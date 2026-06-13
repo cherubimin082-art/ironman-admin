@@ -1,0 +1,38 @@
+/* Smart-iron admin — global responsive utilities */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+/* ── Table scroll wrapper ── */
+.si-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: inherit;
+}
+
+/* ── Minimum touch targets ── */
+button { touch-action: manipulation; }
+
+/* ── Login page: hide left branding panel on narrow screens ── */
+@media (max-width: 767px) {
+  .login-root  { flex-direction: column; }
+  .login-left  { display: none !important; }
+}
+
+/* ── Navbar: simplify on mobile ── */
+@media (max-width: 639px) {
+  .nav-role-badge  { display: none !important; }
+  .nav-user-text   { display: none !important; }
+  .nav-divider     { display: none !important; }
+  .nav-center      { display: none !important; }
+  .nav-signout-text{ display: none !important; }
+}
+
+/* ── Scrollbar thin on tables ── */
+.si-table-wrap::-webkit-scrollbar        { height: 4px; }
+.si-table-wrap::-webkit-scrollbar-track  { background: #f1f5f9; }
+.si-table-wrap::-webkit-scrollbar-thumb  { background: #cbd5e1; border-radius: 2px; }

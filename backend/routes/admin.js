@@ -1,0 +1,541 @@
+﻿const express = require("express");
+const bcrypt  = require("bcryptjs");
+const pool    = require("../db");
+const { verifyToken, requireRole } = require("../middleware/authMiddleware");
+const { getIO } = require("../socket");
+
+const router = express.Router();
+const auth   = [verifyToken, requireRole("admin")];
+
+// GET /api/all-orders
+router.get("/all-orders", ...auth, async (req, res) => {
+  try {
+    const [orders] = await pool.query(
+      `SELECT o.*,
+              uc.name  AS customer_name,  uc.phone AS customer_phone,
+              uv.name  AS vendor_name,
+              ua.name  AS agent_name,
+              JSON_ARRAYAGG(
+                JSON_OBJECT("garment_name", oi.garment_name,
+                            "quantity",     oi.quantity,
+                            "subtotal",     oi.subtotal)
+              ) AS items
+         FROM orders o
+         JOIN users uc ON uc.id = o.customer_id
+         LEFT JOIN users uv ON uv.id = o.vendor_id
+         LEFT JOIN users ua ON ua.id = o.delivery_agent_id
+         JOIN order_items oi ON oi.order_id = o.id
+        GROUP BY o.id
+        ORDER BY o.created_at DESC`
+    );
+    res.json({ orders });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/dashboard-stats
+router.get("/dashboard-stats", ...auth, async (req, res) => {
+  try {
+    const [[totals]] = await pool.query(
+      `SELECT
+         COUNT(*) AS total_orders,
+         SUM(total) AS total_revenue,
+         SUM(status = "pending")          AS pending_count,
+         SUM(status = "vendor_accepted")  AS accepted_count,
+         SUM(status = "in_progress")      AS in_progress_count,
+         SUM(status = "out_for_delivery") AS out_for_delivery_count,
+         SUM(status = "delivered")        AS delivered_count,
+         SUM(status = "cancelled")        AS cancelled_count
+       FROM orders`
+    );
+
+    const [[customers]] = await pool.query(
+      "SELECT COUNT(*) AS count FROM users WHERE role = \"customer\""
+    );
+    const [[vendors]] = await pool.query(
+      "SELECT COUNT(*) AS count FROM users WHERE role = \"vendor\" AND status = \"active\""
+    );
+    const [[agents]] = await pool.query(
+      "SELECT COUNT(*) AS count FROM users WHERE role = \"delivery\" AND status = \"active\""
+    );
+
+    res.json({
+      stats: {
+        ...totals,
+        total_customers: customers.count,
+        active_vendors:  vendors.count,
+        active_agents:   agents.count,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/assign-delivery/:orderId
+router.put("/assign-delivery/:orderId", ...auth, async (req, res) => {
+  const { orderId }       = req.params;
+  const { delivery_agent_id } = req.body;
+  const adminId           = req.user.id;
+
+  if (!delivery_agent_id)
+    return res.status(400).json({ message: "delivery_agent_id is required" });
+
+  try {
+    // Update order
+    await pool.query(
+      "UPDATE orders SET delivery_agent_id = ? WHERE id = ?",
+      [delivery_agent_id, orderId]
+    );
+
+    // Upsert delivery_assignments
+    await pool.query(
+      `INSERT INTO delivery_assignments (order_id, delivery_agent_id, assigned_by)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE delivery_agent_id = VALUES(delivery_agent_id), assigned_by = VALUES(assigned_by)`,
+      [orderId, delivery_agent_id, adminId]
+    );
+
+    // Emit to the assigned delivery agent
+    try {
+      const io = getIO();
+      io.to("delivery_" + delivery_agent_id).emit("new_assignment", { orderId });
+      io.to("admin_room").emit("assignment_updated", { orderId, delivery_agent_id });
+    } catch (_) {}
+
+    res.json({ message: "Delivery agent assigned", orderId, delivery_agent_id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/vendors
+router.get("/vendors", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.name, u.phone, u.zone, u.status, u.rating,
+              COUNT(o.id) AS total_orders
+         FROM users u
+         LEFT JOIN orders o ON o.vendor_id = u.id
+        WHERE u.role = "vendor"
+        GROUP BY u.id`
+    );
+    res.json({ vendors: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/delivery-agents
+router.get("/delivery-agents", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.name, u.phone, u.zone, u.status, u.rating,
+              COUNT(da.id) AS total_deliveries
+         FROM users u
+         LEFT JOIN delivery_assignments da ON da.delivery_agent_id = u.id
+        WHERE u.role = "delivery"
+        GROUP BY u.id`
+    );
+    res.json({ agents: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── VENDOR CRUD ────────────────────────────────────────────────
+
+// GET /api/admin/vendors
+router.get("/admin/vendors", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.name, u.phone, u.zone, u.address, u.status, u.created_at,
+              COUNT(DISTINCT o.id) AS total_orders,
+              GROUP_CONCAT(DISTINCT a.apartment ORDER BY a.apartment SEPARATOR ', ') AS apartments
+         FROM users u
+         LEFT JOIN orders o ON o.vendor_id = u.id
+         LEFT JOIN apartment_slots a ON a.vendor_id = u.id
+        WHERE u.role = 'vendor'
+        GROUP BY u.id
+        ORDER BY u.created_at DESC`
+    );
+    res.json({ vendors: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/vendors
+router.post("/admin/vendors", ...auth, async (req, res) => {
+  const { name, phone, password, zone, address } = req.body;
+  if (!name || !phone || !password)
+    return res.status(400).json({ message: "name, phone and password are required" });
+
+  try {
+    const [[existing]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ?", [phone]
+    );
+    if (existing)
+      return res.status(409).json({ message: "Mobile number already registered" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.query(
+      `INSERT INTO users (name, phone, password_hash, role, zone, address, status)
+       VALUES (?, ?, ?, 'vendor', ?, ?, 'active')`,
+      [name, phone, hash, zone || null, address || null]
+    );
+    const vendorId = result.insertId;
+
+    // Create 20 bags for this vendor
+    const bagValues = Array.from({ length: 20 }, (_, i) => [vendorId, i + 1, "available"]);
+    await pool.query("INSERT INTO bags (vendor_id, bag_number, status) VALUES ?", [bagValues]);
+
+    res.status(201).json({ message: "Vendor created successfully", vendorId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/vendors/:id
+router.put("/admin/vendors/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, zone, address, status } = req.body;
+  if (!name || !phone)
+    return res.status(400).json({ message: "name and phone are required" });
+
+  try {
+    const [[vendor]] = await pool.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [id]
+    );
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+    const [[dup]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND id != ?", [phone, id]
+    );
+    if (dup) return res.status(409).json({ message: "Mobile number already in use by another account" });
+
+    const allowed = ["active", "inactive", "on_leave"];
+    const newStatus = allowed.includes(status) ? status : undefined;
+
+    await pool.query(
+      `UPDATE users SET name = ?, phone = ?, zone = ?, address = ?
+       ${newStatus ? ", status = ?" : ""}
+       WHERE id = ? AND role = 'vendor'`,
+      newStatus
+        ? [name, phone, zone || null, address || null, newStatus, id]
+        : [name, phone, zone || null, address || null, id]
+    );
+    res.json({ message: "Vendor updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/vendors/:id
+router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [[vendor]] = await pool.query(
+      "SELECT id, name FROM users WHERE id = ? AND role = 'vendor'", [id]
+    );
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+    const [[{ activeCount }]] = await pool.query(
+      `SELECT COUNT(*) AS activeCount FROM orders
+       WHERE vendor_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
+    );
+    if (activeCount > 0)
+      return res.status(409).json({
+        message: `Cannot delete: vendor has ${activeCount} active order(s). Resolve or cancel them first.`,
+        activeCount,
+      });
+
+    await pool.query("DELETE FROM bags WHERE vendor_id = ?", [id]);
+    await pool.query("DELETE FROM apartment_slots WHERE vendor_id = ?", [id]);
+    await pool.query("DELETE FROM users WHERE id = ? AND role = 'vendor'", [id]);
+
+    res.json({ message: "Vendor deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── DELIVERY BOY CRUD ───────────────────────────────────────────
+
+// GET /api/admin/delivery-boys
+router.get("/admin/delivery-boys", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.name, u.phone, u.status, u.created_at,
+              COUNT(DISTINCT da.id) AS total_deliveries
+         FROM users u
+         LEFT JOIN delivery_assignments da ON da.delivery_agent_id = u.id
+        WHERE u.role = 'delivery'
+        GROUP BY u.id
+        ORDER BY u.created_at DESC`
+    );
+    res.json({ deliveryBoys: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/delivery-boys
+router.post("/admin/delivery-boys", ...auth, async (req, res) => {
+  const { name, phone, password } = req.body;
+  if (!name || !phone || !password)
+    return res.status(400).json({ message: "name, phone and password are required" });
+
+  try {
+    const [[existing]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ?", [phone]
+    );
+    if (existing)
+      return res.status(409).json({ message: "Mobile number already registered" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.query(
+      `INSERT INTO users (name, phone, password_hash, role, status)
+       VALUES (?, ?, ?, 'delivery', 'active')`,
+      [name, phone, hash]
+    );
+    res.status(201).json({ message: "Delivery boy created successfully", id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/delivery-boys/:id
+router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, status } = req.body;
+  if (!name || !phone)
+    return res.status(400).json({ message: "name and phone are required" });
+
+  try {
+    const [[person]] = await pool.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'delivery'", [id]
+    );
+    if (!person) return res.status(404).json({ message: "Delivery boy not found" });
+
+    const [[dup]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND id != ?", [phone, id]
+    );
+    if (dup) return res.status(409).json({ message: "Mobile number already in use" });
+
+    const allowed = ["active", "inactive", "on_leave"];
+    const newStatus = allowed.includes(status) ? status : undefined;
+
+    await pool.query(
+      `UPDATE users SET name = ?, phone = ?
+       ${newStatus ? ", status = ?" : ""}
+       WHERE id = ? AND role = 'delivery'`,
+      newStatus ? [name, phone, newStatus, id] : [name, phone, id]
+    );
+    res.json({ message: "Delivery boy updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/delivery-boys/:id
+router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [[person]] = await pool.query(
+      "SELECT id, name FROM users WHERE id = ? AND role = 'delivery'", [id]
+    );
+    if (!person) return res.status(404).json({ message: "Delivery boy not found" });
+
+    const [[{ activeCount }]] = await pool.query(
+      `SELECT COUNT(*) AS activeCount FROM orders
+       WHERE delivery_agent_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
+    );
+    if (activeCount > 0)
+      return res.status(409).json({
+        message: `Cannot delete: delivery boy has ${activeCount} active order(s). Resolve them first.`,
+        activeCount,
+      });
+
+    await pool.query("DELETE FROM delivery_assignments WHERE delivery_agent_id = ?", [id]);
+    await pool.query("DELETE FROM users WHERE id = ? AND role = 'delivery'", [id]);
+
+    res.json({ message: "Delivery boy deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── PRICING: CATEGORIES & GARMENTS ─────────────────────────────
+
+// GET /api/admin/categories
+router.get("/admin/categories", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id, c.name, c.created_at,
+              COUNT(g.id) AS garment_count
+         FROM categories c
+         LEFT JOIN garments g ON g.category_id = c.id
+        GROUP BY c.id
+        ORDER BY c.name ASC`
+    );
+    res.json({ categories: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/categories
+router.post("/admin/categories", ...auth, async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ message: "Category name is required" });
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO categories (name) VALUES (?)", [name.trim()]
+    );
+    res.status(201).json({ message: "Category created", id: result.insertId });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Category name already exists" });
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/categories/:id
+router.put("/admin/categories/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ message: "Category name is required" });
+  try {
+    const [result] = await pool.query(
+      "UPDATE categories SET name = ? WHERE id = ?", [name.trim(), id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Category not found" });
+    res.json({ message: "Category updated" });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Category name already exists" });
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/categories/:id
+router.delete("/admin/categories/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [[{ garmentCount }]] = await pool.query(
+      "SELECT COUNT(*) AS garmentCount FROM garments WHERE category_id = ?", [id]
+    );
+    if (garmentCount > 0)
+      return res.status(409).json({
+        message: `Cannot delete: category has ${garmentCount} garment(s). Delete garments first.`,
+        garmentCount,
+      });
+    const [result] = await pool.query("DELETE FROM categories WHERE id = ?", [id]);
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Category not found" });
+    res.json({ message: "Category deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/admin/garments
+router.get("/admin/garments", ...auth, async (req, res) => {
+  try {
+    const { category_id } = req.query;
+    const where = category_id ? "WHERE g.category_id = ?" : "";
+    const params = category_id ? [category_id] : [];
+    const [rows] = await pool.query(
+      `SELECT g.id, g.name, g.price, g.category_id, g.created_at,
+              c.name AS category_name
+         FROM garments g
+         LEFT JOIN categories c ON c.id = g.category_id
+         ${where}
+        ORDER BY c.name ASC, g.name ASC`,
+      params
+    );
+    res.json({ garments: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/garments
+router.post("/admin/garments", ...auth, async (req, res) => {
+  const { category_id, name, price } = req.body;
+  if (!category_id || !name?.trim() || price === undefined)
+    return res.status(400).json({ message: "category_id, name and price are required" });
+  const priceVal = parseFloat(price);
+  if (isNaN(priceVal) || priceVal < 0)
+    return res.status(400).json({ message: "Price must be a positive number" });
+  try {
+    const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ?", [category_id]);
+    if (!cat) return res.status(404).json({ message: "Category not found" });
+    const [result] = await pool.query(
+      "INSERT INTO garments (category_id, name, price) VALUES (?, ?, ?)",
+      [category_id, name.trim(), priceVal]
+    );
+    res.status(201).json({ message: "Garment added", id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/garments/:id
+router.put("/admin/garments/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { category_id, name, price } = req.body;
+  if (!category_id || !name?.trim() || price === undefined)
+    return res.status(400).json({ message: "category_id, name and price are required" });
+  const priceVal = parseFloat(price);
+  if (isNaN(priceVal) || priceVal < 0)
+    return res.status(400).json({ message: "Price must be a positive number" });
+  try {
+    const [result] = await pool.query(
+      "UPDATE garments SET category_id = ?, name = ?, price = ? WHERE id = ?",
+      [category_id, name.trim(), priceVal, id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Garment not found" });
+    res.json({ message: "Garment updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/garments/:id
+router.delete("/admin/garments/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query("DELETE FROM garments WHERE id = ?", [id]);
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Garment not found" });
+    res.json({ message: "Garment deleted" });
+  } catch (err) {
+    if (err.code === "ER_ROW_IS_REFERENCED_2")
+      return res.status(409).json({ message: "Cannot delete: garment is used in existing orders. Consider deactivating it instead." });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = router;

@@ -1,0 +1,137 @@
+/* index.css — Global styles + md breakpoint for sidebar */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import "tailwindcss";
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f8fafc;
+  color: #334155;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+/* ─── Scrollbars ────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ─── Glass utilities ───────────────────────────────── */
+.glass {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.glass-dark {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+  border-radius: 24px;
+}
+
+/* ─── Gradient border ───────────────────────────────── */
+.glow-border {
+  position: relative;
+  isolation: isolate;
+}
+
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.15), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ─── Dot grid background ───────────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ─── Ambient orbs ──────────────────────────────────── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: floatOrb 12s ease-in-out infinite;
+}
+.orb-blue   { background: radial-gradient(circle, rgba(99,102,241,0.25), transparent 70%); }
+.orb-purple { background: radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%); }
+.orb-cyan   { background: radial-gradient(circle, rgba(6,182,212,0.15), transparent 70%); }
+
+@keyframes floatOrb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(20px, -15px) scale(1.04); }
+  66%       { transform: translate(-15px, 20px) scale(0.97); }
+}
+
+/* ─── Sidebar: Desktop always visible ───────────────── */
+@media (min-width: 768px) {
+  aside.md\:translate-x-0 {
+    transform: translateX(0) !important;
+    position: relative !important;
+    height: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ─── Layout flex row ───────────────────────────────── */
+.layout-shell {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+  min-height: calc(100vh - 60px);
+}
+
+/* ─── Input autofill override ───────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #1e293b !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ─── Focus ring reset ──────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid rgba(99,102,241,0.5);
+  outline-offset: 2px;
+}
+
+/* ─── Transitions ───────────────────────────────────── */
+.transition-default {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Spinner animation ─────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
