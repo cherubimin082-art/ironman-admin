@@ -2,48 +2,22 @@ pipeline {
     agent any
 
     environment {
-        DEPLOY_DIR = 'D:\\Smart-iron-admin'
-        PM2_NAME   = 'smart-iron-admin'
-        PATH       = "C:\\Users\\Admin\\AppData\\Roaming\\npm;${env.PATH}"
+        SERVER        = 'ubuntu@18.140.21.202'
+        SSH_KEY       = 'C:\\Jenkins\\keys\\ironman-server.pem'
+        DEPLOY_SCRIPT = '/home/ubuntu/deploy-admin.sh'
     }
 
     stages {
-        stage('Pull') {
+        stage('Deploy to Server') {
             steps {
-                bat "git -C \"%DEPLOY_DIR%\" pull origin main"
-            }
-        }
-
-        stage('Install') {
-            steps {
-                bat """
-                    cd /d "%DEPLOY_DIR%"
-                    npm install --legacy-peer-deps --silent
-                    cd backend
-                    npm install --legacy-peer-deps --silent
-                """
-            }
-        }
-
-        stage('Build') {
-            steps {
-                bat "cd /d \"%DEPLOY_DIR%\" && npm run build"
-            }
-        }
-
-        stage('Restart Backend') {
-            steps {
-                bat """
-                    pm2 describe %PM2_NAME% >nul 2>&1 && pm2 restart %PM2_NAME% || pm2 start "%DEPLOY_DIR%\\backend\\server.js" --name %PM2_NAME%
-                    pm2 save
-                """
+                bat "ssh -i \"%SSH_KEY%\" -o StrictHostKeyChecking=no %SERVER% \"bash %DEPLOY_SCRIPT% 2>&1\""
             }
         }
     }
 
     post {
         success {
-            echo 'Smart Iron Admin deployed successfully!'
+            echo 'Smart Iron Admin deployed to admin.ironman.today!'
         }
         failure {
             echo 'Deployment failed — check logs above.'
