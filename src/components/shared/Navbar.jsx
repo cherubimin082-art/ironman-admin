@@ -73,30 +73,16 @@ export default function Navbar({ onMenuClick }) {
 
           {/* Logo mark */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-              background: cfg.gradient,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 4px 12px ${cfg.dotGlow}`,
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
-            </div>
-            <div>
-              <p style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.01em" }}>
-                Smart Iron
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: "#22c55e",
-                  boxShadow: "0 0 6px rgba(34,197,94,0.6)",
-                }} />
-                <span style={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                  System Live
-                </span>
-              </div>
+            <img src="/logo.png" alt="Iron Man" style={{ height: 36, width: "auto", objectFit: "contain" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "#22c55e",
+                boxShadow: "0 0 6px rgba(34,197,94,0.6)",
+              }} />
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                System Live
+              </span>
             </div>
           </div>
         </div>

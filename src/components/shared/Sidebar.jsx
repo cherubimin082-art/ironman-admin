@@ -212,31 +212,15 @@ export default function Sidebar({ open, onClose }) {
           }} />
 
           {/* Logo row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, position: "relative" }}>
+            <img src="/logo.png" alt="Iron Man" style={{ height: 44, width: "auto", objectFit: "contain" }} />
             <div style={{
-              width: 40, height: 40, borderRadius: 13, flexShrink: 0,
-              background: theme.gradient,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 4px 14px ${theme.glow}`,
+              background: theme.activeBg, border: `1px solid ${theme.activeBorder}`,
+              borderRadius: 99, padding: "1px 8px",
             }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 20, height: 20 }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
-            </div>
-            <div>
-              <p style={{ fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 900, color: "#0f172a", margin: 0, letterSpacing: "-0.01em" }}>
-                Smart Iron
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-                <div style={{
-                  background: theme.activeBg, border: `1px solid ${theme.activeBorder}`,
-                  borderRadius: 99, padding: "1px 8px",
-                }}>
-                  <span style={{ fontSize: 9, fontWeight: 800, color: theme.activeText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    {theme.portal}
-                  </span>
-                </div>
-              </div>
+              <span style={{ fontSize: 9, fontWeight: 800, color: theme.activeText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                {theme.portal}
+              </span>
             </div>
           </div>
         </div>
