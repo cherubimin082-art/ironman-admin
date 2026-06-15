@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
@@ -44,7 +44,7 @@ const TIME_SLOTS = {
 const STATUS_COLORS = {
   pending:             { bg: "#fffbeb", color: "#d97706", border: "#fde68a" },
   vendor_accepted:     { bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe" },
-  delivery_assigned:   { bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
+  delivery_assigned:   { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" },
   picked_up:           { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
   at_vendor:           { bg: "#fefce8", color: "#ca8a04", border: "#fef08a" },
   in_progress:         { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
@@ -175,7 +175,7 @@ export default function ApartmentManagementPage() {
 
         {/* ── Page Header ── */}
         <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
             Vendor Tools
           </p>
           <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
@@ -219,9 +219,9 @@ export default function ApartmentManagementPage() {
                     style={{
                       fontSize: 11.5, fontWeight: 700, padding: "4px 11px", borderRadius: 99, border: "none",
                       cursor: "pointer",
-                      background: isSelected ? "#eef2ff" : isSaved ? "#f0fdf4" : "#f9fafb",
-                      color:     isSelected ? "#4f46e5" : isSaved ? "#15803d" : "#9ca3af",
-                      outline:   isSelected ? "1.5px solid #c7d2fe" : isSaved ? "1.5px solid #bbf7d0" : "1.5px solid #e5e7eb",
+                      background: isSelected ? "#FEF2F2" : isSaved ? "#f0fdf4" : "#f9fafb",
+                      color:     isSelected ? "#B91C1C" : isSaved ? "#15803d" : "#9ca3af",
+                      outline:   isSelected ? "1.5px solid #FECACA" : isSaved ? "1.5px solid #bbf7d0" : "1.5px solid #e5e7eb",
                     }}
                   >
                     {isSaved ? "✓ " : ""}{apt.split(" ")[0]}
@@ -313,7 +313,7 @@ export default function ApartmentManagementPage() {
                   disabled={saving}
                   style={{
                     display: "flex", alignItems: "center", gap: 8,
-                    background: saving ? "#a5b4fc" : "#4f46e5",
+                    background: saving ? "#a5b4fc" : "#B91C1C",
                     color: "#fff", border: "none", borderRadius: 10,
                     padding: "10px 24px", fontSize: 13.5, fontWeight: 700,
                     cursor: saving ? "not-allowed" : "pointer",
@@ -347,8 +347,8 @@ export default function ApartmentManagementPage() {
                 {!loadingOrders && (
                   <span style={{
                     fontSize: 12, fontWeight: 700,
-                    background: "#eef2ff", color: "#4f46e5",
-                    border: "1px solid #c7d2fe", borderRadius: 99,
+                    background: "#FEF2F2", color: "#B91C1C",
+                    border: "1px solid #FECACA", borderRadius: 99,
                     padding: "3px 12px",
                   }}>
                     {orders.length} order{orders.length !== 1 ? "s" : ""}
@@ -360,7 +360,7 @@ export default function ApartmentManagementPage() {
               {loadingOrders && (
                 <div style={{ padding: "40px 24px", textAlign: "center" }}>
                   <div style={{
-                    width: 28, height: 28, border: "3px solid #e5e7eb", borderTopColor: "#6366f1",
+                    width: 28, height: 28, border: "3px solid #e5e7eb", borderTopColor: "#DC2626",
                     borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto 12px",
                   }} />
                   <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Loading orders…</p>
@@ -400,7 +400,7 @@ export default function ApartmentManagementPage() {
                     <tbody>
                       {orders.map((order, idx) => (
                         <tr key={order.id} style={{ background: idx % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #f3f4f6" }}>
-                          <td style={{ padding: "12px 16px", fontWeight: 700, color: "#4f46e5", whiteSpace: "nowrap" }}>
+                          <td style={{ padding: "12px 16px", fontWeight: 700, color: "#B91C1C", whiteSpace: "nowrap" }}>
                             {order.order_code || `#${order.id}`}
                           </td>
                           <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>

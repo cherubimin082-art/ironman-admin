@@ -1,13 +1,13 @@
-const STATUS_CONFIG = {
+﻿const STATUS_CONFIG = {
   pending:              { color: "#b45309", bg: "#fffbeb", border: "#fde68a", dot: "#f59e0b", label: "Pending"            },
   vendor_accepted:      { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe", dot: "#3b82f6", label: "Accepted"           },
-  delivery_assigned:    { color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe", dot: "#8b5cf6", label: "Agent Assigned"     },
-  in_progress:          { color: "#4338ca", bg: "#eef2ff", border: "#c7d2fe", dot: "#6366f1", label: "In Progress"        },
+  delivery_assigned:    { color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA", dot: "#DC2626", label: "Agent Assigned"     },
+  in_progress:          { color: "#4338ca", bg: "#FEF2F2", border: "#FECACA", dot: "#DC2626", label: "In Progress"        },
   picked_up:            { color: "#0369a1", bg: "#f0f9ff", border: "#bae6fd", dot: "#0ea5e9", label: "Picked Up"          },
   at_vendor:            { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa", dot: "#f97316", label: "At Iron Shop"        },
   ironing_in_progress:  { color: "#92400e", bg: "#fffbeb", border: "#fde68a", dot: "#f59e0b", label: "Ironing in Progress" },
   ready_for_delivery:   { color: "#047857", bg: "#ecfdf5", border: "#a7f3d0", dot: "#10b981", label: "Ready for Delivery"  },
-  picked_from_vendor:   { color: "#5b21b6", bg: "#f5f3ff", border: "#ddd6fe", dot: "#8b5cf6", label: "Picked from Vendor"  },
+  picked_from_vendor:   { color: "#7F1D1D", bg: "#FEF2F2", border: "#FECACA", dot: "#DC2626", label: "Picked from Vendor"  },
   out_for_delivery:     { color: "#0e7490", bg: "#ecfeff", border: "#a5f3fc", dot: "#06b6d4", label: "Out for Delivery"    },
   delivered:            { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e", label: "Delivered"          },
   cancelled:            { color: "#b91c1c", bg: "#fef2f2", border: "#fecaca", dot: null,      label: "Cancelled"          },

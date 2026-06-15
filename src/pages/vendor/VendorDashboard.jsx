@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import Layout from "../../components/shared/Layout";
 import OrderCard from "../../components/vendor/OrderCard";
 import { useOrders } from "../../context/OrderContext";
@@ -51,6 +51,18 @@ function formatDt(ts) {
   });
 }
 
+function StarDisplay({ value }) {
+  const r = parseFloat(value) || 0;
+  return (
+    <span style={{ display: "inline-flex", gap: 2 }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} style={{ fontSize: 16, color: i <= Math.round(r) ? "#f59e0b" : "#e5e7eb" }}>★</span>
+      ))}
+      <span style={{ fontSize: 13, color: "#6b7280", marginLeft: 6, fontWeight: 700 }}>{r.toFixed(1)}</span>
+    </span>
+  );
+}
+
 export default function VendorDashboard() {
   const { user } = useAuth();
   const { orders, vendorAction } = useOrders();
@@ -58,6 +70,7 @@ export default function VendorDashboard() {
   const [completedOrders, setCompletedOrders] = useState([]);
   const [totalRevenue, setTotalRevenue]       = useState(0);
   const [completedLoading, setCompletedLoading] = useState(true);
+  const [myRating, setMyRating]               = useState(null);
 
   useEffect(() => {
     api.get("/vendor/completed-orders")
@@ -67,6 +80,10 @@ export default function VendorDashboard() {
       })
       .catch(() => {})
       .finally(() => setCompletedLoading(false));
+
+    api.get("/vendor/my-rating")
+      .then(({ data }) => setMyRating(data))
+      .catch(() => {});
   }, []);
 
   const { isMobile, isTablet } = useWindowSize();
@@ -112,7 +129,7 @@ export default function VendorDashboard() {
       label: "Revenue",
       value: completedLoading ? "—" : `₹${totalRevenue.toFixed(0)}`,
       sub: completedLoading ? "Loading…" : `${completedOrders.length} orders delivered`,
-      accent: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe",
+      accent: "#DC2626", bg: "#FEF2F2", border: "#FECACA",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -202,6 +219,85 @@ export default function VendorDashboard() {
           )}
         </div>
 
+        {/* My Ratings Section */}
+        {myRating && parseInt(myRating.total_ratings) > 0 && (
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 700, color: "#111827", margin: "0 0 3px" }}>
+                My Ratings
+              </h2>
+              <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
+                Based on {myRating.total_ratings} customer review{myRating.total_ratings !== 1 ? "s" : ""}
+              </p>
+            </div>
+
+            {/* Summary row */}
+            <div style={{
+              background: "#fff", borderRadius: 18, border: "1px solid #e5e7eb",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+              padding: "24px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: myRating.reviews?.length ? 20 : 0 }}>
+                <div style={{
+                  width: 70, height: 70, borderRadius: 18, flexShrink: 0,
+                  background: "#fffbeb", border: "1px solid #fde68a",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                }}>
+                  <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: 26, fontWeight: 800, color: "#d97706", lineHeight: 1 }}>
+                    {myRating.avg_rating}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    / 5
+                  </span>
+                </div>
+                <div>
+                  <StarDisplay value={myRating.avg_rating} />
+                  <p style={{ fontSize: 12.5, color: "#6b7280", margin: "6px 0 0", fontWeight: 500 }}>
+                    {myRating.total_ratings} rating{myRating.total_ratings !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+
+              {/* Recent reviews */}
+              {myRating.reviews?.length > 0 && (
+                <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                  {myRating.reviews.map((rv, i) => (
+                    <div key={i} style={{
+                      padding: "14px 16px", borderRadius: 12,
+                      background: "#fafafa", border: "1px solid #f3f4f6",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: rv.vendor_review ? 8 : 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                            background: "#FEF2F2", color: "#DC2626",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 13, fontWeight: 800,
+                          }}>
+                            {rv.customer_name?.[0]?.toUpperCase() ?? "?"}
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0 }}>{rv.customer_name}</p>
+                            <p style={{ fontSize: 10.5, color: "#9ca3af", margin: 0 }}>
+                              {new Date(rv.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          </div>
+                        </div>
+                        <StarDisplay value={rv.vendor_rating} />
+                      </div>
+                      {rv.vendor_review && (
+                        <p style={{ fontSize: 13, color: "#374151", margin: 0, fontStyle: "italic", lineHeight: 1.5 }}>
+                          "{rv.vendor_review}"
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Completed Orders Section */}
         {!completedLoading && completedOrders.length > 0 && (
           <div>
@@ -215,10 +311,10 @@ export default function VendorDashboard() {
                 </p>
               </div>
               <div style={{
-                background: "#f5f3ff", border: "1px solid #ddd6fe",
+                background: "#FEF2F2", border: "1px solid #FECACA",
                 borderRadius: 10, padding: "8px 16px",
               }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#7c3aed" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}>
                   Total Revenue: ₹{totalRevenue.toFixed(0)}
                 </span>
               </div>
@@ -268,7 +364,7 @@ export default function VendorDashboard() {
                           {itemsText}
                         </td>
                         <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                          <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#8b5cf6" }}>
+                          <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#DC2626" }}>
                             ₹{parseFloat(o.total || 0).toFixed(0)}
                           </span>
                         </td>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import api from "../../services/api";
@@ -14,7 +14,7 @@ const inputSt = {
   outline: "none", boxSizing: "border-box", background: "#fff",
   transition: "border-color 0.15s",
 };
-const fo = e => { e.target.style.borderColor = "#8b5cf6"; };
+const fo = e => { e.target.style.borderColor = "#DC2626"; };
 const fb = e => { e.target.style.borderColor = "#e5e7eb"; };
 
 // ── Modal ───────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function Tab({ label, count, active, onClick }) {
       onClick={onClick}
       style={{
         padding: "9px 20px", borderRadius: 10, border: "none", cursor: "pointer",
-        background: active ? "linear-gradient(135deg,#8b5cf6,#6366f1)" : "#f3f4f6",
+        background: active ? "linear-gradient(135deg,#DC2626,#DC2626)" : "#f3f4f6",
         color: active ? "#fff" : "#6b7280",
         fontSize: 13, fontWeight: 700, transition: "all 0.15s",
         display: "flex", alignItems: "center", gap: 8,
@@ -305,7 +305,7 @@ export default function PricingPage() {
 
   const primaryBtn = (_label, loading2) => ({
     flex: 2, padding: "11px 0", borderRadius: 10, border: "none",
-    background: loading2 ? "#e5e7eb" : "linear-gradient(135deg,#8b5cf6,#6366f1)",
+    background: loading2 ? "#e5e7eb" : "linear-gradient(135deg,#DC2626,#DC2626)",
     color: loading2 ? "#9ca3af" : "#fff",
     fontSize: 13, fontWeight: 700,
     cursor: loading2 ? "not-allowed" : "pointer",
@@ -323,7 +323,7 @@ export default function PricingPage() {
 
         {/* Header */}
         <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
             Admin
           </p>
           <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
@@ -352,9 +352,9 @@ export default function PricingPage() {
               <button onClick={openAddCat} style={{
                 display: "flex", alignItems: "center", gap: 8,
                 padding: "9px 18px", borderRadius: 11, border: "none",
-                background: "linear-gradient(135deg,#8b5cf6,#6366f1)",
+                background: "linear-gradient(135deg,#DC2626,#DC2626)",
                 color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(139,92,246,0.3)", minHeight: 40,
+                boxShadow: "0 4px 14px rgba(220,38,38,0.3)", minHeight: 40,
               }}>
                 <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> Add Category
               </button>
@@ -393,7 +393,7 @@ export default function PricingPage() {
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <div style={{
                                 width: 32, height: 32, borderRadius: 9,
-                                background: "linear-gradient(135deg,#8b5cf6,#6366f1)",
+                                background: "linear-gradient(135deg,#DC2626,#DC2626)",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 fontSize: 13, fontWeight: 800, color: "#fff",
                               }}>
@@ -407,7 +407,7 @@ export default function PricingPage() {
                               onClick={() => { setActiveTab("garments"); setFilterCat(String(cat.id)); }}
                               style={{
                                 fontFamily: "'Outfit',sans-serif", fontSize: 15, fontWeight: 800,
-                                color: "#8b5cf6", background: "none", border: "none", cursor: "pointer",
+                                color: "#DC2626", background: "none", border: "none", cursor: "pointer",
                                 padding: 0,
                               }}
                             >
@@ -419,8 +419,8 @@ export default function PricingPage() {
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => openEditCat(cat)} style={{
                                 padding: "5px 12px", borderRadius: 8,
-                                border: "1px solid #e0e7ff", background: "#eef2ff",
-                                color: "#6366f1", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                                border: "1px solid #FEE2E2", background: "#FEF2F2",
+                                color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer",
                               }}>Edit</button>
                               <button onClick={() => openDelCat(cat)} style={{
                                 padding: "5px 12px", borderRadius: 8,
@@ -463,9 +463,9 @@ export default function PricingPage() {
               <button onClick={openAddGmt} style={{
                 display: "flex", alignItems: "center", gap: 8,
                 padding: "9px 18px", borderRadius: 11, border: "none",
-                background: "linear-gradient(135deg,#8b5cf6,#6366f1)",
+                background: "linear-gradient(135deg,#DC2626,#DC2626)",
                 color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(139,92,246,0.3)", minHeight: 40,
+                boxShadow: "0 4px 14px rgba(220,38,38,0.3)", minHeight: 40,
               }}>
                 <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> Add Garment
               </button>
@@ -507,7 +507,7 @@ export default function PricingPage() {
                             {g.category_name ? (
                               <span style={{
                                 fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
-                                background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe",
+                                background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA",
                               }}>{g.category_name}</span>
                             ) : <span style={{ color: "#d1d5db", fontSize: 12 }}>—</span>}
                           </td>
@@ -520,8 +520,8 @@ export default function PricingPage() {
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => openEditGmt(g)} style={{
                                 padding: "5px 12px", borderRadius: 8,
-                                border: "1px solid #e0e7ff", background: "#eef2ff",
-                                color: "#6366f1", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                                border: "1px solid #FEE2E2", background: "#FEF2F2",
+                                color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer",
                               }}>Edit</button>
                               <button onClick={() => openDelGmt(g)} style={{
                                 padding: "5px 12px", borderRadius: 8,

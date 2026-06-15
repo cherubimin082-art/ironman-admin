@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import api from "../../services/api";
 
@@ -415,7 +415,7 @@ export default function CapacityPage() {
                     <td style={{ padding: "13px 18px", textAlign: "right" }}>
                       <button onClick={() => handleAptChange(apt)} style={{
                         fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 8,
-                        border: "1px solid #e0e7ff", background: "#eef2ff", color: "#6366f1", cursor: "pointer",
+                        border: "1px solid #FEE2E2", background: "#FEF2F2", color: "#DC2626", cursor: "pointer",
                       }}>Edit</button>
                     </td>
                   </tr>

@@ -1,11 +1,11 @@
-import Layout from "../../components/shared/Layout";
+﻿import Layout from "../../components/shared/Layout";
 import OrderCard from "../../components/vendor/OrderCard";
 import { useOrders } from "../../context/OrderContext";
 import { useState } from "react";
 import { useWindowSize } from "../../hooks/useWindowSize";
 
 const FILTERS = [
-  { key: "all",         label: "All Orders",  color: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" },
+  { key: "all",         label: "All Orders",  color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
   { key: "pending",     label: "Pending",     color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
   { key: "in-progress", label: "In Progress", color: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
   { key: "ready",       label: "Ready",       color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
@@ -68,7 +68,7 @@ export default function OrderQueuePage() {
         {/* Page Header */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
               Order Management
             </p>
             <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
@@ -99,7 +99,7 @@ export default function OrderQueuePage() {
             style={{
               padding: "7px 32px 7px 12px",
               borderRadius: 9,
-              border: apt !== "All" ? "1.5px solid #818cf8" : "1.5px solid #e5e7eb",
+              border: apt !== "All" ? "1.5px solid #F87171" : "1.5px solid #e5e7eb",
               fontSize: 13, fontWeight: 600, color: "#374151",
               background: "#fff",
               cursor: "pointer",

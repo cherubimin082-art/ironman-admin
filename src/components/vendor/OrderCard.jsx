@@ -1,11 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import StatusBadge from "../shared/StatusBadge";
 
 const STATUS_CONFIG = {
   pending:            { accent: "#f59e0b", avatarBg: "#fffbeb" },
   vendor_accepted:    { accent: "#3b82f6", avatarBg: "#eff6ff" },
-  delivery_assigned:  { accent: "#8b5cf6", avatarBg: "#f5f3ff" },
-  in_progress:        { accent: "#6366f1", avatarBg: "#eef2ff" },
+  delivery_assigned:  { accent: "#DC2626", avatarBg: "#FEF2F2" },
+  in_progress:        { accent: "#DC2626", avatarBg: "#FEF2F2" },
   picked_up:          { accent: "#0ea5e9", avatarBg: "#f0f9ff" },
   at_vendor:          { accent: "#f97316", avatarBg: "#fff7ed" },
   ready_for_delivery: { accent: "#10b981", avatarBg: "#ecfdf5" },
@@ -46,9 +46,82 @@ function InfoBadge({ icon, text, bg = "#f9fafb", border = "#e5e7eb", color = "#6
   );
 }
 
+const REJECT_REASONS = [
+  "Slot Full",
+  "Item not accepted",
+  "Outside service area",
+  "Other",
+];
+
+function RejectModal({ onConfirm, onClose, busy }) {
+  const [reason, setReason] = useState(REJECT_REASONS[0]);
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 999,
+      background: "rgba(15,23,42,0.55)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 20,
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: 18,
+        boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+        padding: "28px 28px 24px", width: "100%", maxWidth: 380,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}>
+        <p style={{ fontFamily: "'Outfit',sans-serif", fontSize: 18, fontWeight: 800, color: "#111827", margin: "0 0 6px" }}>
+          Reject Order
+        </p>
+        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
+          Please select a reason for rejecting this order.
+        </p>
+        <label style={{ fontSize: 11.5, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+          Reason
+        </label>
+        <select
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          style={{
+            width: "100%", padding: "10px 14px", borderRadius: 10,
+            border: "1.5px solid #e5e7eb", fontSize: 13.5, fontWeight: 600,
+            color: "#111827", background: "#f9fafb",
+            outline: "none", cursor: "pointer", marginBottom: 22,
+          }}
+        >
+          {REJECT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onClose}
+            disabled={busy}
+            style={{
+              flex: 1, padding: "11px 0", borderRadius: 10, cursor: "pointer",
+              border: "1.5px solid #e5e7eb", background: "#fff",
+              color: "#374151", fontSize: 13, fontWeight: 700,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={busy}
+            style={{
+              flex: 1, padding: "11px 0", borderRadius: 10, cursor: busy ? "not-allowed" : "pointer",
+              border: "none", background: busy ? "#e5e7eb" : "linear-gradient(135deg,#DC2626,#B91C1C)",
+              color: busy ? "#9ca3af" : "#fff", fontSize: 13, fontWeight: 700,
+            }}
+          >
+            {busy ? "Rejecting…" : "Reject Order"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ActionArea({ order, onStatusChange }) {
   const [busy, setBusy] = useState(null);
   const [err,  setErr]  = useState("");
+  const [showReject, setShowReject] = useState(false);
   const status = order.status;
 
   async function handleClick(action) {
@@ -63,35 +136,57 @@ function ActionArea({ order, onStatusChange }) {
     }
   }
 
+  async function handleRejectConfirm(reason) {
+    setBusy('reject');
+    setErr("");
+    try {
+      await onStatusChange(order.id, 'reject', reason);
+      setShowReject(false);
+    } catch (e) {
+      setErr(e.response?.data?.message || e.message || "Reject failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (status === 'pending') {
     return (
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          onClick={() => onStatusChange(order.id, 'reject')}
-          style={{
-            flex: 1, padding: "10px 0", border: "1.5px solid #fecaca",
-            borderRadius: 10, cursor: "pointer", background: "#fef2f2",
-            color: "#dc2626", fontSize: 12.5, fontWeight: 700, transition: "all 0.15s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "#fef2f2"; }}
-        >
-          Reject
-        </button>
-        <button
-          onClick={() => onStatusChange(order.id, 'accept')}
-          style={{
-            flex: 2, padding: "10px 0", border: "none", borderRadius: 10, cursor: "pointer",
-            background: "linear-gradient(135deg, #10b981, #059669)",
-            color: "#fff", fontSize: 12.5, fontWeight: 700, letterSpacing: "0.02em",
-            transition: "opacity 0.15s, transform 0.15s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "none"; }}
-        >
-          Accept Order
-        </button>
-      </div>
+      <>
+        {showReject && (
+          <RejectModal
+            busy={busy === 'reject'}
+            onConfirm={handleRejectConfirm}
+            onClose={() => setShowReject(false)}
+          />
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setShowReject(true)}
+            style={{
+              flex: 1, padding: "10px 0", border: "1.5px solid #fecaca",
+              borderRadius: 10, cursor: "pointer", background: "#fef2f2",
+              color: "#dc2626", fontSize: 12.5, fontWeight: 700, transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fef2f2"; }}
+          >
+            Reject
+          </button>
+          <button
+            onClick={() => onStatusChange(order.id, 'accept')}
+            style={{
+              flex: 2, padding: "10px 0", border: "none", borderRadius: 10, cursor: "pointer",
+              background: "linear-gradient(135deg, #10b981, #059669)",
+              color: "#fff", fontSize: 12.5, fontWeight: 700, letterSpacing: "0.02em",
+              transition: "opacity 0.15s, transform 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "none"; }}
+          >
+            Accept Order
+          </button>
+        </div>
+      </>
     );
   }
 
@@ -108,7 +203,7 @@ function ActionArea({ order, onStatusChange }) {
   if (status === 'delivery_assigned') {
     return (
       <InfoBadge
-        bg="#f5f3ff" border="#ddd6fe" color="#7c3aed"
+        bg="#FEF2F2" border="#FECACA" color="#B91C1C"
         icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13 }}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         text="Agent On the Way"
       />
@@ -135,7 +230,7 @@ function ActionArea({ order, onStatusChange }) {
             style={{
               flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
               cursor: busy !== null ? "not-allowed" : "pointer",
-              background: busy === 'start_ironing' ? "#e5e7eb" : "linear-gradient(135deg, #6366f1, #4f46e5)",
+              background: busy === 'start_ironing' ? "#e5e7eb" : "linear-gradient(135deg, #DC2626, #B91C1C)",
               color: busy === 'start_ironing' ? "#9ca3af" : "#fff",
               fontSize: 12.5, fontWeight: 700,
               transition: "opacity 0.15s",

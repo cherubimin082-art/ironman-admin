@@ -1,4 +1,4 @@
-import Layout from "../../components/shared/Layout";
+﻿import Layout from "../../components/shared/Layout";
 import RevenueChart from "../../components/admin/RevenueChart";
 import { useOrders } from "../../context/OrderContext";
 import { DUMMY_VENDORS, DUMMY_DELIVERY_PARTNERS } from "../../services/orderService";
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
   const stats = [
     {
       label: "Total Orders", value: orders.length, sub: "All orders across platform",
-      accent: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe",
+      accent: "#DC2626", bg: "#FEF2F2", border: "#FECACA",
       icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
     },
     {
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
               Admin Portal
             </p>
             <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 30, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
@@ -99,11 +99,11 @@ export default function AdminDashboard() {
           </div>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
-            background: "#f5f3ff", border: "1px solid #ddd6fe",
+            background: "#FEF2F2", border: "1px solid #FECACA",
             borderRadius: 10, padding: "9px 16px", flexShrink: 0,
           }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#7c3aed" }}>All Systems Operational</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#B91C1C" }}>All Systems Operational</span>
           </div>
         </div>
 
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 15, height: 15 }}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>}
               />
               <AlertItem
-                bg="#f5f3ff" border="#ddd6fe" titleColor="#6d28d9" bodyColor="#5b21b6"
+                bg="#FEF2F2" border="#FECACA" titleColor="#991B1B" bodyColor="#7F1D1D"
                 title="Platform Online"
                 body="All services running normally."
                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 15, height: 15 }}><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" /></svg>}

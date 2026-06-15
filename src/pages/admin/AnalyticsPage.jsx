@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import {
   LineChart, Line, BarChart, Bar,
@@ -14,7 +14,7 @@ const RANGE_OPTS = [
   { key: "month", label: "This Month" },
 ];
 
-const VENDOR_COLORS = ["#8b5cf6", "#06b6d4", "#f59e0b", "#10b981", "#ef4444"];
+const VENDOR_COLORS = ["#DC2626", "#06b6d4", "#f59e0b", "#10b981", "#ef4444"];
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -100,7 +100,7 @@ function SummaryCards({ data, loading }) {
   const cards = [
     { label: "Orders Today",       value: data?.today,             fmt: v => v,                  accent: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
     { label: "Orders This Week",   value: data?.this_week,         fmt: v => v,                  accent: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
-    { label: "Orders This Month",  value: data?.this_month,        fmt: v => v,                  accent: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe" },
+    { label: "Orders This Month",  value: data?.this_month,        fmt: v => v,                  accent: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
     { label: "Revenue This Month", value: data?.revenue_this_month, fmt: v => `₹${Number(v).toLocaleString("en-IN")}`, accent: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
   ];
 
@@ -166,7 +166,7 @@ function RevenueSection() {
               onClick={() => setRange(o.key)}
               style={{
                 padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none",
-                background: range === o.key ? "#8b5cf6" : "#f3f4f6",
+                background: range === o.key ? "#DC2626" : "#f3f4f6",
                 color: range === o.key ? "#fff" : "#6b7280",
               }}
             >
@@ -304,13 +304,13 @@ function ApartmentsChart({ data, loading }) {
                   return (
                     <div style={{ background: "#fff", border: "1px solid #f3f4f6", borderRadius: 10, padding: "10px 14px", boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}>
                       <p style={{ fontWeight: 700, fontSize: 13, color: "#111827", margin: "0 0 6px" }}>{d.fullName}</p>
-                      <p style={{ fontSize: 12, color: "#6366f1", margin: "0 0 3px" }}>Orders: <b>{d.orders}</b></p>
+                      <p style={{ fontSize: 12, color: "#DC2626", margin: "0 0 3px" }}>Orders: <b>{d.orders}</b></p>
                       <p style={{ fontSize: 12, color: "#10b981", margin: 0 }}>Revenue: <b>₹{Number(d.revenue).toLocaleString("en-IN")}</b></p>
                     </div>
                   );
                 }}
               />
-              <Bar dataKey="orders" name="Orders" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={28} />
+              <Bar dataKey="orders" name="Orders" fill="#DC2626" radius={[6, 6, 0, 0]} barSize={28} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -429,7 +429,7 @@ export default function AnalyticsPage() {
 
         {/* Header */}
         <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
             Admin
           </p>
           <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>

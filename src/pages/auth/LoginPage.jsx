@@ -1,4 +1,4 @@
-// LoginPage.jsx — Professional Split-Panel Design
+﻿// LoginPage.jsx — Professional Split-Panel Design
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
@@ -43,7 +43,7 @@ const features = [
 const quickAccounts = [
   { label: "Vendor", phone: "9876543210", pass: "vendor123", role: "vendor", color: "#0ea5e9", bg: "rgba(14,165,233,0.08)", border: "rgba(14,165,233,0.2)" },
   { label: "Delivery", phone: "9123456789", pass: "delivery123", role: "delivery", color: "#10b981", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.2)" },
-  { label: "Admin", phone: "9000000000", pass: "admin123", role: "admin", color: "#8b5cf6", bg: "rgba(139,92,246,0.08)", border: "rgba(139,92,246,0.2)" },
+  { label: "Admin", phone: "9000000000", pass: "admin123", role: "admin", color: "#DC2626", bg: "rgba(220,38,38,0.08)", border: "rgba(220,38,38,0.2)" },
 ];
 
 export default function LoginPage() {
@@ -188,7 +188,7 @@ export default function LoginPage() {
                   maxLength={10}
                   required
                   style={styles.input}
-                  onFocus={e => { e.target.parentNode.style.borderColor = "#6366f1"; e.target.parentNode.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.08)"; }}
+                  onFocus={e => { e.target.parentNode.style.borderColor = "#DC2626"; e.target.parentNode.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.08)"; }}
                   onBlur={e => { e.target.parentNode.style.borderColor = "#e2e8f0"; e.target.parentNode.style.boxShadow = "none"; }}
                 />
               </div>
@@ -210,7 +210,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                   style={{ ...styles.input, paddingRight: 48 }}
-                  onFocus={e => { e.target.parentNode.style.borderColor = "#6366f1"; e.target.parentNode.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.08)"; }}
+                  onFocus={e => { e.target.parentNode.style.borderColor = "#DC2626"; e.target.parentNode.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.08)"; }}
                   onBlur={e => { e.target.parentNode.style.borderColor = "#e2e8f0"; e.target.parentNode.style.boxShadow = "none"; }}
                 />
                 <button
@@ -340,7 +340,7 @@ const styles = {
   blob1: {
     position: "absolute", top: "-80px", left: "-80px",
     width: 400, height: 400,
-    background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)",
+    background: "radial-gradient(circle, rgba(220,38,38,0.4) 0%, transparent 70%)",
     borderRadius: "50%",
     animation: "floatBlob 10s ease-in-out infinite",
     opacity: 0,
@@ -348,7 +348,7 @@ const styles = {
   blob2: {
     position: "absolute", bottom: "-60px", right: "-60px",
     width: 350, height: 350,
-    background: "radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)",
+    background: "radial-gradient(circle, rgba(220,38,38,0.35) 0%, transparent 70%)",
     borderRadius: "50%",
     animation: "floatBlob 13s ease-in-out infinite reverse",
     opacity: 0,
@@ -402,8 +402,8 @@ const styles = {
   },
   tagDot: {
     width: 7, height: 7, borderRadius: "50%",
-    background: "#a78bfa",
-    boxShadow: "0 0 8px #a78bfa",
+    background: "#F87171",
+    boxShadow: "0 0 8px #F87171",
   },
   heroHeading: {
     fontFamily: "'Outfit', sans-serif",
@@ -411,7 +411,7 @@ const styles = {
     color: "white", margin: 0,
   },
   heroAccent: {
-    background: "linear-gradient(90deg, #a78bfa, #818cf8)",
+    background: "linear-gradient(90deg, #F87171, #F87171)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
   },
@@ -431,7 +431,7 @@ const styles = {
     background: "rgba(255,255,255,0.08)",
     border: "1px solid rgba(255,255,255,0.12)",
     display: "flex", alignItems: "center", justifyContent: "center",
-    color: "#c4b5fd",
+    color: "#FCA5A5",
   },
   featureTitle: {
     fontSize: 13, fontWeight: 700, color: "white", margin: "0 0 2px",
@@ -525,7 +525,7 @@ const styles = {
   /* Submit */
   submitBtn: {
     width: "100%", padding: "14px 24px",
-    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+    background: "linear-gradient(135deg, #B91C1C 0%, #B91C1C 100%)",
     border: "none", borderRadius: 14,
     color: "white", fontFamily: "'Outfit', sans-serif",
     fontSize: 15, fontWeight: 700, letterSpacing: "0.02em",

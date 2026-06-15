@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef } from "react";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -75,7 +75,7 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
               style={{
                 flex: 2, padding: "12px 0", border: "none", borderRadius: 11,
                 cursor: otp.length !== 4 || loading ? "not-allowed" : "pointer",
-                background: otp.length === 4 && !loading ? "linear-gradient(135deg, #3b82f6, #6366f1)" : "#e5e7eb",
+                background: otp.length === 4 && !loading ? "linear-gradient(135deg, #3b82f6, #DC2626)" : "#e5e7eb",
                 color: otp.length === 4 && !loading ? "#fff" : "#9ca3af",
                 fontSize: 13, fontWeight: 700,
               }}
@@ -142,7 +142,7 @@ function OrderActions({ order, onAction, busyId }) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <ActionBtn label={busy ? "Starting..." : "Start Ride to Customer"} disabled={busy}
-          color="#6366f1" onClick={() => onAction(id, "start_ride")} />
+          color="#DC2626" onClick={() => onAction(id, "start_ride")} />
         <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
           Tap to begin the final delivery ride to the customer
         </p>
@@ -433,7 +433,7 @@ export default function ActiveDeliveryPage() {
             {[
               { label: "Ready", color: "#10b981" },
               { label: "→" },
-              { label: "Picked from Vendor", color: "#6366f1" },
+              { label: "Picked from Vendor", color: "#DC2626" },
               { label: "→" },
               { label: "Start Ride", color: "#f97316" },
               { label: "→" },

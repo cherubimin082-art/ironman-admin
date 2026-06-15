@@ -1,4 +1,4 @@
-import Layout from "../../components/shared/Layout";
+﻿import Layout from "../../components/shared/Layout";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area,
@@ -16,9 +16,9 @@ const WEEKLY = [
 ];
 
 const CATEGORIES = [
-  { name: "Shirts",   count: 42, color: "#6366f1" },
+  { name: "Shirts",   count: 42, color: "#DC2626" },
   { name: "Trousers", count: 28, color: "#3b82f6" },
-  { name: "Sarees",   count: 18, color: "#ec4899" },
+  { name: "Sarees",   count: 18, color: "#B91C1C" },
   { name: "Kurtas",   count: 15, color: "#f59e0b" },
   { name: "Coats",    count:  7, color: "#10b981" },
 ];
@@ -110,7 +110,7 @@ export default function ReportsPage() {
       label: "Total Orders",
       value: totalOrders,
       sub: "Across all days this week",
-      accentColor: "#6366f1",
+      accentColor: "#DC2626",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -181,7 +181,7 @@ export default function ReportsPage() {
                 <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#9ca3af", fontWeight: 600 }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f9fafb" }} />
-                <Bar dataKey="orders" name="Orders" fill="#6366f1" radius={[5, 5, 0, 0]} barSize={26} />
+                <Bar dataKey="orders" name="Orders" fill="#DC2626" radius={[5, 5, 0, 0]} barSize={26} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>

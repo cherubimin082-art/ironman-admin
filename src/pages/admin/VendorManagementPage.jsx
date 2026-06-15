@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import api from "../../services/api";
@@ -14,7 +14,7 @@ const inputSt = {
   outline: "none", boxSizing: "border-box", background: "#fff",
   transition: "border-color 0.15s",
 };
-const fo = e => { e.target.style.borderColor = "#8b5cf6"; };
+const fo = e => { e.target.style.borderColor = "#DC2626"; };
 const fb = e => { e.target.style.borderColor = "#e5e7eb"; };
 
 // ── Modal overlay ───────────────────────────────────────────────
@@ -252,7 +252,7 @@ export default function VendorManagementPage() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
               Admin
             </p>
             <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
@@ -267,9 +267,9 @@ export default function VendorManagementPage() {
             style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "10px 20px", borderRadius: 12, border: "none",
-              background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+              background: "linear-gradient(135deg, #DC2626, #DC2626)",
               color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-              boxShadow: "0 4px 14px rgba(139,92,246,0.35)", minHeight: 44,
+              boxShadow: "0 4px 14px rgba(220,38,38,0.35)", minHeight: 44,
             }}
             onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
             onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -291,7 +291,7 @@ export default function VendorManagementPage() {
               {loading ? "Loading…" : `${vendors.length} Vendor${vendors.length !== 1 ? "s" : ""} Registered`}
             </span>
             <button onClick={load} style={{
-              fontSize: 12, fontWeight: 600, color: "#8b5cf6",
+              fontSize: 12, fontWeight: 600, color: "#DC2626",
               border: "none", background: "none", cursor: "pointer",
             }}>↻ Refresh</button>
           </div>
@@ -338,7 +338,7 @@ export default function VendorManagementPage() {
                         {v.apartments || <span style={{ color: "#d1d5db" }}>None assigned</span>}
                       </td>
                       <td style={{ padding: "14px 16px" }}>
-                        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#8b5cf6" }}>
+                        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#DC2626" }}>
                           {v.total_orders || 0}
                         </span>
                       </td>
@@ -348,8 +348,8 @@ export default function VendorManagementPage() {
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => openEdit(v)} style={{
                             padding: "5px 12px", borderRadius: 8,
-                            border: "1px solid #e0e7ff", background: "#eef2ff",
-                            color: "#6366f1", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                            border: "1px solid #FEE2E2", background: "#FEF2F2",
+                            color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer",
                             whiteSpace: "nowrap",
                           }}>Edit</button>
                           <button onClick={() => openDelete(v)} style={{
@@ -374,8 +374,8 @@ export default function VendorManagementPage() {
           <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <VendorFields isEdit={false} />
             <div style={{
-              background: "#f5f3ff", border: "1px solid #ddd6fe",
-              borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#7c3aed",
+              background: "#FEF2F2", border: "1px solid #FECACA",
+              borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#B91C1C",
             }}>
               ℹ️ 20 laundry bags will be automatically created for this vendor.
             </div>
@@ -389,7 +389,7 @@ export default function VendorManagementPage() {
               }}>Cancel</button>
               <button type="submit" disabled={saving} style={{
                 flex: 2, padding: "11px 0", borderRadius: 10, border: "none",
-                background: saving ? "#e5e7eb" : "linear-gradient(135deg,#8b5cf6,#6366f1)",
+                background: saving ? "#e5e7eb" : "linear-gradient(135deg,#DC2626,#DC2626)",
                 color: saving ? "#9ca3af" : "#fff",
                 fontSize: 13, fontWeight: 700,
                 cursor: saving ? "not-allowed" : "pointer",
@@ -414,7 +414,7 @@ export default function VendorManagementPage() {
               }}>Cancel</button>
               <button type="submit" disabled={saving} style={{
                 flex: 2, padding: "11px 0", borderRadius: 10, border: "none",
-                background: saving ? "#e5e7eb" : "linear-gradient(135deg,#8b5cf6,#6366f1)",
+                background: saving ? "#e5e7eb" : "linear-gradient(135deg,#DC2626,#DC2626)",
                 color: saving ? "#9ca3af" : "#fff",
                 fontSize: 13, fontWeight: 700,
                 cursor: saving ? "not-allowed" : "pointer",

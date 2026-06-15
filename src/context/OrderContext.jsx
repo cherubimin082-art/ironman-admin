@@ -89,7 +89,7 @@ export function OrderProvider({ children }) {
   }, [user, loadData]);
 
   // Vendor API actions
-  const vendorAction = async (orderId, action) => {
+  const vendorAction = async (orderId, action, reason = null) => {
     const endpointMap = {
       accept:        `/accept-order/${orderId}`,
       reject:        `/reject-order/${orderId}`,
@@ -99,7 +99,8 @@ export function OrderProvider({ children }) {
     const endpoint = endpointMap[action];
     if (!endpoint) return;
     try {
-      await api.put(endpoint);
+      const body = (action === 'reject' && reason) ? { reason } : {};
+      await api.put(endpoint, body);
       await loadData();
     } catch (err) {
       console.error('vendorAction error:', err.response?.data || err.message);

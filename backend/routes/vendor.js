@@ -543,4 +543,35 @@ router.put("/order-in-progress/:id", ...auth, async (req, res) => {
   }
 });
 
+// GET /api/vendor/my-rating
+router.get("/vendor/my-rating", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const [[summary]] = await pool.query(
+      `SELECT
+         COUNT(*)             AS total_ratings,
+         AVG(vendor_rating)   AS avg_rating
+       FROM ratings WHERE vendor_id = ? AND vendor_rating IS NOT NULL`,
+      [vendorId]
+    );
+    const [reviews] = await pool.query(
+      `SELECT r.vendor_rating, r.vendor_review, r.created_at,
+              u.name AS customer_name
+         FROM ratings r
+         JOIN users u ON u.id = r.customer_id
+        WHERE r.vendor_id = ? AND r.vendor_rating IS NOT NULL
+        ORDER BY r.created_at DESC LIMIT 10`,
+      [vendorId]
+    );
+    res.json({
+      avg_rating:    parseFloat(summary.avg_rating || 0).toFixed(1),
+      total_ratings: parseInt(summary.total_ratings || 0),
+      reviews,
+    });
+  } catch (err) {
+    console.error("my-rating error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

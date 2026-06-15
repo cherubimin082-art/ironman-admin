@@ -1,4 +1,4 @@
-import Layout from "../../components/shared/Layout";
+﻿import Layout from "../../components/shared/Layout";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const WEEKLY = [
@@ -97,7 +97,7 @@ export default function EarningsPage() {
     },
     {
       label: "Avg Per Trip", value: `₹${avgPerTrip}`, sub: "Weekly average",
-      accent: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe",
+      accent: "#DC2626", bg: "#FEF2F2", border: "#FECACA",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />

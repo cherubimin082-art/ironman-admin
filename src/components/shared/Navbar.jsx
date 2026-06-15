@@ -6,9 +6,9 @@ import { useNavigate } from "react-router-dom";
 const ROLE_CONFIG = {
   vendor: {
     label: "Vendor",
-    gradient: "linear-gradient(135deg,#0ea5e9,#6366f1)",
-    chipBg: "#eff6ff", chipBorder: "#bfdbfe", chipColor: "#2563eb",
-    dotColor: "#0ea5e9", dotGlow: "rgba(14,165,233,0.4)",
+    gradient: "linear-gradient(135deg,#DC2626,#B91C1C)",
+    chipBg: "#FEF2F2", chipBorder: "#FECACA", chipColor: "#DC2626",
+    dotColor: "#DC2626", dotGlow: "rgba(220,38,38,0.4)",
   },
   delivery: {
     label: "Delivery",
@@ -18,9 +18,9 @@ const ROLE_CONFIG = {
   },
   admin: {
     label: "Admin",
-    gradient: "linear-gradient(135deg,#8b5cf6,#ec4899)",
-    chipBg: "#f5f3ff", chipBorder: "#ddd6fe", chipColor: "#7c3aed",
-    dotColor: "#8b5cf6", dotGlow: "rgba(139,92,246,0.4)",
+    gradient: "linear-gradient(135deg,#DC2626,#7F1D1D)",
+    chipBg: "#FEF2F2", chipBorder: "#FECACA", chipColor: "#DC2626",
+    dotColor: "#DC2626", dotGlow: "rgba(220,38,38,0.4)",
   },
 };
 

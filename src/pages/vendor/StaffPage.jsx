@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import api from "../../services/api";
@@ -7,10 +7,10 @@ import api from "../../services/api";
 
 const AVATAR_BG = [
   "linear-gradient(135deg,#f59e0b,#ef4444)",
-  "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+  "linear-gradient(135deg,#3b82f6,#DC2626)",
   "linear-gradient(135deg,#10b981,#06b6d4)",
-  "linear-gradient(135deg,#f43f5e,#ec4899)",
-  "linear-gradient(135deg,#8b5cf6,#6366f1)",
+  "linear-gradient(135deg,#f43f5e,#B91C1C)",
+  "linear-gradient(135deg,#DC2626,#DC2626)",
 ];
 
 const labelSt = {
@@ -285,7 +285,7 @@ export default function StaffPage() {
         {/* Summary row */}
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 14 }}>
           {[
-            { label: "Total Staff",      value: totalCount,                                                                                          color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe" },
+            { label: "Total Staff",      value: totalCount,                                                                                          color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" },
             { label: "Added This Month", value: staff.filter(s => new Date(s.created_at).getMonth() === new Date().getMonth()).length, color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc" },
             { label: "With Role Title",  value: staff.filter(s => s.role_title).length,                                                              color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
           ].map(item => (

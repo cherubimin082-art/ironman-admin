@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+﻿import { useEffect, useRef, useState, useCallback } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -56,7 +56,7 @@ function NoKeyFallback({ job, onClose }) {
         {url && (
           <a href={url} target="_blank" rel="noreferrer" style={{
             padding: "12px 28px", borderRadius: 12, border: "none",
-            background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+            background: "linear-gradient(135deg, #3b82f6, #DC2626)",
             color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none",
           }}>
             Open in Google Maps →
@@ -366,7 +366,7 @@ function MapContent({ job, onClose, onReach, reaching }) {
           style={{
             flex: 1, padding: "12px 0", border: "none", borderRadius: 11,
             cursor: busy ? "not-allowed" : "pointer",
-            background: busy ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #6366f1)",
+            background: busy ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
             color: busy ? "#9ca3af" : "#fff",
             fontSize: 13, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,

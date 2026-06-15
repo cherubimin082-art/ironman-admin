@@ -1,4 +1,4 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+﻿import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { REVENUE_DATA } from "../../services/orderService";
 
 function ChartTooltip({ active, payload, label }) {
@@ -44,8 +44,8 @@ export default function RevenueChart() {
           <AreaChart data={REVENUE_DATA} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="adminRevGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor="#8b5cf6" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}    />
+                <stop offset="0%"   stopColor="#DC2626" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="#DC2626" stopOpacity={0}    />
               </linearGradient>
               <linearGradient id="adminOrdGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"   stopColor="#06b6d4" stopOpacity={0.18} />
@@ -58,7 +58,7 @@ export default function RevenueChart() {
             <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} />
             <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#f3f4f6", strokeWidth: 1 }} />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: "16px", fontSize: "12px", fontWeight: "600", color: "#6b7280" }} />
-            <Area yAxisId="left"  type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#adminRevGrad)" dot={{ r: 0 }} activeDot={{ r: 5, fill: "#8b5cf6",  strokeWidth: 0 }} />
+            <Area yAxisId="left"  type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#DC2626" strokeWidth={2.5} fill="url(#adminRevGrad)" dot={{ r: 0 }} activeDot={{ r: 5, fill: "#DC2626",  strokeWidth: 0 }} />
             <Area yAxisId="right" type="monotone" dataKey="orders"  name="Orders"      stroke="#06b6d4" strokeWidth={2.5} fill="url(#adminOrdGrad)" dot={{ r: 0 }} activeDot={{ r: 5, fill: "#06b6d4", strokeWidth: 0 }} />
           </AreaChart>
         </ResponsiveContainer>

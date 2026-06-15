@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -210,7 +210,7 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
 function AssignmentCard({ job, onAccept, accepting }) {
   return (
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <div style={{ height: 4, background: "linear-gradient(90deg, #3b82f6, #6366f1)" }} />
+      <div style={{ height: 4, background: "linear-gradient(90deg, #3b82f6, #DC2626)" }} />
       <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
@@ -248,7 +248,7 @@ function AssignmentCard({ job, onAccept, accepting }) {
               style={{
                 flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
                 cursor: accepting === job.id ? "not-allowed" : "pointer",
-                background: accepting === job.id ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #6366f1)",
+                background: accepting === job.id ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
                 color: accepting === job.id ? "#9ca3af" : "#fff",
                 fontSize: 13, fontWeight: 700,
               }}
@@ -334,7 +334,7 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
             style={{
               flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
               cursor: busy ? "not-allowed" : "pointer",
-              background: busy ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #6366f1)",
+              background: busy ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
               color: busy ? "#9ca3af" : "#fff", fontSize: 13, fontWeight: 700,
             }}
           >

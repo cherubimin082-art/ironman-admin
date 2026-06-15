@@ -33,13 +33,13 @@ const ADMIN_LINKS = [
 /* ─── Role Theming ──────────────────────────────────────── */
 const ROLE_THEME = {
   vendor: {
-    gradient: "linear-gradient(135deg,#0ea5e9,#6366f1)",
-    activeText: "#2563eb",
-    activeBg: "#eff6ff",
-    activeBorder: "#bfdbfe",
-    activeIconBg: "#dbeafe",
-    glow: "rgba(14,165,233,0.15)",
-    dot: "#0ea5e9",
+    gradient: "linear-gradient(135deg,#DC2626,#B91C1C)",
+    activeText: "#DC2626",
+    activeBg: "#FEF2F2",
+    activeBorder: "#FECACA",
+    activeIconBg: "#FEE2E2",
+    glow: "rgba(220,38,38,0.15)",
+    dot: "#DC2626",
     portal: "Vendor Portal",
   },
   delivery: {
@@ -53,13 +53,13 @@ const ROLE_THEME = {
     portal: "Delivery Portal",
   },
   admin: {
-    gradient: "linear-gradient(135deg,#8b5cf6,#ec4899)",
-    activeText: "#7c3aed",
-    activeBg: "#f5f3ff",
-    activeBorder: "#ddd6fe",
-    activeIconBg: "#ede9fe",
-    glow: "rgba(139,92,246,0.15)",
-    dot: "#8b5cf6",
+    gradient: "linear-gradient(135deg,#DC2626,#7F1D1D)",
+    activeText: "#DC2626",
+    activeBg: "#FEF2F2",
+    activeBorder: "#FECACA",
+    activeIconBg: "#FEE2E2",
+    glow: "rgba(220,38,38,0.15)",
+    dot: "#DC2626",
     portal: "Admin Portal",
   },
 };

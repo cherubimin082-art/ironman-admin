@@ -1,8 +1,8 @@
-export default function CapacityBar({ label, current, max, color = "indigo" }) {
+﻿export default function CapacityBar({ label, current, max, color = "indigo" }) {
   const pct = max > 0 ? Math.min(Math.round((current / max) * 100), 100) : 0;
 
   const palette = {
-    indigo: { bar: "linear-gradient(90deg, #6366f1, #818cf8)", track: "#e0e7ff", text: "#4f46e5" },
+    indigo: { bar: "linear-gradient(90deg, #DC2626, #F87171)", track: "#FEE2E2", text: "#B91C1C" },
     green:  { bar: "linear-gradient(90deg, #10b981, #34d399)", track: "#d1fae5", text: "#059669" },
     amber:  { bar: "linear-gradient(90deg, #f59e0b, #fbbf24)", track: "#fef3c7", text: "#d97706" },
     red:    { bar: "linear-gradient(90deg, #ef4444, #f87171)", track: "#fee2e2", text: "#dc2626" },

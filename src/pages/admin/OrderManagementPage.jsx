@@ -1,4 +1,4 @@
-import Layout from "../../components/shared/Layout";
+﻿import Layout from "../../components/shared/Layout";
 import UserTable from "../../components/admin/UserTable";
 import { useOrders } from "../../context/OrderContext";
 
@@ -23,7 +23,7 @@ export default function OrderManagementPage() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
               Admin
             </p>
             <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
@@ -34,9 +34,9 @@ export default function OrderManagementPage() {
             </p>
           </div>
           <div style={{
-            background: "#f5f3ff", border: "1px solid #ddd6fe",
+            background: "#FEF2F2", border: "1px solid #FECACA",
             borderRadius: 10, padding: "9px 16px",
-            fontSize: 13, fontWeight: 700, color: "#7c3aed",
+            fontSize: 13, fontWeight: 700, color: "#B91C1C",
           }}>
             {orders.length} Total Orders
           </div>

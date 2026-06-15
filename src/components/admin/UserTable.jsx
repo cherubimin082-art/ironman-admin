@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import StatusBadge from "../shared/StatusBadge";
 
 export default function UserTable({ columns, rows, emptyText = "No data found." }) {
@@ -39,8 +39,8 @@ export default function UserTable({ columns, rows, emptyText = "No data found." 
             transition: "border-color 0.15s, box-shadow 0.15s",
           }}
           onFocus={e => {
-            e.currentTarget.style.borderColor = "#8b5cf6";
-            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(139,92,246,0.10)";
+            e.currentTarget.style.borderColor = "#DC2626";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.10)";
           }}
           onBlur={e => {
             e.currentTarget.style.borderColor = "#e5e7eb";
