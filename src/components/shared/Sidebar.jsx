@@ -1,299 +1,170 @@
-// Sidebar.jsx — Professional Redesign (Inline Styles)
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import * as Icons from "./Icons";
 import { useState, useEffect } from "react";
 
-/* ─── Nav Links ─────────────────────────────────────────── */
+// ── Icons ─────────────────────────────────────────────────────
+const DashboardIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+const OrdersIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+    <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57L23 6H6" />
+  </svg>
+);
+const CustomersIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+  </svg>
+);
+const StaffIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+const PaymentsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+const SettingsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+  </svg>
+);
+
+// ── Nav configs per role ──────────────────────────────────────
+const ADMIN_LINKS = [
+  { to: "/admin/dashboard", label: "Dashboard", Icon: DashboardIcon },
+  { to: "/admin/orders",    label: "Orders",    Icon: OrdersIcon    },
+  { to: "/admin/vendors",   label: "Customers", Icon: CustomersIcon },
+  { to: "/admin/delivery",  label: "Staff",     Icon: StaffIcon     },
+  { to: "/admin/pricing",   label: "Payments",  Icon: PaymentsIcon  },
+  { to: "/admin/analytics", label: "Settings",  Icon: SettingsIcon  },
+];
+
 const VENDOR_LINKS = [
-  { to: "/vendor/dashboard",    label: "Dashboard",    icon: Icons.HomeIcon,     emoji: "🏠" },
-  { to: "/vendor/orders",       label: "Order Queue",  icon: Icons.OrderIcon,    emoji: "📋" },
-  { to: "/vendor/capacity",     label: "Capacity",     icon: Icons.CapacityIcon, emoji: "⚡" },
-  { to: "/vendor/staff",        label: "Staff",        icon: Icons.StaffIcon,    emoji: "👥" },
-  { to: "/vendor/reports",      label: "Reports",      icon: Icons.ReportIcon,   emoji: "📊" },
-  { to: "/vendor/apartments",   label: "Apartments",   icon: Icons.MapPinIcon,   emoji: "🏢" },
+  { to: "/vendor/dashboard",  label: "Dashboard", Icon: DashboardIcon },
+  { to: "/vendor/orders",     label: "Orders",    Icon: OrdersIcon    },
+  { to: "/vendor/staff",      label: "Staff",     Icon: StaffIcon     },
+  { to: "/vendor/capacity",   label: "Capacity",  Icon: PaymentsIcon  },
+  { to: "/vendor/reports",    label: "Reports",   Icon: SettingsIcon  },
+  { to: "/vendor/apartments", label: "Locations", Icon: CustomersIcon },
 ];
 
 const DELIVERY_LINKS = [
-  { to: "/delivery/dashboard", label: "Dashboard",       icon: Icons.HomeIcon,     emoji: "🏠" },
-  { to: "/delivery/pickups",   label: "Pickup Jobs",     icon: Icons.OrderIcon,    emoji: "📦" },
-  { to: "/delivery/active",    label: "Delivery Jobs",   icon: Icons.DeliveryIcon, emoji: "🚚" },
-  { to: "/delivery/earnings",  label: "Earnings",        icon: Icons.PricingIcon,  emoji: "💰" },
+  { to: "/delivery/dashboard", label: "Dashboard", Icon: DashboardIcon },
+  { to: "/delivery/pickups",   label: "Pickups",   Icon: OrdersIcon    },
+  { to: "/delivery/active",    label: "Deliveries",Icon: StaffIcon     },
+  { to: "/delivery/earnings",  label: "Earnings",  Icon: PaymentsIcon  },
 ];
 
-const ADMIN_LINKS = [
-  { to: "/admin/dashboard",  label: "Dashboard",  icon: Icons.HomeIcon,      emoji: "🏠" },
-  { to: "/admin/orders",     label: "Orders",     icon: Icons.OrderIcon,     emoji: "📋" },
-  { to: "/admin/vendors",    label: "Vendors",    icon: Icons.StaffIcon,     emoji: "🏪" },
-  { to: "/admin/delivery",   label: "Delivery",   icon: Icons.DeliveryIcon,  emoji: "🚚" },
-  { to: "/admin/pricing",    label: "Pricing",    icon: Icons.PricingIcon,   emoji: "💲" },
-  { to: "/admin/analytics",  label: "Analytics",  icon: Icons.AnalyticsIcon, emoji: "📈" },
-];
+const SIDEBAR_BG = "#0D1B2A";
 
-/* ─── Role Theming ──────────────────────────────────────── */
-const ROLE_THEME = {
-  vendor: {
-    gradient: "linear-gradient(135deg,#DC2626,#B91C1C)",
-    activeText: "#DC2626",
-    activeBg: "#FEF2F2",
-    activeBorder: "#FECACA",
-    activeIconBg: "#FEE2E2",
-    glow: "rgba(220,38,38,0.15)",
-    dot: "#DC2626",
-    portal: "Vendor Portal",
-  },
-  delivery: {
-    gradient: "linear-gradient(135deg,#10b981,#06b6d4)",
-    activeText: "#059669",
-    activeBg: "#f0fdf4",
-    activeBorder: "#bbf7d0",
-    activeIconBg: "#d1fae5",
-    glow: "rgba(16,185,129,0.15)",
-    dot: "#10b981",
-    portal: "Delivery Portal",
-  },
-  admin: {
-    gradient: "linear-gradient(135deg,#DC2626,#7F1D1D)",
-    activeText: "#DC2626",
-    activeBg: "#FEF2F2",
-    activeBorder: "#FECACA",
-    activeIconBg: "#FEE2E2",
-    glow: "rgba(220,38,38,0.15)",
-    dot: "#DC2626",
-    portal: "Admin Portal",
-  },
-};
-
-/* ─── Single Nav Item ───────────────────────────────────── */
-function NavItem({ to, label, icon: IconComponent, theme, onClose }) {
-  const [hovered, setHovered] = useState(false);
-
+// ── NavItem ──────────────────────────────────────────────────
+function NavItem({ to, label, Icon, onClose }) {
   return (
-    <NavLink
-      to={to}
-      onClick={onClose}
-      style={{ textDecoration: "none" }}
-    >
+    <NavLink to={to} onClick={onClose} style={{ textDecoration: "none" }}>
       {({ isActive }) => (
-        <div
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-          style={{
-            display: "flex", alignItems: "center", gap: 12,
-            padding: "10px 12px", borderRadius: 12, cursor: "pointer",
-            marginBottom: 2,
-            background: isActive
-              ? theme.activeBg
-              : hovered ? "#f8fafc" : "transparent",
-            border: isActive
-              ? `1px solid ${theme.activeBorder}`
-              : "1px solid transparent",
-            transition: "all 0.15s",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Active left bar */}
-          {isActive && (
-            <div style={{
-              position: "absolute", left: 0, top: "20%", bottom: "20%",
-              width: 3, borderRadius: "0 3px 3px 0",
-              background: theme.activeText,
-            }} />
-          )}
-
-          {/* Icon box */}
-          <div style={{
-            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-            background: isActive ? theme.activeIconBg : hovered ? "#f1f5f9" : "#f8fafc",
-            border: `1px solid ${isActive ? theme.activeBorder : "#f1f5f9"}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: isActive ? theme.activeText : "#64748b",
-            transition: "all 0.15s",
-          }}>
-            <IconComponent
-              style={{ width: 16, height: 16 }}
-              strokeWidth={isActive ? 2.2 : 1.8}
-            />
-          </div>
-
-          {/* Label */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "10px 14px", borderRadius: 10, marginBottom: 2,
+          background: isActive ? "#B91C1C" : "transparent",
+          cursor: "pointer", transition: "background 0.15s",
+        }}>
+          <span style={{ color: isActive ? "white" : "rgba(255,255,255,0.45)", display: "flex", flexShrink: 0 }}>
+            <Icon />
+          </span>
           <span style={{
-            fontSize: 13, fontWeight: isActive ? 700 : 600,
-            color: isActive ? theme.activeText : hovered ? "#334155" : "#64748b",
-            flex: 1, transition: "color 0.15s",
+            fontSize: 13.5, fontWeight: isActive ? 700 : 500,
+            color: isActive ? "white" : "rgba(255,255,255,0.55)",
+            flex: 1,
           }}>
             {label}
           </span>
-
-          {/* Active dot indicator */}
-          {isActive && (
-            <div style={{
-              width: 7, height: 7, borderRadius: "50%",
-              background: theme.activeText,
-              boxShadow: `0 0 8px ${theme.dot}`,
-              flexShrink: 0,
-            }} />
-          )}
         </div>
       )}
     </NavLink>
   );
 }
 
-/* ─── Sidebar ───────────────────────────────────────────── */
+// ── Sidebar ──────────────────────────────────────────────────
 export default function Sidebar({ open, onClose }) {
   const { user } = useAuth();
   const role = user?.role ?? "admin";
   const links = role === "vendor" ? VENDOR_LINKS : role === "delivery" ? DELIVERY_LINKS : ADMIN_LINKS;
-  const theme = ROLE_THEME[role] ?? ROLE_THEME.admin;
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
   }, []);
 
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-
-  const asideStyle = isMobile
+  const sidebarStyle = isMobile
     ? {
-        position: "fixed", top: 0, left: 0, height: "100%",
-        width: 252, zIndex: 40,
+        position: "fixed", top: 0, left: 0, height: "100%", width: 240, zIndex: 40,
         display: "flex", flexDirection: "column",
-        background: "white",
-        borderRight: "1px solid #f1f5f9",
-        boxShadow: "4px 0 24px rgba(15,23,42,0.05)",
+        background: SIDEBAR_BG,
         transform: open ? "translateX(0)" : "translateX(-100%)",
-        transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
-        fontFamily: "'Plus Jakarta Sans',sans-serif",
+        transition: "transform 0.26s cubic-bezier(0.4,0,0.2,1)",
       }
     : {
-        position: "relative",
-        width: 252, flexShrink: 0,
+        position: "relative", width: 220, flexShrink: 0,
         display: "flex", flexDirection: "column",
-        background: "white",
-        borderRight: "1px solid #f1f5f9",
-        fontFamily: "'Plus Jakarta Sans',sans-serif",
+        background: SIDEBAR_BG,
       };
 
   return (
     <>
-      {/* Mobile overlay — only rendered on small screens when sidebar is open */}
       {isMobile && open && (
-        <div
-          onClick={onClose}
-          style={{
-            position: "fixed", inset: 0,
-            background: "rgba(15,23,42,0.45)",
-            zIndex: 30,
-          }}
-        />
+        <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 30 }} />
       )}
 
-      <aside style={asideStyle}>
+      <aside style={sidebarStyle}>
 
-        {/* ── BRAND HEADER ── */}
-        <div style={{
-          padding: "20px 18px 16px",
-          borderBottom: "1px solid #f1f5f9",
-          position: "relative", overflow: "hidden",
-        }}>
-          {/* Subtle glow bg */}
-          <div style={{
-            position: "absolute", top: -30, right: -30,
-            width: 120, height: 120,
-            background: theme.gradient, opacity: 0.06,
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }} />
-
-          {/* Logo row */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, position: "relative" }}>
-            <img src="/logo.png" alt="Iron Man" style={{ height: 44, width: "auto", objectFit: "contain" }} />
-            <div style={{
-              background: theme.activeBg, border: `1px solid ${theme.activeBorder}`,
-              borderRadius: 99, padding: "1px 8px",
-            }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: theme.activeText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                {theme.portal}
-              </span>
-            </div>
-          </div>
+        {/* ── Brand ── */}
+        <div style={{ padding: "22px 20px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <span style={{ fontSize: 20, fontWeight: 900, color: "white", letterSpacing: "-0.01em" }}>IRON MAN</span>
         </div>
 
-        {/* ── USER MINI PROFILE ── */}
-        <div style={{
-          margin: "12px 14px",
-          background: "#f8fafc", border: "1px solid #f1f5f9",
-          borderRadius: 14, padding: "12px 14px",
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-            background: theme.gradient,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 12, fontWeight: 900, color: "white",
-            boxShadow: `0 3px 10px ${theme.glow}`,
-          }}>
-            {initials}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 12.5, fontWeight: 800, color: "#0f172a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {user?.name}
-            </p>
-            <p style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", margin: 0, textTransform: "capitalize" }}>
-              {role} Account
-            </p>
-          </div>
-          <div style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: "#22c55e",
-            boxShadow: "0 0 6px rgba(34,197,94,0.5)",
-            flexShrink: 0,
-          }} />
-        </div>
-
-        {/* ── NAVIGATION ── */}
-        <nav style={{ flex: 1, padding: "4px 10px", overflowY: "auto" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", padding: "6px 12px 8px", margin: 0 }}>
-            Navigation
-          </p>
+        {/* ── Nav ── */}
+        <nav style={{ flex: 1, padding: "14px 10px", overflowY: "auto" }}>
           {links.map(link => (
-            <NavItem key={link.to} {...link} theme={theme} onClose={onClose} />
+            <NavItem key={link.to} {...link} onClose={onClose} />
           ))}
         </nav>
 
-        {/* ── FOOTER ── */}
+        {/* ── User footer ── */}
         <div style={{
-          padding: "14px 18px",
-          borderTop: "1px solid #f1f5f9",
-          background: "#fafbfc",
+          padding: "14px 16px",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", alignItems: "center", gap: 10,
         }}>
-          {/* Status row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <div style={{
-                width: 7, height: 7, borderRadius: "50%",
-                background: "#22c55e",
-                boxShadow: "0 0 6px rgba(34,197,94,0.5)",
-              }} />
-              <span style={{ fontSize: 10.5, fontWeight: 700, color: "#64748b" }}>All Systems Online</span>
-            </div>
-            <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8" }}>v2.0</span>
+          <div style={{
+            width: 36, height: 36, borderRadius: 99, flexShrink: 0,
+            background: "#B91C1C",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, fontWeight: 800, color: "white",
+          }}>
+            {initials}
           </div>
-
-          {/* Time */}
-          <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>Smart Iron Operations</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#475569", fontVariantNumeric: "tabular-nums" }}>
-              {timeStr}
-            </span>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "white", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user?.name}
+            </p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", margin: 0, textTransform: "capitalize" }}>
+              {role === "admin" ? "Administrator" : role === "vendor" ? "Vendor Account" : "Delivery Partner"}
+            </p>
           </div>
         </div>
+
       </aside>
     </>
   );
