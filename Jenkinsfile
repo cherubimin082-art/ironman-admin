@@ -2,58 +2,58 @@ pipeline {
     agent any
 
     environment {
-        APP_DIR = '/var/www/smart-iron-admin'  // <-- change this to your server path
-        BACKEND_PM2_NAME = 'smart-iron-admin'
+        DEPLOY_DIR  = '/var/www/ironman-admin'
+        PM2_NAME    = 'smart-iron-admin'
     }
 
     stages {
-        stage('Pull Latest Code') {
+        stage('Pull') {
             steps {
-                sh """
-                    cd ${APP_DIR}
-                    git pull origin main
-                """
+                sh 'git -C ${DEPLOY_DIR} pull origin main'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install') {
             steps {
-                sh """
-                    cd ${APP_DIR}
-                    npm install --legacy-peer-deps
-                    cd backend && npm install --legacy-peer-deps
-                """
+                sh '''
+                    cd ${DEPLOY_DIR}
+                    npm install --legacy-peer-deps --silent
+                    cd backend
+                    npm install --legacy-peer-deps --silent
+                '''
             }
         }
 
-        stage('Build Frontend') {
+        stage('Build') {
             steps {
-                sh """
-                    cd ${APP_DIR}
-                    npm run build
-                """
+                sh 'cd ${DEPLOY_DIR} && npm run build'
+            }
+        }
+
+        stage('Migrate') {
+            steps {
+                sh 'node ${DEPLOY_DIR}/backend/migrate.js || true'
             }
         }
 
         stage('Restart Backend') {
             steps {
-                sh """
-                    cd ${APP_DIR}/backend
-                    pm2 describe ${BACKEND_PM2_NAME} > /dev/null 2>&1 \
-                        && pm2 restart ${BACKEND_PM2_NAME} \
-                        || pm2 start server.js --name ${BACKEND_PM2_NAME}
+                sh '''
+                    pm2 describe ${PM2_NAME} > /dev/null 2>&1 \
+                        && pm2 restart ${PM2_NAME} \
+                        || pm2 start ${DEPLOY_DIR}/backend/server.js --name ${PM2_NAME}
                     pm2 save
-                """
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Smart Iron admin app deployed successfully!'
+            echo '✅ Smart Iron Admin app deployed successfully!'
         }
         failure {
-            echo 'Deployment failed — check the logs above.'
+            echo '❌ Deployment failed — check logs above.'
         }
     }
 }
