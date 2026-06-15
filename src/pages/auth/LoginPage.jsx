@@ -101,7 +101,7 @@ export default function LoginPage() {
         <div style={styles.leftContent}>
           {/* Brand mark */}
           <div style={styles.brandRow}>
-            <img src="/logo1.png" alt="Iron Man" style={{ height: 52, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+            <img src="/logo1.png" alt="Iron Man" style={{ height: 110, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
           </div>
 
           {/* Hero text */}
