@@ -192,24 +192,31 @@ router.put("/accept-order/:id", ...auth, async (req, res) => {
 router.put("/reject-order/:id", ...auth, async (req, res) => {
   const orderId  = req.params.id;
   const vendorId = req.user.id;
+  const { reason } = req.body;
   try {
     const [result] = await pool.query(
-      `UPDATE orders SET status = "cancelled" WHERE id = ? AND status = "pending"`,
-      [orderId]
+      `UPDATE orders
+          SET status = 'cancelled',
+              cancellation_reason = ?,
+              cancelled_by = 'vendor'
+        WHERE id = ? AND status = 'pending'`,
+      [reason?.trim() || null, orderId]
     );
     if (!result.affectedRows)
       return res.status(404).json({ message: "Order not found or already actioned" });
 
     await pool.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "cancelled", ?)`,
+      `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, 'cancelled', ?)`,
       [orderId, vendorId]
     );
 
     const [rows] = await pool.query(`SELECT customer_id FROM orders WHERE id = ?`, [orderId]);
     try {
-      emitToCustomer(rows[0].customer_id, "order_status_update", {
-        orderId, status: "cancelled"
+      const customerId = rows[0].customer_id;
+      emitToCustomer(customerId, "order_rejected", {
+        orderId: parseInt(orderId), reason: reason?.trim() || null
       });
+      getIO().to("admin_room").emit("order_rejected", { orderId: parseInt(orderId) });
     } catch (_) {}
 
     res.json({ message: "Order rejected", orderId, status: "cancelled" });

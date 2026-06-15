@@ -22,6 +22,19 @@ app.use("/api", vendorRoutes);
 app.use("/api", deliveryRoutes);
 app.use("/api", adminRoutes);
 
+// Internal bridge — customer backend (port 5001) POSTs here to reach vendor/admin via THIS socket.io instance
+app.post("/api/internal/notify", (req, res) => {
+  const { room, event, payload } = req.body || {};
+  if (!room || !event) return res.status(400).json({ ok: false });
+  try {
+    socketMod.getIO().to(room).emit(event, payload);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[socket-bridge] admin:", err.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
 app.get("/api/health", (_req, res) =>
   res.json({ status: "ok", service: "smart-iron-admin", port: process.env.PORT })
 );

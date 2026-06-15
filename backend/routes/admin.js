@@ -378,6 +378,155 @@ router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   }
 });
 
+// ── ANALYTICS ──────────────────────────────────────────────────
+
+// GET /api/admin/analytics — summary counts
+router.get("/admin/analytics", ...auth, async (req, res) => {
+  try {
+    const [[today]] = await pool.query(
+      `SELECT COUNT(*) AS count FROM orders WHERE DATE(created_at) = CURDATE()`
+    );
+    const [[week]] = await pool.query(
+      `SELECT COUNT(*) AS count FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
+    );
+    const [[month]] = await pool.query(
+      `SELECT COUNT(*) AS count FROM orders WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())`
+    );
+    const [[revenue]] = await pool.query(
+      `SELECT COALESCE(SUM(total), 0) AS total FROM orders
+        WHERE status = 'delivered'
+          AND MONTH(created_at) = MONTH(NOW())
+          AND YEAR(created_at)  = YEAR(NOW())`
+    );
+    res.json({
+      today:               today.count,
+      this_week:           week.count,
+      this_month:          month.count,
+      revenue_this_month:  parseFloat(revenue.total || 0),
+    });
+  } catch (err) {
+    console.error("analytics summary error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/admin/analytics/revenue?range=today|week|month
+router.get("/admin/analytics/revenue", ...auth, async (req, res) => {
+  const { range = "month" } = req.query;
+  const now = new Date();
+  let fromDate;
+  if (range === "today") {
+    fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (range === "week") {
+    fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  } else {
+    fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  }
+  const fromStr = fromDate.toISOString().slice(0, 19).replace("T", " ");
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id AS vendor_id, u.name AS vendor_name,
+              DATE(o.created_at) AS date,
+              SUM(o.total) AS revenue
+         FROM orders o
+         JOIN users u ON o.vendor_id = u.id
+        WHERE o.status = 'delivered' AND o.created_at >= ?
+        GROUP BY u.id, DATE(o.created_at)
+        ORDER BY date ASC`,
+      [fromStr]
+    );
+
+    const vendorMap = {};
+    const dateArr   = [];
+    const seenDates = new Set();
+    rows.forEach(r => {
+      const d = new Date(r.date);
+      const dateStr = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      if (!seenDates.has(dateStr)) { seenDates.add(dateStr); dateArr.push(dateStr); }
+      if (!vendorMap[r.vendor_id]) {
+        vendorMap[r.vendor_id] = { id: r.vendor_id, name: r.vendor_name, data: {} };
+      }
+      vendorMap[r.vendor_id].data[dateStr] = parseFloat(r.revenue);
+    });
+
+    const vendors   = Object.values(vendorMap);
+    const chartData = dateArr.map(date => {
+      const pt = { date };
+      vendors.forEach(v => { pt[v.name] = v.data[date] || 0; });
+      return pt;
+    });
+
+    res.json({ chartData, vendors: vendors.map(v => ({ id: v.id, name: v.name })) });
+  } catch (err) {
+    console.error("analytics revenue error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/admin/analytics/top-vendors
+router.get("/admin/analytics/top-vendors", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.name,
+              COUNT(o.id) AS total_orders,
+              COALESCE(SUM(o.total), 0) AS total_revenue,
+              COALESCE(AVG(r.vendor_rating), 0) AS avg_rating
+         FROM orders o
+         JOIN users u ON o.vendor_id = u.id
+         LEFT JOIN ratings r ON o.id = r.order_id
+        WHERE o.status = 'delivered'
+        GROUP BY o.vendor_id
+        ORDER BY total_orders DESC
+        LIMIT 5`
+    );
+    res.json({ vendors: rows.map(v => ({ ...v, avg_rating: parseFloat(v.avg_rating || 0).toFixed(1) })) });
+  } catch (err) {
+    console.error("analytics top-vendors error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/admin/analytics/apartments
+router.get("/admin/analytics/apartments", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT apartment, COUNT(id) AS total_orders, COALESCE(SUM(total), 0) AS total_revenue
+         FROM orders
+        WHERE apartment IS NOT NULL AND apartment != ''
+        GROUP BY apartment
+        ORDER BY total_orders DESC`
+    );
+    res.json({ apartments: rows });
+  } catch (err) {
+    console.error("analytics apartments error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/admin/analytics/delivery-performance
+router.get("/admin/analytics/delivery-performance", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.name,
+              COUNT(da.id) AS total_deliveries,
+              COALESCE(SUM(o.total), 0) AS total_revenue,
+              COALESCE(AVG(r.delivery_rating), 0) AS avg_rating
+         FROM delivery_assignments da
+         JOIN users u ON da.delivery_agent_id = u.id
+         JOIN orders o ON da.order_id = o.id
+         LEFT JOIN ratings r ON o.id = r.order_id
+        WHERE o.status = 'delivered'
+        GROUP BY da.delivery_agent_id
+        ORDER BY total_deliveries DESC`
+    );
+    res.json({ agents: rows.map(a => ({ ...a, avg_rating: parseFloat(a.avg_rating || 0).toFixed(1) })) });
+  } catch (err) {
+    console.error("analytics delivery-performance error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── PRICING: CATEGORIES & GARMENTS ─────────────────────────────
 
 // GET /api/admin/categories

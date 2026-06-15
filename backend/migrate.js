@@ -67,6 +67,44 @@ async function run() {
     }
   }
 
+  // 5. Add cancellation columns to orders if missing
+  const [orderCols] = await pool.query("DESCRIBE orders");
+  const hasReason     = orderCols.some(c => c.Field === "cancellation_reason");
+  const hasCancelledBy = orderCols.some(c => c.Field === "cancelled_by");
+  if (!hasReason) {
+    await pool.query("ALTER TABLE orders ADD COLUMN cancellation_reason VARCHAR(255) DEFAULT NULL");
+    console.log("Added cancellation_reason to orders");
+  } else {
+    console.log("cancellation_reason already exists");
+  }
+  if (!hasCancelledBy) {
+    await pool.query("ALTER TABLE orders ADD COLUMN cancelled_by ENUM('customer','vendor') DEFAULT NULL");
+    console.log("Added cancelled_by to orders");
+  } else {
+    console.log("cancelled_by already exists");
+  }
+
+  // 6. Create ratings table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ratings (
+      id                INT AUTO_INCREMENT PRIMARY KEY,
+      order_id          INT NOT NULL UNIQUE,
+      customer_id       INT NOT NULL,
+      vendor_id         INT DEFAULT NULL,
+      delivery_agent_id INT DEFAULT NULL,
+      vendor_rating     INT DEFAULT NULL,
+      delivery_rating   INT DEFAULT NULL,
+      vendor_review     TEXT DEFAULT NULL,
+      delivery_review   TEXT DEFAULT NULL,
+      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id)          REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (customer_id)       REFERENCES users(id),
+      FOREIGN KEY (vendor_id)         REFERENCES users(id),
+      FOREIGN KEY (delivery_agent_id) REFERENCES users(id)
+    )
+  `);
+  console.log("ratings table OK");
+
   console.log("Migration complete");
   process.exit(0);
 }
