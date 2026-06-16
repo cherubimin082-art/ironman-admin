@@ -35,36 +35,16 @@ function StatCard({ label, value, sub, accent, bg, border, icon }) {
 
 const ACTIVE_STATUSES = new Set(["delivery_assigned", "picked_up", "at_vendor", "ready_for_delivery", "out_for_delivery"]);
 
-function formatDt(ts) {
-  if (!ts) return "—";
-  return new Date(ts).toLocaleString("en-IN", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { pickupJobs, loading, loadData } = useOrders();
   const navigate = useNavigate();
 
-  const [completedOrders, setCompletedOrders] = useState([]);
-  const [totalEarnings, setTotalEarnings]     = useState(0);
-  const [completedLoading, setCompletedLoading] = useState(true);
   const [myRating, setMyRating] = useState(null);
   const { isMobile, isTablet } = useWindowSize();
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  useEffect(() => {
-    api.get("/delivery/completed-orders")
-      .then(({ data }) => {
-        setCompletedOrders(data.orders || []);
-        setTotalEarnings(data.totalRevenue || 0);
-      })
-      .catch(() => {})
-      .finally(() => setCompletedLoading(false));
-  }, []);
 
   useEffect(() => {
     api.get("/delivery/my-rating")
@@ -95,24 +75,6 @@ export default function DeliveryDashboard() {
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-        </svg>
-      ),
-    },
-    {
-      label: "Completed", value: completedLoading ? "—" : completedOrders.length, sub: "All-time delivered",
-      accent: "#10b981", bg: "#f0fdf4", border: "#bbf7d0",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      label: "Total Earnings", value: completedLoading ? "—" : `₹${totalEarnings.toFixed(0)}`, sub: "Sum of delivered orders",
-      accent: "#DC2626", bg: "#FEF2F2", border: "#FECACA",
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
@@ -315,89 +277,13 @@ export default function DeliveryDashboard() {
           </div>
         )}
 
-        {!loading && pickupJobs.length === 0 && completedOrders.length === 0 && (
+        {!loading && pickupJobs.length === 0 && (
           <div style={{
             background: "#fff", border: "2px dashed #e5e7eb", borderRadius: 16,
             padding: "60px 24px", textAlign: "center",
           }}>
             <p style={{ fontSize: 15, fontWeight: 700, color: "#374151", margin: "0 0 6px" }}>No orders assigned yet</p>
             <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>New orders will appear here automatically when assigned.</p>
-          </div>
-        )}
-
-        {/* Completed Orders */}
-        {!completedLoading && completedOrders.length > 0 && (
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <div>
-                <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 700, color: "#111827", margin: 0 }}>
-                  Completed Orders
-                </h2>
-                <p style={{ fontSize: 13, color: "#9ca3af", margin: "3px 0 0" }}>
-                  {completedOrders.length} order{completedOrders.length !== 1 ? "s" : ""} delivered
-                </p>
-              </div>
-              <div style={{
-                background: "#f0fdf4", border: "1px solid #bbf7d0",
-                borderRadius: 10, padding: "8px 16px",
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#16a34a" }}>
-                  Total: ₹{totalEarnings.toFixed(0)}
-                </span>
-              </div>
-            </div>
-
-            <div className="si-table-wrap" style={{
-              background: "#fff", borderRadius: 18, border: "1px solid #e5e7eb",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-            }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                    {["Order ID", "Customer", "Delivery Address", "Amount", "Delivered On"].map((h, i) => (
-                      <th key={h} style={{
-                        padding: "12px 20px", fontSize: 11, fontWeight: 700, color: "#9ca3af",
-                        textTransform: "uppercase", letterSpacing: "0.07em",
-                        textAlign: i === 3 ? "right" : "left",
-                      }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {completedOrders.map((o, idx) => (
-                    <tr
-                      key={o.id}
-                      style={{
-                        borderBottom: idx < completedOrders.length - 1 ? "1px solid #f9fafb" : "none",
-                        transition: "background 0.12s",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: "#111827" }}>
-                        {o.order_code || `#${o.id}`}
-                      </td>
-                      <td style={{ padding: "14px 20px" }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0 }}>{o.customer_name}</p>
-                      </td>
-                      <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#6b7280", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {o.customer_address || "—"}
-                      </td>
-                      <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981" }}>
-                          ₹{parseFloat(o.total || 0).toFixed(0)}
-                        </span>
-                      </td>
-                      <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#9ca3af", fontWeight: 500, whiteSpace: "nowrap" }}>
-                        {formatDt(o.delivered_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
 
