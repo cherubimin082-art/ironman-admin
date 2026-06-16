@@ -11,6 +11,23 @@ const inputSt = {
 const fo = e => { e.target.style.borderColor = "#DC2626"; };
 const fb = e => { e.target.style.borderColor = "#e5e7eb"; };
 
+const TIME_SLOTS = [
+  "6:00 AM – 7:00 AM",
+  "7:00 AM – 8:00 AM",
+  "8:00 AM – 9:00 AM",
+  "9:00 AM – 10:00 AM",
+  "10:00 AM – 11:00 AM",
+  "11:00 AM – 12:00 PM",
+  "12:00 PM – 1:00 PM",
+  "1:00 PM – 2:00 PM",
+  "2:00 PM – 3:00 PM",
+  "3:00 PM – 4:00 PM",
+  "4:00 PM – 5:00 PM",
+  "5:00 PM – 6:00 PM",
+  "6:00 PM – 7:00 PM",
+  "7:00 PM – 8:00 PM",
+];
+
 function Modal({ title, onClose, children, maxWidth = 440 }) {
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()} style={{
@@ -122,7 +139,10 @@ export default function ApartmentsPage() {
       </div>
       <div>
         <label style={labelSt}>Pickup Time Slot *</label>
-        <input value={form.pickup_time} onChange={set("pickup_time")} placeholder="e.g. 9:00 AM – 10:00 AM" style={inputSt} onFocus={fo} onBlur={fb} required />
+        <select value={form.pickup_time} onChange={set("pickup_time")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb} required>
+          <option value="">— Select a time slot —</option>
+          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
       <Alert type="error" msg={formErr} />
       <Alert type="ok"    msg={formOk}  />
