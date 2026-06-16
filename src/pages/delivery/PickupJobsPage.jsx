@@ -246,11 +246,13 @@ function AssignmentCard({ job, onAccept, accepting }) {
             </div>
             <span style={{
               fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 99,
-              background: job.vendor_available_bags > 0 ? "#f0fdf4" : "#fef2f2",
-              color: job.vendor_available_bags > 0 ? "#16a34a" : "#dc2626",
-              border: `1px solid ${job.vendor_available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
+              background: job.vendor_bags_flag && job.vendor_available_bags > 0 ? "#f0fdf4" : "#fef2f2",
+              color: job.vendor_bags_flag && job.vendor_available_bags > 0 ? "#16a34a" : "#dc2626",
+              border: `1px solid ${job.vendor_bags_flag && job.vendor_available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
             }}>
-              {job.vendor_available_bags > 0 ? `${job.vendor_available_bags} bags available` : "No bags available"}
+              {job.vendor_bags_flag && job.vendor_available_bags > 0
+                ? `${job.vendor_available_bags} bags available`
+                : "No bags available"}
             </span>
           </div>
         )}
@@ -333,12 +335,12 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
               </div>
               <span style={{
                 fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
-                background: job.vendor_available_bags > 0 ? "#f0fdf4" : "#fef2f2",
-                color: job.vendor_available_bags > 0 ? "#16a34a" : "#dc2626",
-                border: `1px solid ${job.vendor_available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
+                background: job.vendor_bags_flag && job.vendor_available_bags > 0 ? "#f0fdf4" : "#fef2f2",
+                color: job.vendor_bags_flag && job.vendor_available_bags > 0 ? "#16a34a" : "#dc2626",
+                border: `1px solid ${job.vendor_bags_flag && job.vendor_available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
                 flexShrink: 0,
               }}>
-                {job.vendor_available_bags > 0 ? `${job.vendor_available_bags} bags` : "No bags"}
+                {job.vendor_bags_flag && job.vendor_available_bags > 0 ? `${job.vendor_available_bags} bags` : "No bags"}
               </span>
             </div>
           )}

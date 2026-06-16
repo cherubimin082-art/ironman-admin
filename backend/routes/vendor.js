@@ -637,14 +637,36 @@ router.get("/vendor/bag-stats", ...auth, async (req, res) => {
        FROM bags WHERE vendor_id = ?`,
       [vendorId]
     );
+    const [[user]] = await pool.query(
+      "SELECT bags_available FROM users WHERE id = ?", [vendorId]
+    );
     res.json({ stats: {
-      total:     parseInt(stats.total     || 0),
-      available: parseInt(stats.available || 0),
-      in_use:    parseInt(stats.in_use    || 0),
-      missing:   parseInt(stats.missing   || 0),
+      total:          parseInt(stats.total     || 0),
+      available:      parseInt(stats.available || 0),
+      in_use:         parseInt(stats.in_use    || 0),
+      missing:        parseInt(stats.missing   || 0),
+      bags_available: user?.bags_available ?? 1,
     }});
   } catch (err) {
     console.error("bag-stats error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/vendor/bags-available — vendor toggles their bag availability status
+router.put("/vendor/bags-available", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { bags_available } = req.body;
+  if (bags_available === undefined)
+    return res.status(400).json({ message: "bags_available (0 or 1) is required" });
+  try {
+    await pool.query(
+      "UPDATE users SET bags_available = ? WHERE id = ?",
+      [bags_available ? 1 : 0, vendorId]
+    );
+    res.json({ message: "Updated", bags_available: bags_available ? 1 : 0 });
+  } catch (err) {
+    console.error("bags-available error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

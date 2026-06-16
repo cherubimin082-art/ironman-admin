@@ -176,7 +176,7 @@ router.get("/delivery-agents", ...auth, async (req, res) => {
 router.get("/admin/vendors", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT u.id, u.name, u.phone, u.zone, u.address, u.status, u.created_at,
+      `SELECT u.id, u.name, u.phone, u.zone, u.address, u.status, u.bags_available, u.created_at,
               COUNT(DISTINCT o.id) AS total_orders,
               GROUP_CONCAT(DISTINCT a.apartment ORDER BY a.apartment SEPARATOR ', ') AS apartments,
               (SELECT COUNT(*) FROM bags WHERE vendor_id = u.id AND status = 'available') AS available_bags,

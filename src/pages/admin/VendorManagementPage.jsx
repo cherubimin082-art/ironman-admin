@@ -530,13 +530,13 @@ export default function VendorManagementPage() {
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => setBagsVendor(v)} style={{
                             padding: "5px 12px", borderRadius: 8,
-                            border: `1px solid ${v.available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
-                            background: v.available_bags > 0 ? "#f0fdf4" : "#fef2f2",
-                            color: v.available_bags > 0 ? "#16a34a" : "#dc2626",
+                            border: `1px solid ${v.bags_available && v.available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
+                            background: v.bags_available && v.available_bags > 0 ? "#f0fdf4" : "#fef2f2",
+                            color: v.bags_available && v.available_bags > 0 ? "#16a34a" : "#dc2626",
                             fontSize: 12, fontWeight: 700, cursor: "pointer",
                             whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5,
                           }}>
-                            <span style={{ fontSize: 14, lineHeight: 1 }}>{v.available_bags > 0 ? "🟢" : "🔴"}</span>
+                            <span style={{ fontSize: 14, lineHeight: 1 }}>{v.bags_available && v.available_bags > 0 ? "🟢" : "🔴"}</span>
                             Bags ({v.available_bags ?? 0}/{v.total_bags ?? 0})
                           </button>
                           <button onClick={() => openEdit(v)} style={{

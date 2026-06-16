@@ -72,6 +72,7 @@ export default function VendorDashboard() {
   const [completedLoading, setCompletedLoading] = useState(true);
   const [myRating, setMyRating]               = useState(null);
   const [bagStats, setBagStats]               = useState(null);
+  const [bagToggling, setBagToggling]         = useState(false);
 
   useEffect(() => {
     api.get("/vendor/completed-orders")
@@ -90,6 +91,17 @@ export default function VendorDashboard() {
       .then(({ data }) => setBagStats(data.stats))
       .catch(() => {});
   }, []);
+
+  const toggleBagStatus = async () => {
+    if (!bagStats || bagToggling) return;
+    const next = bagStats.bags_available ? 0 : 1;
+    setBagToggling(true);
+    try {
+      await api.put("/vendor/bags-available", { bags_available: next });
+      setBagStats(s => ({ ...s, bags_available: next }));
+    } catch (_) {}
+    finally { setBagToggling(false); }
+  };
 
   const { isMobile, isTablet } = useWindowSize();
   const pending    = orders.filter(o => o.status === "pending").length;
@@ -174,13 +186,49 @@ export default function VendorDashboard() {
               Here's your shop performance overview for today.
             </p>
           </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: "#f0fdf4", border: "1px solid #bbf7d0",
-            borderRadius: 10, padding: "9px 16px", flexShrink: 0,
-          }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>Shop Active</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: "#f0fdf4", border: "1px solid #bbf7d0",
+              borderRadius: 10, padding: "9px 16px",
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>Shop Active</span>
+            </div>
+
+            {/* Bags availability toggle */}
+            <button
+              onClick={toggleBagStatus}
+              disabled={bagToggling || !bagStats}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "9px 16px", borderRadius: 10, border: "none", cursor: bagToggling ? "wait" : "pointer",
+                background: bagStats?.bags_available ? "#f0fdf4" : "#fef2f2",
+                border: `1px solid ${bagStats?.bags_available ? "#bbf7d0" : "#fecaca"}`,
+                transition: "all 0.2s",
+              }}
+            >
+              {/* toggle pill */}
+              <div style={{
+                width: 36, height: 20, borderRadius: 99, position: "relative",
+                background: bagStats?.bags_available ? "#22c55e" : "#e5e7eb",
+                transition: "background 0.2s", flexShrink: 0,
+              }}>
+                <div style={{
+                  position: "absolute", top: 2,
+                  left: bagStats?.bags_available ? 18 : 2,
+                  width: 16, height: 16, borderRadius: "50%",
+                  background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  transition: "left 0.2s",
+                }} />
+              </div>
+              <span style={{
+                fontSize: 13, fontWeight: 700,
+                color: bagStats?.bags_available ? "#16a34a" : "#dc2626",
+              }}>
+                {bagToggling ? "Updating…" : bagStats?.bags_available ? "Bags Available" : "No Bags"}
+              </span>
+            </button>
           </div>
         </div>
 

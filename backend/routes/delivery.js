@@ -88,7 +88,7 @@ router.get("/delivery/assigned-orders", ...auth, async (req, res) => {
   try {
     const [orders] = await pool.query(
       `SELECT o.*, u.name AS customer_name, u.phone AS customer_phone, u.address AS customer_address,
-              v.name AS vendor_name, v.address AS vendor_address,
+              v.name AS vendor_name, v.address AS vendor_address, v.bags_available AS vendor_bags_flag,
               da.status AS assignment_status, da.current_latitude, da.current_longitude,
               b.bag_number,
               (SELECT COUNT(*) FROM bags WHERE vendor_id = o.vendor_id AND status = 'available') AS vendor_available_bags,
