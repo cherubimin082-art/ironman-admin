@@ -117,6 +117,8 @@ export default function PricingPage() {
   // Forms
   const [catForm, setCatForm] = useState({ name: "" });
   const [gmtForm, setGmtForm] = useState({ category_id: "", name: "", price: "", image_url: "" });
+  const [imgTab,  setImgTab]  = useState("url"); // "url" | "upload"
+  const [uploading, setUploading] = useState(false);
 
   // ── Loaders ──────────────────────────────────────────────────
   const loadCategories = useCallback(async () => {
@@ -276,6 +278,78 @@ export default function PricingPage() {
     } finally { setSaving(false); }
   }
 
+  // ── Image URL / Upload picker ─────────────────────────────────
+  function ImageField({ gmtForm: gf, setGmtForm: setGf }) {
+    async function handleFile(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setUploading(true);
+      try {
+        const fd = new FormData();
+        fd.append("image", file);
+        const { data } = await api.post("/admin/upload-image", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setGf(f => ({ ...f, image_url: data.url }));
+      } catch {
+        alert("Upload failed. Try again.");
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    return (
+      <div>
+        <label style={labelSt}>
+          Image <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span>
+        </label>
+
+        {/* Tab toggle */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 10, border: "1.5px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+          {["url", "upload"].map(t => (
+            <button key={t} type="button" onClick={() => setImgTab(t)} style={{
+              flex: 1, padding: "8px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
+              background: imgTab === t ? "#DC2626" : "#fff",
+              color: imgTab === t ? "#fff" : "#6b7280",
+              transition: "all 0.15s",
+            }}>
+              {t === "url" ? "🔗 URL" : "📁 Upload File"}
+            </button>
+          ))}
+        </div>
+
+        {imgTab === "url" ? (
+          <input style={inputSt} placeholder="https://..." value={gf.image_url}
+            onChange={e => setGf(f => ({ ...f, image_url: e.target.value }))}
+            onFocus={fo} onBlur={fb} />
+        ) : (
+          <label style={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            gap: 6, padding: "20px 14px", borderRadius: 10, cursor: uploading ? "wait" : "pointer",
+            border: "1.5px dashed #d1d5db", background: "#fafafa", fontSize: 13, color: "#6b7280",
+          }}>
+            {uploading ? "Uploading…" : "Click to choose image (max 5 MB)"}
+            <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} disabled={uploading} />
+          </label>
+        )}
+
+        {gf.image_url && (
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+            <img src={gf.image_url} alt="preview"
+              style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 9, background: "#f3f4f6", padding: 4 }}
+              onError={e => { e.target.style.display = "none"; }} />
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: 0 }}>Preview</p>
+              <p style={{ fontSize: 11, color: "#9ca3af", margin: 0, wordBreak: "break-all", maxWidth: 260 }}>{gf.image_url.split("/").pop()}</p>
+            </div>
+            <button type="button" onClick={() => setGf(f => ({ ...f, image_url: "" }))}
+              style={{ marginLeft: "auto", fontSize: 18, background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}>×</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ── Garment form fields shared by add+edit ───────────────────
   function GarmentFields() {
     return (
@@ -301,19 +375,7 @@ export default function PricingPage() {
             placeholder="e.g. 25" value={gmtForm.price}
             onChange={setG("price")} onFocus={fo} onBlur={fb} />
         </div>
-        <div>
-          <label style={labelSt}>Image URL <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span></label>
-          <input style={inputSt} placeholder="https://..." value={gmtForm.image_url}
-            onChange={setG("image_url")} onFocus={fo} onBlur={fb} />
-          {gmtForm.image_url && (
-            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
-              <img src={gmtForm.image_url} alt="preview"
-                style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8, background: "#f3f4f6", padding: 4 }}
-                onError={e => { e.target.style.display = "none"; }} />
-              <span style={{ fontSize: 12, color: "#9ca3af" }}>Preview</span>
-            </div>
-          )}
-        </div>
+        <ImageField gmtForm={gmtForm} setGmtForm={setGmtForm} />
       </>
     );
   }

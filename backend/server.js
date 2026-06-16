@@ -2,6 +2,8 @@
 const express       = require("express");
 const http          = require("http");
 const cors          = require("cors");
+const path          = require("path");
+const fs            = require("fs");
 const pool          = require("./db");
 const socketMod     = require("./socket");
 const authRoutes    = require("./routes/auth");
@@ -12,8 +14,15 @@ const adminRoutes   = require("./routes/admin");
 const app    = express();
 const server = http.createServer(app);
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "public", "uploads");
+fs.mkdirSync(uploadsDir, { recursive: true });
+
 app.use(cors({ origin: "*" }));
 app.use(express.json());
+
+// Serve uploaded garment images publicly
+app.use("/api/uploads", express.static(uploadsDir));
 
 socketMod.init(server);
 

@@ -1,11 +1,30 @@
 ﻿const express = require("express");
 const bcrypt  = require("bcryptjs");
+const path    = require("path");
+const multer  = require("multer");
 const pool    = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
 
 const router = express.Router();
 const auth   = [verifyToken, requireRole("admin")];
+
+// ── Image upload (multer) ────────────────────────────────────────
+const storage = multer.diskStorage({
+  destination: path.join(__dirname, "../public/uploads"),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `garment_${Date.now()}${ext}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Images only"));
+  },
+});
 
 // GET /api/all-orders
 router.get("/all-orders", ...auth, async (req, res) => {
@@ -913,6 +932,13 @@ router.delete("/admin/garments/:id", ...auth, async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+// POST /api/admin/upload-image
+router.post("/admin/upload-image", ...auth, upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+  const url = `https://admin.ironman.today/api/uploads/${req.file.filename}`;
+  res.json({ url });
 });
 
 module.exports = router;
