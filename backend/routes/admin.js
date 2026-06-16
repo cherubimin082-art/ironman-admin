@@ -268,6 +268,78 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
   }
 });
 
+// ── BAG MANAGEMENT ─────────────────────────────────────────────
+
+// GET /api/admin/vendors/:id/bags
+router.get("/admin/vendors/:id/bags", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [bags] = await pool.query(
+      "SELECT id, bag_number, status FROM bags WHERE vendor_id = ? ORDER BY bag_number ASC",
+      [id]
+    );
+    res.json({ bags });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/bags/:id — update bag status
+router.put("/admin/bags/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const allowed = ["available", "in_use", "missing", "retired"];
+  if (!allowed.includes(status))
+    return res.status(400).json({ message: "Invalid status" });
+  try {
+    const [result] = await pool.query(
+      "UPDATE bags SET status = ? WHERE id = ?", [status, id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Bag not found" });
+    res.json({ message: "Bag updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/vendors/:id/bags — add more bags
+router.post("/admin/vendors/:id/bags", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const count = parseInt(req.body.count) || 1;
+  if (count < 1 || count > 50)
+    return res.status(400).json({ message: "Count must be between 1 and 50" });
+  try {
+    const [[{ maxNum }]] = await pool.query(
+      "SELECT COALESCE(MAX(bag_number), 0) AS maxNum FROM bags WHERE vendor_id = ?", [id]
+    );
+    const bagValues = Array.from({ length: count }, (_, i) => [id, maxNum + i + 1, "available"]);
+    await pool.query("INSERT INTO bags (vendor_id, bag_number, status) VALUES ?", [bagValues]);
+    res.status(201).json({ message: `${count} bag(s) added` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/bags/:id — remove a bag (only if available)
+router.delete("/admin/bags/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [[bag]] = await pool.query("SELECT status FROM bags WHERE id = ?", [id]);
+    if (!bag) return res.status(404).json({ message: "Bag not found" });
+    if (bag.status === "in_use")
+      return res.status(409).json({ message: "Cannot delete a bag that is currently in use" });
+    await pool.query("DELETE FROM bags WHERE id = ?", [id]);
+    res.json({ message: "Bag deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── DELIVERY BOY CRUD ───────────────────────────────────────────
 
 // GET /api/admin/delivery-boys

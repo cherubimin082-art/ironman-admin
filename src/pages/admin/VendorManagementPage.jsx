@@ -96,6 +96,187 @@ const fmtDate = d => d
   ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
   : "—";
 
+const BAG_STATUSES = ["available", "in_use", "missing", "retired"];
+const BAG_COLORS = {
+  available: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
+  in_use:    { bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe" },
+  missing:   { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+  retired:   { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
+};
+
+function BagsModal({ vendor, onClose }) {
+  const [bags, setBags]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [updating, setUpdating] = useState(null); // bag id being updated
+  const [addCount, setAddCount] = useState(1);
+  const [adding, setAdding]     = useState(false);
+  const [err, setErr]           = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/admin/vendors/${vendor.id}/bags`);
+      setBags(data.bags || []);
+    } catch { setErr("Failed to load bags"); }
+    finally { setLoading(false); }
+  }, [vendor.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function changeStatus(bag, status) {
+    setUpdating(bag.id); setErr("");
+    try {
+      await api.put(`/admin/bags/${bag.id}`, { status });
+      setBags(prev => prev.map(b => b.id === bag.id ? { ...b, status } : b));
+    } catch (e) { setErr(e.response?.data?.message || "Failed to update"); }
+    finally { setUpdating(null); }
+  }
+
+  async function handleAdd() {
+    setAdding(true); setErr("");
+    try {
+      await api.post(`/admin/vendors/${vendor.id}/bags`, { count: addCount });
+      await load();
+    } catch (e) { setErr(e.response?.data?.message || "Failed to add bags"); }
+    finally { setAdding(false); }
+  }
+
+  async function handleDelete(bag) {
+    setUpdating(bag.id); setErr("");
+    try {
+      await api.delete(`/admin/bags/${bag.id}`);
+      setBags(prev => prev.filter(b => b.id !== bag.id));
+    } catch (e) { setErr(e.response?.data?.message || "Failed to delete"); }
+    finally { setUpdating(null); }
+  }
+
+  const counts = BAG_STATUSES.reduce((acc, s) => {
+    acc[s] = bags.filter(b => b.status === s).length;
+    return acc;
+  }, {});
+
+  return (
+    <div onClick={e => e.target === e.currentTarget && onClose()} style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(15,23,42,0.45)", backdropFilter: "blur(3px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: 20, width: "100%", maxWidth: 640,
+        maxHeight: "90vh", overflowY: "auto",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: "18px 22px", borderBottom: "1px solid #f3f4f6",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          position: "sticky", top: 0, background: "#fff", zIndex: 1,
+        }}>
+          <div>
+            <h2 style={{ fontSize: 17, fontWeight: 800, color: "#111827", margin: "0 0 2px" }}>
+              Bags — {vendor.name}
+            </h2>
+            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>{bags.length} bags total</p>
+          </div>
+          <button onClick={onClose} style={{
+            width: 30, height: 30, borderRadius: 8, border: "none",
+            background: "#f3f4f6", cursor: "pointer", fontSize: 18, color: "#6b7280",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>×</button>
+        </div>
+
+        <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* Summary chips */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {BAG_STATUSES.map(s => {
+              const c = BAG_COLORS[s];
+              return (
+                <div key={s} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "4px 12px", borderRadius: 99,
+                  background: c.bg, border: `1px solid ${c.border}`,
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: c.color }}>{counts[s]}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: c.color, textTransform: "capitalize" }}>
+                    {s.replace("_", " ")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Add bags row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f9fafb", borderRadius: 12, padding: "12px 16px" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#374151", flex: 1 }}>Add more bags</span>
+            <input
+              type="number" min={1} max={50} value={addCount}
+              onChange={e => setAddCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+              style={{ width: 64, padding: "6px 10px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 14, textAlign: "center", outline: "none" }}
+            />
+            <button onClick={handleAdd} disabled={adding} style={{
+              padding: "7px 16px", borderRadius: 8, border: "none",
+              background: "#B91C1C", color: "white", fontWeight: 700, fontSize: 13, cursor: "pointer",
+            }}>
+              {adding ? "Adding…" : "Add"}
+            </button>
+          </div>
+
+          {err && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "9px 14px", fontSize: 13, color: "#dc2626" }}>
+              {err}
+            </div>
+          )}
+
+          {/* Bags grid */}
+          {loading ? (
+            <p style={{ color: "#9ca3af", fontSize: 14, textAlign: "center", padding: "24px 0" }}>Loading…</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 }}>
+              {bags.map(bag => {
+                const c = BAG_COLORS[bag.status] || BAG_COLORS.available;
+                const busy = updating === bag.id;
+                return (
+                  <div key={bag.id} style={{
+                    borderRadius: 12, border: `1.5px solid ${c.border}`,
+                    background: c.bg, padding: "12px 14px",
+                    display: "flex", flexDirection: "column", gap: 8,
+                    opacity: busy ? 0.6 : 1, transition: "opacity 0.15s",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>#{bag.bag_number}</span>
+                      <button
+                        onClick={() => handleDelete(bag)}
+                        disabled={busy}
+                        title="Delete bag"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#d1d5db", fontSize: 14, padding: 0, lineHeight: 1 }}
+                      >×</button>
+                    </div>
+                    <select
+                      value={bag.status}
+                      onChange={e => changeStatus(bag, e.target.value)}
+                      disabled={busy}
+                      style={{
+                        fontSize: 11, fontWeight: 700, color: c.color,
+                        background: "transparent", border: "none", outline: "none",
+                        cursor: "pointer", padding: 0, textTransform: "capitalize",
+                        width: "100%",
+                      }}
+                    >
+                      {BAG_STATUSES.map(s => (
+                        <option key={s} value={s}>{s.replace("_", " ")}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────
 export default function VendorManagementPage() {
   const { isMobile } = useWindowSize();
@@ -107,6 +288,7 @@ export default function VendorManagementPage() {
   // modal state
   const [modal,    setModal]    = useState(null); // null | 'add' | 'edit' | 'delete'
   const [selected, setSelected] = useState(null);
+  const [bagsVendor, setBagsVendor] = useState(null);
   const [saving,   setSaving]   = useState(false);
   const [formErr,  setFormErr]  = useState("");
   const [formOk,   setFormOk]   = useState("");
@@ -346,6 +528,12 @@ export default function VendorManagementPage() {
                       <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>{fmtDate(v.created_at)}</td>
                       <td style={{ padding: "14px 16px" }}>
                         <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => setBagsVendor(v)} style={{
+                            padding: "5px 12px", borderRadius: 8,
+                            border: "1px solid #bfdbfe", background: "#eff6ff",
+                            color: "#2563eb", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}>Bags</button>
                           <button onClick={() => openEdit(v)} style={{
                             padding: "5px 12px", borderRadius: 8,
                             border: "1px solid #FEE2E2", background: "#FEF2F2",
@@ -367,6 +555,9 @@ export default function VendorManagementPage() {
           )}
         </div>
       </div>
+
+      {/* ── Bags Modal ── */}
+      {bagsVendor && <BagsModal vendor={bagsVendor} onClose={() => setBagsVendor(null)} />}
 
       {/* ── Add Modal ── */}
       {modal === "add" && (
