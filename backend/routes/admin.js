@@ -781,7 +781,7 @@ router.get("/admin/categories", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT c.id, c.name, c.created_at,
-              COUNT(g.id) AS garment_count
+              SUM(g.is_active = 1) AS garment_count
          FROM categories c
          LEFT JOIN garments g ON g.category_id = c.id
         GROUP BY c.id
@@ -855,7 +855,9 @@ router.delete("/admin/categories/:id", ...auth, async (req, res) => {
 router.get("/admin/garments", ...auth, async (req, res) => {
   try {
     const { category_id } = req.query;
-    const where = category_id ? "WHERE g.category_id = ?" : "";
+    const where = category_id
+      ? "WHERE g.is_active = 1 AND g.category_id = ?"
+      : "WHERE g.is_active = 1";
     const params = category_id ? [category_id] : [];
     const [rows] = await pool.query(
       `SELECT g.id, g.name, g.price, g.category_id, g.image_url, g.icon, g.is_active, g.created_at,
@@ -885,7 +887,7 @@ router.post("/admin/garments", ...auth, async (req, res) => {
     const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ?", [category_id]);
     if (!cat) return res.status(404).json({ message: "Category not found" });
     const [result] = await pool.query(
-      "INSERT INTO garments (category_id, name, price, image_url) VALUES (?, ?, ?, ?)",
+      "INSERT INTO garments (category_id, name, price, image_url, is_active) VALUES (?, ?, ?, ?, 1)",
       [category_id, name.trim(), priceVal, image_url?.trim() || null]
     );
     res.status(201).json({ message: "Garment added", id: result.insertId });
