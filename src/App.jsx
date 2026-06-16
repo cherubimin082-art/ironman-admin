@@ -22,6 +22,7 @@ import EarningsPage from "./pages/delivery/EarningsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import OrderManagementPage from "./pages/admin/OrderManagementPage";
 import VendorManagementPage from "./pages/admin/VendorManagementPage";
+import CustomerManagementPage from "./pages/admin/CustomerManagementPage";
 import DeliveryManagementPage from "./pages/admin/DeliveryManagementPage";
 import PricingPage from "./pages/admin/PricingPage";
 import AnalyticsPage from "./pages/admin/AnalyticsPage";
@@ -53,7 +54,8 @@ export default function App() {
             {/* Admin routes */}
             <Route path="/admin/dashboard" element={<RoleRoute allowedRole="admin"><AdminDashboard /></RoleRoute>} />
             <Route path="/admin/orders"    element={<RoleRoute allowedRole="admin"><OrderManagementPage /></RoleRoute>} />
-            <Route path="/admin/vendors"   element={<RoleRoute allowedRole="admin"><VendorManagementPage /></RoleRoute>} />
+            <Route path="/admin/vendors"    element={<RoleRoute allowedRole="admin"><VendorManagementPage /></RoleRoute>} />
+            <Route path="/admin/customers" element={<RoleRoute allowedRole="admin"><CustomerManagementPage /></RoleRoute>} />
             <Route path="/admin/delivery"  element={<RoleRoute allowedRole="admin"><DeliveryManagementPage /></RoleRoute>} />
             <Route path="/admin/pricing"   element={<RoleRoute allowedRole="admin"><PricingPage /></RoleRoute>} />
             <Route path="/admin/analytics" element={<RoleRoute allowedRole="admin"><AnalyticsPage /></RoleRoute>} />

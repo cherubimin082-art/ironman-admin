@@ -378,6 +378,158 @@ router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   }
 });
 
+// ── CUSTOMER CRUD ──────────────────────────────────────────────
+
+// GET /api/admin/customers
+router.get("/admin/customers", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, name, phone, apartment, address, created_at
+         FROM users WHERE role = 'customer'
+        ORDER BY created_at DESC`
+    );
+    res.json({ customers: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/customers
+router.post("/admin/customers", ...auth, async (req, res) => {
+  const { name, phone, password, apartment, address } = req.body;
+  if (!name || !phone || !password)
+    return res.status(400).json({ message: "Name, phone and password are required" });
+  try {
+    const [[existing]] = await pool.query("SELECT id FROM users WHERE phone = ?", [phone]);
+    if (existing)
+      return res.status(409).json({ message: "Mobile number already registered" });
+    const hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.query(
+      `INSERT INTO users (name, phone, password_hash, role, apartment, address)
+       VALUES (?, ?, ?, 'customer', ?, ?)`,
+      [name, phone, hash, apartment || null, address || null]
+    );
+    res.status(201).json({ message: "Customer created", id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/customers/:id
+router.put("/admin/customers/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, apartment, address } = req.body;
+  if (!name || !phone)
+    return res.status(400).json({ message: "Name and phone are required" });
+  try {
+    const [[dup]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND id != ?", [phone, id]
+    );
+    if (dup) return res.status(409).json({ message: "Mobile number already in use" });
+    await pool.query(
+      "UPDATE users SET name = ?, phone = ?, apartment = ?, address = ? WHERE id = ? AND role = 'customer'",
+      [name, phone, apartment || null, address || null, id]
+    );
+    res.json({ message: "Customer updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/customers/:id
+router.delete("/admin/customers/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("DELETE FROM users WHERE id = ? AND role = 'customer'", [id]);
+    res.json({ message: "Customer deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── APARTMENT LIST CRUD ─────────────────────────────────────────
+
+async function ensureApartmentsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS apartments (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      name        VARCHAR(255) NOT NULL UNIQUE,
+      pickup_time VARCHAR(100) NOT NULL,
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+// GET /api/admin/apartments-list
+router.get("/admin/apartments-list", ...auth, async (req, res) => {
+  try {
+    await ensureApartmentsTable();
+    const [rows] = await pool.query("SELECT * FROM apartments ORDER BY name ASC");
+    res.json({ apartments: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/apartments-list
+router.post("/admin/apartments-list", ...auth, async (req, res) => {
+  const { name, pickup_time } = req.body;
+  if (!name?.trim() || !pickup_time?.trim())
+    return res.status(400).json({ message: "Apartment name and pickup time are required" });
+  try {
+    await ensureApartmentsTable();
+    const [result] = await pool.query(
+      "INSERT INTO apartments (name, pickup_time) VALUES (?, ?)",
+      [name.trim(), pickup_time.trim()]
+    );
+    res.status(201).json({ message: "Apartment added", id: result.insertId });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Apartment name already exists" });
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/apartments-list/:id
+router.put("/admin/apartments-list/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, pickup_time } = req.body;
+  if (!name?.trim() || !pickup_time?.trim())
+    return res.status(400).json({ message: "Apartment name and pickup time are required" });
+  try {
+    await ensureApartmentsTable();
+    const [result] = await pool.query(
+      "UPDATE apartments SET name = ?, pickup_time = ? WHERE id = ?",
+      [name.trim(), pickup_time.trim(), id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Apartment not found" });
+    res.json({ message: "Apartment updated" });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Apartment name already exists" });
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/apartments-list/:id
+router.delete("/admin/apartments-list/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await ensureApartmentsTable();
+    await pool.query("DELETE FROM apartments WHERE id = ?", [id]);
+    res.json({ message: "Apartment deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── ANALYTICS ──────────────────────────────────────────────────
 
 // GET /api/admin/analytics — summary counts

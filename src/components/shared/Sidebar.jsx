@@ -42,7 +42,7 @@ const SettingsIcon = () => (
 const ADMIN_LINKS = [
   { to: "/admin/dashboard", label: "Dashboard", Icon: DashboardIcon },
   { to: "/admin/orders",    label: "Orders",    Icon: OrdersIcon    },
-  { to: "/admin/vendors",   label: "Customers", Icon: CustomersIcon },
+  { to: "/admin/customers", label: "Customers", Icon: CustomersIcon },
   { to: "/admin/delivery",  label: "Staff",     Icon: StaffIcon     },
   { to: "/admin/pricing",   label: "Payments",  Icon: PaymentsIcon  },
   { to: "/admin/analytics", label: "Settings",  Icon: SettingsIcon  },
