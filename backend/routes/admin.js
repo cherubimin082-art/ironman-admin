@@ -918,17 +918,15 @@ router.put("/admin/garments/:id", ...auth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/garments/:id
+// DELETE /api/admin/garments/:id  (soft-delete — hides from customer, preserves order history)
 router.delete("/admin/garments/:id", ...auth, async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.query("DELETE FROM garments WHERE id = ?", [id]);
+    const [result] = await pool.query("UPDATE garments SET is_active = 0 WHERE id = ?", [id]);
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Garment not found" });
-    res.json({ message: "Garment deleted" });
+    res.json({ message: "Garment removed from catalogue" });
   } catch (err) {
-    if (err.code === "ER_ROW_IS_REFERENCED_2")
-      return res.status(409).json({ message: "Cannot delete: garment is used in existing orders. Consider deactivating it instead." });
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
