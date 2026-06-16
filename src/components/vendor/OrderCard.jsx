@@ -374,7 +374,7 @@ export default function OrderCard({ order, onStatusChange }) {
         </div>
 
         {/* Meta */}
-        <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
             <LocationIcon /> {order.zone}
           </span>
@@ -382,6 +382,21 @@ export default function OrderCard({ order, onStatusChange }) {
             <ClockIcon /> {order.time}
           </span>
         </div>
+
+        {/* Bag number — shown once clothes are at the shop */}
+        {order.bag_number && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "#eff6ff", border: "1px solid #bfdbfe",
+            borderRadius: 10, padding: "8px 13px",
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+            </svg>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: "#1d4ed8" }}>Bag #{order.bag_number}</span>
+            <span style={{ fontSize: 11, color: "#93c5fd", marginLeft: "auto" }}>{order.order_code || `#${order.id}`}</span>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 14, marginTop: "auto" }}>
