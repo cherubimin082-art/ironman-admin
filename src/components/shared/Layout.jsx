@@ -25,7 +25,7 @@ export default function Layout({ children }) {
 
       {/* Body row: Sidebar + Main */}
       <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative", zIndex: 10 }}>
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={isMobile} />
         <main style={{
           flex: 1, overflowY: "auto",
           padding: mainPadding,

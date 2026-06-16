@@ -1,6 +1,5 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { useState, useEffect } from "react";
 
 // ── Icons ─────────────────────────────────────────────────────
 const DashboardIcon = () => (
@@ -102,44 +101,67 @@ function NavItem({ to, label, Icon, onClose }) {
 }
 
 // ── Sidebar ──────────────────────────────────────────────────
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose, isMobile }) {
   const { user } = useAuth();
   const role = user?.role ?? "admin";
   const links = role === "vendor" ? VENDOR_LINKS : role === "delivery" ? DELIVERY_LINKS : ADMIN_LINKS;
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
 
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
-
   const sidebarStyle = isMobile
     ? {
-        position: "fixed", top: 0, left: 0, height: "100%", width: 240, zIndex: 40,
+        position: "fixed", top: 0, left: 0, height: "100%", width: 260, zIndex: 200,
         display: "flex", flexDirection: "column",
         background: SIDEBAR_BG,
         transform: open ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 0.26s cubic-bezier(0.4,0,0.2,1)",
+        boxShadow: open ? "4px 0 24px rgba(0,0,0,0.35)" : "none",
       }
     : {
         position: "relative", width: 220, flexShrink: 0,
         display: "flex", flexDirection: "column",
         background: SIDEBAR_BG,
+        minHeight: 0,
       };
 
   return (
     <>
-      {isMobile && open && (
-        <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 30 }} />
+      {/* Backdrop — mobile only */}
+      {isMobile && (
+        <div
+          onClick={onClose}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 199,
+            opacity: open ? 1 : 0,
+            pointerEvents: open ? "auto" : "none",
+            transition: "opacity 0.26s",
+          }}
+        />
       )}
 
       <aside style={sidebarStyle}>
 
-        {/* ── Brand ── */}
-        <div style={{ padding: "22px 20px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        {/* ── Brand + close button ── */}
+        <div style={{
+          padding: "18px 16px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
           <span style={{ fontSize: 20, fontWeight: 900, color: "white", letterSpacing: "-0.01em" }}>IRON MAN</span>
+          {isMobile && (
+            <button
+              onClick={onClose}
+              style={{
+                width: 32, height: 32, borderRadius: 8, border: "none",
+                background: "rgba(255,255,255,0.1)", color: "white",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", flexShrink: 0,
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" width="16" height="16">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* ── Nav ── */}
