@@ -12,6 +12,11 @@ const FILTERS = [
   { key: "delivered",   label: "Delivered",   color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" },
 ];
 
+const IN_PROGRESS_STATUSES = new Set([
+  "vendor_accepted", "delivery_assigned", "picked_up",
+  "at_vendor", "ironing_in_progress", "in_progress",
+]);
+
 const APARTMENTS = [
   "All",
   "Green Valley Apartments",
@@ -58,8 +63,21 @@ export default function OrderQueuePage() {
   const { isMobile, isTablet } = useWindowSize();
 
   const byApt    = apt === "All" ? orders : orders.filter(o => o.apartment === apt);
-  const filtered = filter === "all" ? byApt : byApt.filter(o => o.status === filter);
-  const countFor = key => key === "all" ? byApt.length : byApt.filter(o => o.status === key).length;
+  const matchFilter = (o) => {
+    if (filter === "all")         return true;
+    if (filter === "in-progress") return IN_PROGRESS_STATUSES.has(o.status);
+    if (filter === "ready")       return o.status === "ready_for_delivery";
+    if (filter === "delivered")   return o.status === "delivered";
+    return o.status === filter;
+  };
+  const filtered = byApt.filter(matchFilter);
+  const countFor = key => {
+    if (key === "all")         return byApt.length;
+    if (key === "in-progress") return byApt.filter(o => IN_PROGRESS_STATUSES.has(o.status)).length;
+    if (key === "ready")       return byApt.filter(o => o.status === "ready_for_delivery").length;
+    if (key === "delivered")   return byApt.filter(o => o.status === "delivered").length;
+    return byApt.filter(o => o.status === key).length;
+  };
 
   return (
     <Layout>

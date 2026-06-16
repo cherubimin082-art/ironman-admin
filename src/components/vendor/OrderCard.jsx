@@ -222,48 +222,36 @@ function ActionArea({ order, onStatusChange }) {
 
   if (status === 'at_vendor') {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => handleClick('start_ironing')}
-            disabled={busy !== null}
-            style={{
-              flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
-              cursor: busy !== null ? "not-allowed" : "pointer",
-              background: busy === 'start_ironing' ? "#e5e7eb" : "linear-gradient(135deg, #DC2626, #B91C1C)",
-              color: busy === 'start_ironing' ? "#9ca3af" : "#fff",
-              fontSize: 12.5, fontWeight: 700,
-              transition: "opacity 0.15s",
-            }}
-          >
-            {busy === 'start_ironing' ? "Starting…" : "Start Ironing"}
-          </button>
-          <button
-            onClick={() => handleClick('mark_complete')}
-            disabled={busy !== null}
-            style={{
-              flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
-              cursor: busy !== null ? "not-allowed" : "pointer",
-              background: busy === 'mark_complete' ? "#e5e7eb" : "linear-gradient(135deg, #f97316, #ef4444)",
-              color: busy === 'mark_complete' ? "#9ca3af" : "#fff",
-              fontSize: 12.5, fontWeight: 700,
-              transition: "opacity 0.15s",
-            }}
-          >
-            {busy === 'mark_complete' ? "Saving…" : "Iron Complete"}
-          </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 9, padding: "8px 12px" }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#c2410c" }}>Clothes received — ready to iron</span>
         </div>
-        {err && (
-          <p style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 600, margin: 0, textAlign: "center" }}>{err}</p>
-        )}
+        <button
+          onClick={() => handleClick('start_ironing')}
+          disabled={busy !== null}
+          style={{
+            width: "100%", padding: "11px 0", border: "none", borderRadius: 10,
+            cursor: busy !== null ? "not-allowed" : "pointer",
+            background: busy !== null ? "#e5e7eb" : "linear-gradient(135deg, #DC2626, #B91C1C)",
+            color: busy !== null ? "#9ca3af" : "#fff",
+            fontSize: 13, fontWeight: 700, transition: "opacity 0.15s",
+          }}
+        >
+          {busy === 'start_ironing' ? "Starting…" : "Start Ironing"}
+        </button>
+        {err && <p style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 600, margin: 0, textAlign: "center" }}>{err}</p>}
       </div>
     );
   }
 
   if (status === 'ironing_in_progress' || status === 'in_progress') {
-    const isLegacy = status === 'in_progress';
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 9, padding: "9px 12px" }}>
+          <span style={{ fontSize: 16 }}>🔥</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#DC2626" }}>Ironing in Process…</span>
+        </div>
         <button
           onClick={() => handleClick('mark_complete')}
           disabled={busy !== null}
@@ -272,15 +260,12 @@ function ActionArea({ order, onStatusChange }) {
             cursor: busy !== null ? "not-allowed" : "pointer",
             background: busy !== null ? "#e5e7eb" : "linear-gradient(135deg, #10b981, #059669)",
             color: busy !== null ? "#9ca3af" : "#fff",
-            fontSize: 13, fontWeight: 700,
-            transition: "opacity 0.15s",
+            fontSize: 13, fontWeight: 700, transition: "opacity 0.15s",
           }}
         >
-          {busy !== null ? "Saving…" : isLegacy ? "Mark Ironing Complete" : "Iron Complete"}
+          {busy !== null ? "Saving…" : "Iron Complete ✓"}
         </button>
-        {err && (
-          <p style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 600, margin: 0, textAlign: "center" }}>{err}</p>
-        )}
+        {err && <p style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 600, margin: 0, textAlign: "center" }}>{err}</p>}
       </div>
     );
   }
