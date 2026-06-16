@@ -18,6 +18,7 @@ import DeliveryDashboard from "./pages/delivery/DeliveryDashboard";
 import PickupJobsPage from "./pages/delivery/PickupJobsPage";
 import ActiveDeliveryPage from "./pages/delivery/ActiveDeliveryPage";
 import EarningsPage from "./pages/delivery/EarningsPage";
+import CompletedOrdersPage from "./pages/delivery/CompletedOrdersPage";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import OrderManagementPage from "./pages/admin/OrderManagementPage";
@@ -50,7 +51,8 @@ export default function App() {
             <Route path="/delivery/dashboard" element={<RoleRoute allowedRole="delivery"><DeliveryDashboard /></RoleRoute>} />
             <Route path="/delivery/pickups"   element={<RoleRoute allowedRole="delivery"><PickupJobsPage /></RoleRoute>} />
             <Route path="/delivery/active"    element={<RoleRoute allowedRole="delivery"><ActiveDeliveryPage /></RoleRoute>} />
-            <Route path="/delivery/earnings"  element={<RoleRoute allowedRole="delivery"><EarningsPage /></RoleRoute>} />
+            <Route path="/delivery/earnings"   element={<RoleRoute allowedRole="delivery"><EarningsPage /></RoleRoute>} />
+            <Route path="/delivery/completed" element={<RoleRoute allowedRole="delivery"><CompletedOrdersPage /></RoleRoute>} />
 
             {/* Admin routes */}
             <Route path="/admin/dashboard" element={<RoleRoute allowedRole="admin"><AdminDashboard /></RoleRoute>} />

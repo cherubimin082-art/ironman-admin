@@ -58,10 +58,17 @@ const VENDOR_LINKS = [
   { to: "/vendor/apartments", label: "Locations", Icon: CustomersIcon },
 ];
 
+const CompletedIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 const DELIVERY_LINKS = [
   { to: "/delivery/dashboard", label: "Dashboard", Icon: DashboardIcon },
   { to: "/delivery/pickups",   label: "Pickups",   Icon: OrdersIcon    },
   { to: "/delivery/active",    label: "Deliveries",Icon: StaffIcon     },
+  { to: "/delivery/completed", label: "Completed", Icon: CompletedIcon },
   { to: "/delivery/earnings",  label: "Earnings",  Icon: PaymentsIcon  },
 ];
 
