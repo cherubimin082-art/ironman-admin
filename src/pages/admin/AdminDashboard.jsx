@@ -83,19 +83,20 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ totalToday: 0, ongoing: 0, completedToday: 0, revenueToday: 0 });
 
   useEffect(() => {
-    api.get("/admin/stats").then(({ data }) => {
+    api.get("/dashboard-stats").then(({ data }) => {
+      const s = data.stats || {};
       setStats({
-        totalToday:    data.totalOrders     ?? orders.length,
-        ongoing:       data.ongoingOrders   ?? orders.filter(o => !["delivered","cancelled"].includes(o.status)).length,
-        completedToday:data.deliveredToday  ?? orders.filter(o => o.status === "delivered").length,
-        revenueToday:  data.revenueToday    ?? orders.filter(o => o.status === "delivered").reduce((s,o) => s + (o.amount || 0), 0),
+        totalToday:     s.today_orders     ?? 0,
+        ongoing:        s.ongoing_orders   ?? 0,
+        completedToday: s.today_delivered  ?? 0,
+        revenueToday:   s.today_revenue    ?? 0,
       });
     }).catch(() => {
       setStats({
-        totalToday:     orders.length,
+        totalToday:     orders.filter(o => { const d = new Date(o.created_at); const t = new Date(); return d.toDateString() === t.toDateString(); }).length,
         ongoing:        orders.filter(o => !["delivered","cancelled"].includes(o.status)).length,
         completedToday: orders.filter(o => o.status === "delivered").length,
-        revenueToday:   orders.filter(o => o.status === "delivered").reduce((s,o) => s + (o.amount || 0), 0),
+        revenueToday:   orders.filter(o => o.status === "delivered").reduce((s,o) => s + (parseFloat(o.total) || 0), 0),
       });
     });
   }, [orders]);
@@ -130,8 +131,7 @@ export default function AdminDashboard() {
           <StatCard
             label="Total Orders Today"
             value={stats.totalToday}
-            sub="~12% from yesterday"
-            subColor="#22C55E"
+            sub="orders placed today"
             iconBg="#FEE2E2"
             icon={<svg viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57L23 6H6" /></svg>}
           />
@@ -145,16 +145,14 @@ export default function AdminDashboard() {
           <StatCard
             label="Completed Today"
             value={stats.completedToday}
-            sub="~88% efficiency"
-            subColor="#22C55E"
+            sub="delivered today"
             iconBg="#D1FAE5"
             icon={<svg viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>}
           />
           <StatCard
             label="Revenue Today"
-            value={`₹${stats.revenueToday.toLocaleString()}`}
-            sub="+₹420 vs yesterday"
-            subColor="#22C55E"
+            value={`₹${Math.round(stats.revenueToday).toLocaleString()}`}
+            sub="from delivered orders"
             iconBg="#EDE9FE"
             icon={<svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>}
           />

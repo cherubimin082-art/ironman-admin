@@ -24,7 +24,7 @@ router.get("/all-orders", ...auth, async (req, res) => {
          JOIN users uc ON uc.id = o.customer_id
          LEFT JOIN users uv ON uv.id = o.vendor_id
          LEFT JOIN users ua ON ua.id = o.delivery_agent_id
-         JOIN order_items oi ON oi.order_id = o.id
+         LEFT JOIN order_items oi ON oi.order_id = o.id
         GROUP BY o.id
         ORDER BY o.created_at DESC`
     );
@@ -47,7 +47,11 @@ router.get("/dashboard-stats", ...auth, async (req, res) => {
          SUM(status = "in_progress")      AS in_progress_count,
          SUM(status = "out_for_delivery") AS out_for_delivery_count,
          SUM(status = "delivered")        AS delivered_count,
-         SUM(status = "cancelled")        AS cancelled_count
+         SUM(status = "cancelled")        AS cancelled_count,
+         SUM(DATE(created_at) = CURDATE()) AS today_orders,
+         SUM(DATE(created_at) = CURDATE() AND status = "delivered") AS today_delivered,
+         SUM(CASE WHEN DATE(created_at) = CURDATE() AND status = "delivered" THEN total ELSE 0 END) AS today_revenue,
+         SUM(status NOT IN ("delivered","cancelled")) AS ongoing_orders
        FROM orders`
     );
 

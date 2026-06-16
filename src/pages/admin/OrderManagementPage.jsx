@@ -42,12 +42,6 @@ function initials(name) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function parseItemCount(items) {
-  try {
-    const arr = typeof items === "string" ? JSON.parse(items) : (Array.isArray(items) ? items : []);
-    return arr.reduce((s, i) => s + (i.quantity || 1), 0);
-  } catch { return 0; }
-}
 
 function formatDate(ts) {
   if (!ts) return "—";
@@ -103,8 +97,8 @@ export default function OrderManagementPage() {
               onClick={() => navigate("/admin/dashboard")}
               style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px", borderRadius: 10, border: "none", background: "#B91C1C", fontSize: 13, fontWeight: 700, color: "white", cursor: "pointer" }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-              New Order
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Dashboard
             </button>
           </div>
         </div>
@@ -155,7 +149,7 @@ export default function OrderManagementPage() {
           <div>
             <p style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 6px" }}>Active Deliveries</p>
             <p style={{ fontSize: 40, fontWeight: 900, color: "white", margin: "0 0 5px", lineHeight: 1 }}>{activeDeliveries}</p>
-            <p style={{ fontSize: 12.5, color: "#22C55E", fontWeight: 600, margin: 0 }}>+12% from yesterday</p>
+            <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.5)", fontWeight: 600, margin: 0 }}>currently in transit</p>
           </div>
           <div style={{ opacity: 0.08 }}>
             <svg viewBox="0 0 24 24" fill="white" width="90" height="90">
@@ -183,7 +177,7 @@ export default function OrderManagementPage() {
             const displayId  = order.order_code || `#${order.id}`;
             const name       = order.customerName || order.customer_name || "Customer";
             const phone      = order.customerPhone || order.phone || "";
-            const itemCount  = parseItemCount(order.items);
+            const itemCount  = (order.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
             const address    = order.address || order.apartment || "—";
 
             return (
