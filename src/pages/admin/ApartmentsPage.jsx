@@ -71,6 +71,29 @@ function Alert({ type, msg }) {
   );
 }
 
+function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit }) {
+  return (
+    <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <label style={labelSt}>Apartment Name *</label>
+        <input value={form.name} onChange={set("name")} placeholder="e.g. Green Valley Apartments" style={inputSt} onFocus={fo} onBlur={fb} required />
+      </div>
+      <div>
+        <label style={labelSt}>Pickup Time Slot *</label>
+        <select value={form.pickup_time} onChange={set("pickup_time")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb} required>
+          <option value="">— Select a time slot —</option>
+          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+      <Alert type="error" msg={formErr} />
+      <Alert type="ok"    msg={formOk}  />
+      <button type="submit" disabled={saving} style={{ padding: "11px 0", borderRadius: 10, border: "none", background: "#B91C1C", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+        {saving ? "Saving…" : modal === "edit" ? "Save Changes" : "Add Apartment"}
+      </button>
+    </form>
+  );
+}
+
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -131,26 +154,6 @@ export default function ApartmentsPage() {
     finally { setSaving(false); }
   }
 
-  const AptForm = () => (
-    <form onSubmit={modal === "edit" ? handleEdit : handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div>
-        <label style={labelSt}>Apartment Name *</label>
-        <input value={form.name} onChange={set("name")} placeholder="e.g. Green Valley Apartments" style={inputSt} onFocus={fo} onBlur={fb} required />
-      </div>
-      <div>
-        <label style={labelSt}>Pickup Time Slot *</label>
-        <select value={form.pickup_time} onChange={set("pickup_time")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb} required>
-          <option value="">— Select a time slot —</option>
-          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <Alert type="error" msg={formErr} />
-      <Alert type="ok"    msg={formOk}  />
-      <button type="submit" disabled={saving} style={{ padding: "11px 0", borderRadius: 10, border: "none", background: "#B91C1C", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-        {saving ? "Saving…" : modal === "edit" ? "Save Changes" : "Add Apartment"}
-      </button>
-    </form>
-  );
 
   return (
     <Layout>
@@ -222,8 +225,8 @@ export default function ApartmentsPage() {
 
         {loading && <p style={{ color: "#9ca3af", fontSize: 14 }}>Loading…</p>}
 
-        {modal === "add"  && <Modal title="Add Apartment"             onClose={closeModal}><AptForm /></Modal>}
-        {modal === "edit" && selected && <Modal title={`Edit — ${selected.name}`} onClose={closeModal}><AptForm /></Modal>}
+        {modal === "add"  && <Modal title="Add Apartment" onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleAdd} /></Modal>}
+        {modal === "edit" && selected && <Modal title={`Edit — ${selected.name}`} onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleEdit} /></Modal>}
         {modal === "delete" && selected && (
           <Modal title="Delete Apartment?" onClose={closeModal} maxWidth={380}>
             <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 18 }}>
