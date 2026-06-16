@@ -566,4 +566,35 @@ router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) =
   }
 });
 
+// GET /api/delivery/my-rating
+router.get("/delivery/my-rating", ...auth, async (req, res) => {
+  const agentId = req.user.id;
+  try {
+    const [[summary]] = await pool.query(
+      `SELECT
+         COUNT(*)               AS total_ratings,
+         AVG(delivery_rating)   AS avg_rating
+       FROM ratings WHERE delivery_agent_id = ? AND delivery_rating IS NOT NULL`,
+      [agentId]
+    );
+    const [reviews] = await pool.query(
+      `SELECT r.delivery_rating, r.delivery_review, r.created_at,
+              u.name AS customer_name
+         FROM ratings r
+         JOIN users u ON u.id = r.customer_id
+        WHERE r.delivery_agent_id = ? AND r.delivery_rating IS NOT NULL
+        ORDER BY r.created_at DESC LIMIT 10`,
+      [agentId]
+    );
+    res.json({
+      avg_rating:    parseFloat(summary.avg_rating || 0).toFixed(1),
+      total_ratings: parseInt(summary.total_ratings || 0),
+      reviews,
+    });
+  } catch (err) {
+    console.error("delivery my-rating error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

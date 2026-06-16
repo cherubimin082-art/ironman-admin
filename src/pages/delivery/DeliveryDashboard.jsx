@@ -51,6 +51,7 @@ export default function DeliveryDashboard() {
   const [completedOrders, setCompletedOrders] = useState([]);
   const [totalEarnings, setTotalEarnings]     = useState(0);
   const [completedLoading, setCompletedLoading] = useState(true);
+  const [myRating, setMyRating] = useState(null);
   const { isMobile, isTablet } = useWindowSize();
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -63,6 +64,12 @@ export default function DeliveryDashboard() {
       })
       .catch(() => {})
       .finally(() => setCompletedLoading(false));
+  }, []);
+
+  useEffect(() => {
+    api.get("/delivery/my-rating")
+      .then(({ data }) => setMyRating(data))
+      .catch(() => {});
   }, []);
 
   const newAssignments = pickupJobs.filter(j => j.status === "vendor_accepted");
@@ -227,6 +234,84 @@ export default function DeliveryDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {myRating !== null && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12, background: "#fef9c3",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0,
+              }}>⭐</div>
+              <div>
+                <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 700, color: "#111827", margin: 0 }}>
+                  My Ratings
+                </h2>
+                <p style={{ fontSize: 13, color: "#9ca3af", margin: "2px 0 0" }}>
+                  {myRating.total_ratings} review{myRating.total_ratings !== 1 ? "s" : ""} from customers
+                </p>
+              </div>
+              <div style={{
+                marginLeft: "auto",
+                background: "#fef9c3", border: "1px solid #fde047",
+                borderRadius: 12, padding: "10px 20px", textAlign: "center", flexShrink: 0,
+              }}>
+                <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#854d0e", margin: 0, lineHeight: 1 }}>
+                  {myRating.avg_rating}
+                </p>
+                <div style={{ display: "flex", justifyContent: "center", gap: 2, margin: "4px 0 2px" }}>
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} style={{ fontSize: 14, color: parseFloat(myRating.avg_rating) >= s ? "#f59e0b" : "#d1d5db" }}>★</span>
+                  ))}
+                </div>
+                <p style={{ fontSize: 11, color: "#92400e", margin: 0, fontWeight: 600 }}>Average</p>
+              </div>
+            </div>
+
+            {myRating.reviews && myRating.reviews.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {myRating.reviews.map((rv, idx) => (
+                  <div key={idx} style={{
+                    background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb",
+                    padding: "16px 20px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{
+                          width: 34, height: 34, borderRadius: 10, background: "#f0fdf4",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 14, fontWeight: 800, color: "#10b981", flexShrink: 0,
+                        }}>
+                          {rv.customer_name?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>{rv.customer_name}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 2 }}>
+                        {[1,2,3,4,5].map(s => (
+                          <span key={s} style={{ fontSize: 14, color: rv.delivery_rating >= s ? "#f59e0b" : "#d1d5db" }}>★</span>
+                        ))}
+                      </div>
+                    </div>
+                    {rv.delivery_review && (
+                      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 6px", lineHeight: 1.5 }}>
+                        "{rv.delivery_review}"
+                      </p>
+                    )}
+                    <p style={{ fontSize: 11.5, color: "#9ca3af", margin: 0, fontWeight: 500 }}>
+                      {new Date(rv.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                background: "#f9fafb", border: "1px dashed #e5e7eb", borderRadius: 14,
+                padding: "30px 24px", textAlign: "center",
+              }}>
+                <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>No reviews yet. Complete deliveries to receive ratings.</p>
+              </div>
+            )}
           </div>
         )}
 
