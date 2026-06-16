@@ -10,6 +10,7 @@ const FILTERS = [
   { key: "in-progress", label: "In Progress", color: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
   { key: "ready",       label: "Ready",       color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
   { key: "delivered",   label: "Delivered",   color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" },
+  { key: "cancelled",   label: "Cancelled",   color: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
 ];
 
 const IN_PROGRESS_STATUSES = new Set([
