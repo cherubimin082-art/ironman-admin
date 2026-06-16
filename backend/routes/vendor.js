@@ -289,10 +289,12 @@ router.put("/vendor/start-ironing/:orderId", ...auth, async (req, res) => {
     if (!result.affectedRows)
       return res.status(404).json({ message: "Order not found or not at vendor stage" });
 
-    await pool.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ironing_in_progress", ?)`,
-      [orderId, vendorId]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ironing_in_progress", ?)`,
+        [orderId, vendorId]
+      );
+    } catch (_) {}
 
     const [rows] = await pool.query(`SELECT customer_id FROM orders WHERE id = ?`, [orderId]);
     try {
@@ -322,10 +324,12 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
     if (!result.affectedRows)
       return res.status(404).json({ message: "Order not found or not at vendor stage" });
 
-    await pool.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ready_for_delivery", ?)`,
-      [orderId, vendorId]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ready_for_delivery", ?)`,
+        [orderId, vendorId]
+      );
+    } catch (_) {}
 
     const [rows] = await pool.query(
       `SELECT o.customer_id, o.delivery_agent_id FROM orders o WHERE o.id = ?`, [orderId]
