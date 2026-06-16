@@ -51,6 +51,54 @@ router.get("/vendor/completed-orders", ...auth, async (req, res) => {
   }
 });
 
+// GET /api/vendor/reports — weekly stats + category breakdown for this vendor
+router.get("/vendor/reports", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const [[summary]] = await pool.query(
+      `SELECT
+         COUNT(*)                                                        AS total_orders,
+         COALESCE(SUM(total), 0)                                         AS total_revenue,
+         SUM(DATE(created_at) = CURDATE())                               AS today_orders,
+         COALESCE(SUM(CASE WHEN DATE(created_at) = CURDATE() THEN total ELSE 0 END), 0) AS today_revenue
+       FROM orders
+       WHERE vendor_id = ? AND status = "delivered"`,
+      [vendorId]
+    );
+
+    const [weekly] = await pool.query(
+      `SELECT
+         DAYNAME(created_at)    AS day_name,
+         DAYOFWEEK(created_at)  AS day_num,
+         COUNT(*)               AS orders,
+         COALESCE(SUM(total),0) AS revenue
+       FROM orders
+       WHERE vendor_id = ?
+         AND status = "delivered"
+         AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+       GROUP BY day_num, day_name
+       ORDER BY day_num`,
+      [vendorId]
+    );
+
+    const [categories] = await pool.query(
+      `SELECT oi.garment_name AS name, SUM(oi.quantity) AS count
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+        WHERE o.vendor_id = ? AND o.status = "delivered"
+        GROUP BY oi.garment_name
+        ORDER BY count DESC
+        LIMIT 10`,
+      [vendorId]
+    );
+
+    res.json({ summary, weekly, categories });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /api/vendor-orders — pending orders + this vendor's accepted/active orders
 router.get("/vendor-orders", ...auth, async (req, res) => {
   const vendorId = req.user.id;

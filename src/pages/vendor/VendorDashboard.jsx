@@ -88,7 +88,7 @@ export default function VendorDashboard() {
 
   const { isMobile, isTablet } = useWindowSize();
   const pending    = orders.filter(o => o.status === "pending").length;
-  const inProgress = orders.filter(o => o.status === "in_progress").length;
+  const inProgress = orders.filter(o => ["ironing_in_progress", "in_progress"].includes(o.status)).length;
   const ready      = orders.filter(o => o.status === "vendor_accepted").length;
   const active     = orders.filter(o => !["delivered", "cancelled"].includes(o.status));
 
