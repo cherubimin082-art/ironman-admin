@@ -39,13 +39,18 @@ function broadcast(io, { customerId, agentId, vendorId }, event, payload) {
 }
 
 // Helper — fetch order with all parties, verify it belongs to this agent
+// Uses the LATEST assignment row to prevent a previously-assigned agent
+// from acting on a re-assigned order.
 async function getOrderForAgent(orderId, agentId) {
   const [rows] = await pool.query(
     `SELECT o.id, o.status, o.customer_id, o.vendor_id, o.delivery_agent_id
        FROM orders o
-       JOIN delivery_assignments da ON da.order_id = o.id
-      WHERE o.id = ? AND da.delivery_agent_id = ?`,
-    [orderId, agentId]
+       JOIN delivery_assignments da
+            ON  da.order_id = o.id
+            AND da.delivery_agent_id = ?
+            AND da.id = (SELECT MAX(da2.id) FROM delivery_assignments da2 WHERE da2.order_id = o.id)
+      WHERE o.id = ?`,
+    [agentId, orderId]
   );
   return rows[0] || null;
 }
@@ -199,20 +204,21 @@ router.put("/delivery/reached-for-pickup/:orderId", ...auth, async (req, res) =>
   try {
     const order = await getOrderForAgent(orderId, agentId);
     if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.status !== "delivery_assigned")
+      return res.status(400).json({ message: "Order is not at pickup stage" });
 
-    const PICKUP_OTP = String(Math.floor(1000 + Math.random() * 9000));
-
-    // Persist OTP so verify step can check against DB
-    await pool.query(
-      `UPDATE orders SET pickup_otp = ? WHERE id = ?`, [PICKUP_OTP, orderId]
+    // Reuse existing OTP on double-tap — prevents customer seeing a different
+    // code from what the agent will enter in verify-pickup-otp
+    const [[{ pickup_otp: existing }]] = await pool.query(
+      `SELECT pickup_otp FROM orders WHERE id = ?`, [orderId]
     );
+    const PICKUP_OTP = existing || String(Math.floor(1000 + Math.random() * 9000));
 
-    try {
-      emitToCustomer(order.customer_id, "show_pickup_otp", {
-        orderId, otp: PICKUP_OTP
-      });
-    } catch (_) {}
+    if (!existing) {
+      await pool.query(`UPDATE orders SET pickup_otp = ? WHERE id = ?`, [PICKUP_OTP, orderId]);
+    }
 
+    emitToCustomer(order.customer_id, "show_pickup_otp", { orderId, otp: PICKUP_OTP });
     res.json({ message: "Customer notified with pickup OTP" });
   } catch (err) {
     console.error(err);
@@ -395,9 +401,15 @@ router.put("/delivery/end-ride/:orderId", ...auth, async (req, res) => {
     if (order.status !== "out_for_delivery")
       return res.status(400).json({ message: "Order is not out for delivery" });
 
-    const DELIVERY_OTP = String(Math.floor(1000 + Math.random() * 9000));
+    // Reuse existing OTP on double-tap to stay in sync with customer's screen
+    const [[{ delivery_otp: existing }]] = await pool.query(
+      `SELECT delivery_otp FROM orders WHERE id = ?`, [orderId]
+    );
+    const DELIVERY_OTP = existing || String(Math.floor(1000 + Math.random() * 9000));
 
-    await pool.query(`UPDATE orders SET delivery_otp = ? WHERE id = ?`, [DELIVERY_OTP, orderId]);
+    if (!existing) {
+      await pool.query(`UPDATE orders SET delivery_otp = ? WHERE id = ?`, [DELIVERY_OTP, orderId]);
+    }
 
     console.log(`[end-ride] orderId=${orderId} delivery_otp=${DELIVERY_OTP}`);
     emitToCustomer(order.customer_id, "show_delivery_otp", { orderId, otp: DELIVERY_OTP });
@@ -528,10 +540,13 @@ router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) =
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "delivered", ?)`,
       [orderId, agentId]
     );
-    await pool.query(
+    const [bagResult] = await pool.query(
       `UPDATE bags b JOIN orders o ON o.bag_id = b.id SET b.status = 'available' WHERE o.id = ?`,
       [orderId]
     );
+    if (bagResult.affectedRows === 0) {
+      console.warn(`[verify-delivery-otp] bag not released for order ${orderId} — bag_id may be null`);
+    }
 
     try {
       const io = getIO();

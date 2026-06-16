@@ -481,6 +481,13 @@ export default function PickupJobsPage() {
     try {
       await deliveryAction(pickupModal.order.id, "confirm_pickup", { otp, bag_id: bagId });
       setPickupModal(null);
+    } catch (err) {
+      // Refresh bag list — another agent may have taken the selected bag
+      try {
+        const { data } = await api.get(`/delivery/available-bags/${pickupModal.order.vendor_id}`);
+        setAvailableBags(data.bags || []);
+      } catch (_) {}
+      throw err;
     } finally {
       setConfirming(false);
     }

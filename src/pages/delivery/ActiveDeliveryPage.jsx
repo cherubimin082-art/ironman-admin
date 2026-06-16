@@ -198,11 +198,11 @@ function useLocationShare(orderId) {
 function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
   const { sharing, start, stop } = useLocationShare(order.id);
 
-  const needOtp = order.status === "picked_from_vendor" || order.status === "out_for_delivery";
+  const needOtp = order.status === "out_for_delivery";
 
   function handleAction(id, action) {
-    if (action === "reach_pickup" || action === "end_ride") {
-      onShowOtpModal(id, action === "reach_pickup" ? "pickup" : "delivery");
+    if (action === "end_ride") {
+      onShowOtpModal(id, "delivery");
     } else {
       onAction(id, action);
     }
