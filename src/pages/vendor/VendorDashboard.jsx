@@ -71,6 +71,7 @@ export default function VendorDashboard() {
   const [totalRevenue, setTotalRevenue]       = useState(0);
   const [completedLoading, setCompletedLoading] = useState(true);
   const [myRating, setMyRating]               = useState(null);
+  const [bagStats, setBagStats]               = useState(null);
 
   useEffect(() => {
     api.get("/vendor/completed-orders")
@@ -84,6 +85,10 @@ export default function VendorDashboard() {
     api.get("/vendor/my-rating")
       .then(({ data }) => setMyRating(data))
       .catch(() => {});
+
+    api.get("/vendor/bag-stats")
+      .then(({ data }) => setBagStats(data.stats))
+      .catch(() => {});
   }, []);
 
   const { isMobile, isTablet } = useWindowSize();
@@ -95,6 +100,9 @@ export default function VendorDashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
   const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const bagsAvail = bagStats?.available ?? null;
+  const bagsOk    = bagsAvail === null ? null : bagsAvail > 0;
 
   const stats = [
     {
@@ -136,6 +144,19 @@ export default function VendorDashboard() {
         </svg>
       ),
     },
+    {
+      label: "Bags Available",
+      value: bagsAvail === null ? "—" : bagsAvail,
+      sub: bagStats ? `${bagStats.in_use} in use · ${bagStats.total} total` : "Loading…",
+      accent: bagsOk === null ? "#9ca3af" : bagsOk ? "#10b981" : "#dc2626",
+      bg:     bagsOk === null ? "#f9fafb"  : bagsOk ? "#f0fdf4"  : "#fef2f2",
+      border: bagsOk === null ? "#e5e7eb"  : bagsOk ? "#bbf7d0"  : "#fecaca",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -164,7 +185,7 @@ export default function VendorDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: isMobile ? 10 : 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : isTablet ? "repeat(3, 1fr)" : "repeat(5, 1fr)", gap: isMobile ? 10 : 16 }}>
           {stats.map(s => <StatCard key={s.label} {...s} />)}
         </div>
 

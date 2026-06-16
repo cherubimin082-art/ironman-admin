@@ -624,4 +624,29 @@ router.get("/vendor/my-rating", ...auth, async (req, res) => {
   }
 });
 
+// GET /api/vendor/bag-stats — vendor sees their own bag availability summary
+router.get("/vendor/bag-stats", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const [[stats]] = await pool.query(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(status = 'available') AS available,
+         SUM(status = 'in_use') AS in_use,
+         SUM(status = 'missing') AS missing
+       FROM bags WHERE vendor_id = ?`,
+      [vendorId]
+    );
+    res.json({ stats: {
+      total:     parseInt(stats.total     || 0),
+      available: parseInt(stats.available || 0),
+      in_use:    parseInt(stats.in_use    || 0),
+      missing:   parseInt(stats.missing   || 0),
+    }});
+  } catch (err) {
+    console.error("bag-stats error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

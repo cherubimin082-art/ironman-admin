@@ -235,6 +235,25 @@ function AssignmentCard({ job, onAccept, accepting }) {
           </svg>
           <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.5 }}>{job.customer_address || "Address not available"}</p>
         </div>
+        {/* Vendor bag availability */}
+        {job.vendor_name && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f9fafb", borderRadius: 9, padding: "8px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" style={{ width: 13, height: 13, flexShrink: 0 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016 2.993 2.993 0 002.25-1.016 3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.375.375 0 00.375-.375v-1.5a.375.375 0 00-.375-.375h-3.75a.375.375 0 00-.375.375v1.5c0 .207.168.375.375.375z" />
+              </svg>
+              <span style={{ fontSize: 11.5, color: "#6b7280" }}>{job.vendor_name}</span>
+            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 99,
+              background: job.vendor_available_bags > 0 ? "#f0fdf4" : "#fef2f2",
+              color: job.vendor_available_bags > 0 ? "#16a34a" : "#dc2626",
+              border: `1px solid ${job.vendor_available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
+            }}>
+              {job.vendor_available_bags > 0 ? `${job.vendor_available_bags} bags available` : "No bags available"}
+            </span>
+          </div>
+        )}
         <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 14, marginTop: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>Total</span>
@@ -306,6 +325,23 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
             <p style={S.label}>Pickup Time</p>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{job.time_slot || "—"}</p>
           </div>
+          {job.vendor_name && (
+            <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={S.label}>Vendor Shop</p>
+                <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{job.vendor_name}</p>
+              </div>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
+                background: job.vendor_available_bags > 0 ? "#f0fdf4" : "#fef2f2",
+                color: job.vendor_available_bags > 0 ? "#16a34a" : "#dc2626",
+                border: `1px solid ${job.vendor_available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
+                flexShrink: 0,
+              }}>
+                {job.vendor_available_bags > 0 ? `${job.vendor_available_bags} bags` : "No bags"}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Ride to Pickup — embedded map */}

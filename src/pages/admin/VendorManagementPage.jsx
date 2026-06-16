@@ -530,10 +530,15 @@ export default function VendorManagementPage() {
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => setBagsVendor(v)} style={{
                             padding: "5px 12px", borderRadius: 8,
-                            border: "1px solid #bfdbfe", background: "#eff6ff",
-                            color: "#2563eb", fontSize: 12, fontWeight: 700, cursor: "pointer",
-                            whiteSpace: "nowrap",
-                          }}>Bags</button>
+                            border: `1px solid ${v.available_bags > 0 ? "#bbf7d0" : "#fecaca"}`,
+                            background: v.available_bags > 0 ? "#f0fdf4" : "#fef2f2",
+                            color: v.available_bags > 0 ? "#16a34a" : "#dc2626",
+                            fontSize: 12, fontWeight: 700, cursor: "pointer",
+                            whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5,
+                          }}>
+                            <span style={{ fontSize: 14, lineHeight: 1 }}>{v.available_bags > 0 ? "🟢" : "🔴"}</span>
+                            Bags ({v.available_bags ?? 0}/{v.total_bags ?? 0})
+                          </button>
                           <button onClick={() => openEdit(v)} style={{
                             padding: "5px 12px", borderRadius: 8,
                             border: "1px solid #FEE2E2", background: "#FEF2F2",

@@ -178,7 +178,9 @@ router.get("/admin/vendors", ...auth, async (req, res) => {
     const [rows] = await pool.query(
       `SELECT u.id, u.name, u.phone, u.zone, u.address, u.status, u.created_at,
               COUNT(DISTINCT o.id) AS total_orders,
-              GROUP_CONCAT(DISTINCT a.apartment ORDER BY a.apartment SEPARATOR ', ') AS apartments
+              GROUP_CONCAT(DISTINCT a.apartment ORDER BY a.apartment SEPARATOR ', ') AS apartments,
+              (SELECT COUNT(*) FROM bags WHERE vendor_id = u.id AND status = 'available') AS available_bags,
+              (SELECT COUNT(*) FROM bags WHERE vendor_id = u.id) AS total_bags
          FROM users u
          LEFT JOIN orders o ON o.vendor_id = u.id
          LEFT JOIN apartment_slots a ON a.vendor_id = u.id

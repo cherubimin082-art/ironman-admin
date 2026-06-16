@@ -91,6 +91,7 @@ router.get("/delivery/assigned-orders", ...auth, async (req, res) => {
               v.name AS vendor_name, v.address AS vendor_address,
               da.status AS assignment_status, da.current_latitude, da.current_longitude,
               b.bag_number,
+              (SELECT COUNT(*) FROM bags WHERE vendor_id = o.vendor_id AND status = 'available') AS vendor_available_bags,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name, "quantity", oi.quantity)
               ) AS items
