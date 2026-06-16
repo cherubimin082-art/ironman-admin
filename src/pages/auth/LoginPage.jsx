@@ -1,8 +1,8 @@
-﻿// LoginPage.jsx — Professional Split-Panel Design
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
+import { useWindowSize } from "../../hooks/useWindowSize";
 
 const ROLE_REDIRECT = {
   vendor: "/vendor/dashboard",
@@ -54,6 +54,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useWindowSize();
+  const isCompact = isMobile || isTablet;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -87,9 +89,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-root" style={styles.root}>
-      {/* ── LEFT BRANDING PANEL ── */}
-      <div className="login-left" style={styles.leftPanel}>
+    <div className="login-root" style={{ ...styles.root, flexDirection: isCompact ? "column" : "row" }}>
+      {/* ── LEFT BRANDING PANEL — hidden on mobile/tablet ── */}
+      <div className="login-left" style={{ ...styles.leftPanel, display: isCompact ? "none" : "flex" }}>
         {/* Animated mesh blobs */}
         <div style={styles.blob1} />
         <div style={styles.blob2} />
@@ -146,12 +148,30 @@ export default function LoginPage() {
       </div>
 
       {/* ── RIGHT FORM PANEL ── */}
-      <div style={styles.rightPanel}>
-        <div style={styles.formContainer}>
+      <div style={{ ...styles.rightPanel, padding: isCompact ? "32px 20px 40px" : "48px 24px" }}>
+        <div style={{ ...styles.formContainer, maxWidth: isCompact ? "100%" : 420 }}>
+
+          {/* Compact brand header — mobile/tablet only */}
+          {isCompact && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 18,
+                background: "linear-gradient(135deg, #1e1b4b 0%, #B91C1C 100%)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 8px 24px rgba(185,28,28,0.3)",
+              }}>
+                <img src="/logo1.png" alt="Iron Man" style={{ height: 44, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+              </div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", margin: 0 }}>
+                Operations Portal
+              </p>
+            </div>
+          )}
+
           {/* Header */}
           <div style={styles.formHeader}>
-            <h2 style={styles.formTitle}>Welcome back</h2>
-            <p style={styles.formSub}>Sign in to your staff account to continue</p>
+            <h2 style={{ ...styles.formTitle, fontSize: isCompact ? 24 : 28, textAlign: isCompact ? "center" : "left" }}>Welcome back</h2>
+            <p style={{ ...styles.formSub, textAlign: isCompact ? "center" : "left" }}>Sign in to your staff account to continue</p>
           </div>
 
           {/* Error banner */}
