@@ -277,6 +277,54 @@ function BagsModal({ vendor, onClose }) {
   );
 }
 
+// ── Vendor form fields (module-level so React doesn't remount on each keystroke) ──
+function VendorFields({ form, onChange, isEdit, isMobile }) {
+  return (
+    <>
+      <div>
+        <label style={labelSt}>Full Name *</label>
+        <input style={inputSt} placeholder="e.g. Ravi Iron Works" value={form.name}
+          onChange={onChange("name")} onFocus={fo} onBlur={fb} />
+      </div>
+      <div>
+        <label style={labelSt}>Mobile Number *</label>
+        <input style={inputSt} placeholder="10-digit mobile" value={form.phone}
+          onChange={onChange("phone")} onFocus={fo} onBlur={fb} />
+      </div>
+      {!isEdit && (
+        <div>
+          <label style={labelSt}>Password *</label>
+          <input type="password" style={inputSt} placeholder="Min 6 characters" value={form.password}
+            onChange={onChange("password")} onFocus={fo} onBlur={fb} />
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+        <div>
+          <label style={labelSt}>Zone / Area</label>
+          <input style={inputSt} placeholder="e.g. Anna Nagar" value={form.zone}
+            onChange={onChange("zone")} onFocus={fo} onBlur={fb} />
+        </div>
+        {isEdit && (
+          <div>
+            <label style={labelSt}>Status</label>
+            <select style={{ ...inputSt, cursor: "pointer" }} value={form.status}
+              onChange={onChange("status")} onFocus={fo} onBlur={fb}>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="on_leave">On Leave</option>
+            </select>
+          </div>
+        )}
+      </div>
+      <div>
+        <label style={labelSt}>Shop Address</label>
+        <input style={inputSt} placeholder="e.g. 12 Park St, T. Nagar" value={form.address}
+          onChange={onChange("address")} onFocus={fo} onBlur={fb} />
+      </div>
+    </>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────
 export default function VendorManagementPage() {
   const { isMobile } = useWindowSize();
@@ -377,54 +425,6 @@ export default function VendorManagementPage() {
     } catch (err) {
       setFormErr(err.response?.data?.message || "Failed to delete vendor");
     } finally { setSaving(false); }
-  }
-
-  // shared form fields for add/edit
-  function VendorFields({ isEdit }) {
-    return (
-      <>
-        <div>
-          <label style={labelSt}>Full Name *</label>
-          <input style={inputSt} placeholder="e.g. Ravi Iron Works" value={form.name}
-            onChange={set("name")} onFocus={fo} onBlur={fb} />
-        </div>
-        <div>
-          <label style={labelSt}>Mobile Number *</label>
-          <input style={inputSt} placeholder="10-digit mobile" value={form.phone}
-            onChange={set("phone")} onFocus={fo} onBlur={fb} />
-        </div>
-        {!isEdit && (
-          <div>
-            <label style={labelSt}>Password *</label>
-            <input type="password" style={inputSt} placeholder="Min 6 characters" value={form.password}
-              onChange={set("password")} onFocus={fo} onBlur={fb} />
-          </div>
-        )}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-          <div>
-            <label style={labelSt}>Zone / Area</label>
-            <input style={inputSt} placeholder="e.g. Anna Nagar" value={form.zone}
-              onChange={set("zone")} onFocus={fo} onBlur={fb} />
-          </div>
-          {isEdit && (
-            <div>
-              <label style={labelSt}>Status</label>
-              <select style={{ ...inputSt, cursor: "pointer" }} value={form.status}
-                onChange={set("status")} onFocus={fo} onBlur={fb}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="on_leave">On Leave</option>
-              </select>
-            </div>
-          )}
-        </div>
-        <div>
-          <label style={labelSt}>Shop Address</label>
-          <input style={inputSt} placeholder="e.g. 12 Park St, T. Nagar" value={form.address}
-            onChange={set("address")} onFocus={fo} onBlur={fb} />
-        </div>
-      </>
-    );
   }
 
   return (
@@ -563,7 +563,7 @@ export default function VendorManagementPage() {
       {modal === "add" && (
         <Modal title="Add New Vendor" onClose={closeModal}>
           <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <VendorFields isEdit={false} />
+            <VendorFields form={form} onChange={set} isEdit={false} isMobile={isMobile} />
             <div style={{
               background: "#FEF2F2", border: "1px solid #FECACA",
               borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#B91C1C",
@@ -594,7 +594,7 @@ export default function VendorManagementPage() {
       {modal === "edit" && selected && (
         <Modal title={`Edit — ${selected.name}`} onClose={closeModal}>
           <form onSubmit={handleEdit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <VendorFields isEdit={true} />
+            <VendorFields form={form} onChange={set} isEdit={true} isMobile={isMobile} />
             <Alert type="err" msg={formErr} />
             <Alert type="ok"  msg={formOk}  />
             <div style={{ display: "flex", gap: 10 }}>
