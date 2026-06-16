@@ -69,7 +69,7 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
         WHERE o.status IN ("pending", "cancelled")
            OR o.vendor_id = ?
         GROUP BY o.id
-        ORDER BY o.created_at ASC`,
+        ORDER BY o.created_at DESC`,
       [vendorId]
     );
     res.json({ orders });
