@@ -55,9 +55,9 @@ function initials(name) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function formatTime(ts) {
-  if (!ts) return "—";
-  return new Date(ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+function formatDate(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
 // ── Quick action button ───────────────────────────────────────
@@ -188,8 +188,9 @@ export default function AdminDashboard() {
               const ini = initials(order.customerName || order.customer_name || "");
               const displayId = order.order_code || `#${order.id}`;
               const itemCount = (() => {
-                try { const arr = typeof order.items === "string" ? JSON.parse(order.items) : (order.items || []); return arr.reduce((s,i) => s + (i.quantity||1), 0); }
-                catch { return "—"; }
+                const arr = order.rawItems || [];
+                const n = arr.reduce((s, i) => s + (i.quantity || 1), 0);
+                return n || "—";
               })();
               return (
                 <div
@@ -213,8 +214,8 @@ export default function AdminDashboard() {
                   <div><StatusBadge status={order.status} /></div>
                   <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{itemCount}</span>
                   <div>
-                    <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 2px" }}>Pick: {formatTime(order.created_at)}</p>
-                    <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>Del: {order.slot || "—"}</p>
+                    <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 2px" }}>{formatDate(order.pickup_date)}</p>
+                    <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>{order.time || "—"}</p>
                   </div>
                   <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>{order.vendor_name || order.vendorName || "Unassigned"}</span>
                   <button
