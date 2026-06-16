@@ -839,7 +839,7 @@ router.get("/admin/garments", ...auth, async (req, res) => {
     const where = category_id ? "WHERE g.category_id = ?" : "";
     const params = category_id ? [category_id] : [];
     const [rows] = await pool.query(
-      `SELECT g.id, g.name, g.price, g.category_id, g.created_at,
+      `SELECT g.id, g.name, g.price, g.category_id, g.image_url, g.icon, g.is_active, g.created_at,
               c.name AS category_name
          FROM garments g
          LEFT JOIN categories c ON c.id = g.category_id
@@ -856,7 +856,7 @@ router.get("/admin/garments", ...auth, async (req, res) => {
 
 // POST /api/admin/garments
 router.post("/admin/garments", ...auth, async (req, res) => {
-  const { category_id, name, price } = req.body;
+  const { category_id, name, price, image_url } = req.body;
   if (!category_id || !name?.trim() || price === undefined)
     return res.status(400).json({ message: "category_id, name and price are required" });
   const priceVal = parseFloat(price);
@@ -866,8 +866,8 @@ router.post("/admin/garments", ...auth, async (req, res) => {
     const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ?", [category_id]);
     if (!cat) return res.status(404).json({ message: "Category not found" });
     const [result] = await pool.query(
-      "INSERT INTO garments (category_id, name, price) VALUES (?, ?, ?)",
-      [category_id, name.trim(), priceVal]
+      "INSERT INTO garments (category_id, name, price, image_url) VALUES (?, ?, ?, ?)",
+      [category_id, name.trim(), priceVal, image_url?.trim() || null]
     );
     res.status(201).json({ message: "Garment added", id: result.insertId });
   } catch (err) {
@@ -879,7 +879,7 @@ router.post("/admin/garments", ...auth, async (req, res) => {
 // PUT /api/admin/garments/:id
 router.put("/admin/garments/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { category_id, name, price } = req.body;
+  const { category_id, name, price, image_url } = req.body;
   if (!category_id || !name?.trim() || price === undefined)
     return res.status(400).json({ message: "category_id, name and price are required" });
   const priceVal = parseFloat(price);
@@ -887,8 +887,8 @@ router.put("/admin/garments/:id", ...auth, async (req, res) => {
     return res.status(400).json({ message: "Price must be a positive number" });
   try {
     const [result] = await pool.query(
-      "UPDATE garments SET category_id = ?, name = ?, price = ? WHERE id = ?",
-      [category_id, name.trim(), priceVal, id]
+      "UPDATE garments SET category_id = ?, name = ?, price = ?, image_url = ? WHERE id = ?",
+      [category_id, name.trim(), priceVal, image_url?.trim() || null, id]
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Garment not found" });

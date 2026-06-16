@@ -116,7 +116,7 @@ export default function PricingPage() {
 
   // Forms
   const [catForm, setCatForm] = useState({ name: "" });
-  const [gmtForm, setGmtForm] = useState({ category_id: "", name: "", price: "" });
+  const [gmtForm, setGmtForm] = useState({ category_id: "", name: "", price: "", image_url: "" });
 
   // ── Loaders ──────────────────────────────────────────────────
   const loadCategories = useCallback(async () => {
@@ -208,13 +208,13 @@ export default function PricingPage() {
 
   // ── Garment handlers ─────────────────────────────────────────
   function openAddGmt() {
-    setGmtForm({ category_id: categories[0]?.id ?? "", name: "", price: "" });
+    setGmtForm({ category_id: categories[0]?.id ?? "", name: "", price: "", image_url: "" });
     setFormErr(""); setFormOk("");
     setModal("addGmt");
   }
   function openEditGmt(g) {
     setSelected(g);
-    setGmtForm({ category_id: g.category_id ?? "", name: g.name, price: String(g.price) });
+    setGmtForm({ category_id: g.category_id ?? "", name: g.name, price: String(g.price), image_url: g.image_url || "" });
     setFormErr(""); setFormOk("");
     setModal("editGmt");
   }
@@ -234,6 +234,7 @@ export default function PricingPage() {
         category_id: Number(gmtForm.category_id),
         name: gmtForm.name,
         price: gmtForm.price,
+        image_url: gmtForm.image_url || null,
       });
       setFormOk("Garment added");
       await loadGarments(filterCat);
@@ -253,6 +254,7 @@ export default function PricingPage() {
         category_id: Number(gmtForm.category_id),
         name: gmtForm.name,
         price: gmtForm.price,
+        image_url: gmtForm.image_url || null,
       });
       setFormOk("Garment updated");
       await loadGarments(filterCat);
@@ -298,6 +300,19 @@ export default function PricingPage() {
           <input type="number" min="0" step="0.01" style={inputSt}
             placeholder="e.g. 25" value={gmtForm.price}
             onChange={setG("price")} onFocus={fo} onBlur={fb} />
+        </div>
+        <div>
+          <label style={labelSt}>Image URL <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span></label>
+          <input style={inputSt} placeholder="https://..." value={gmtForm.image_url}
+            onChange={setG("image_url")} onFocus={fo} onBlur={fb} />
+          {gmtForm.image_url && (
+            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+              <img src={gmtForm.image_url} alt="preview"
+                style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8, background: "#f3f4f6", padding: 4 }}
+                onError={e => { e.target.style.display = "none"; }} />
+              <span style={{ fontSize: 12, color: "#9ca3af" }}>Preview</span>
+            </div>
+          )}
         </div>
       </>
     );
@@ -502,7 +517,16 @@ export default function PricingPage() {
                           onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                           <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>{g.id}</td>
-                          <td style={{ padding: "14px 16px", fontSize: 13.5, fontWeight: 700, color: "#111827" }}>{g.name}</td>
+                          <td style={{ padding: "14px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 36, height: 36, borderRadius: 9, background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                {g.image_url
+                                  ? <img src={g.image_url} alt={g.name} style={{ width: 24, height: 24, objectFit: "contain" }} />
+                                  : <span style={{ fontSize: 18 }}>{g.icon || "👗"}</span>}
+                              </div>
+                              <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827" }}>{g.name}</span>
+                            </div>
+                          </td>
                           <td style={{ padding: "14px 16px" }}>
                             {g.category_name ? (
                               <span style={{
