@@ -785,7 +785,7 @@ router.get("/admin/categories", ...auth, async (req, res) => {
          FROM categories c
          LEFT JOIN garments g ON g.category_id = c.id
         GROUP BY c.id
-        ORDER BY c.name ASC`
+        ORDER BY c.id ASC`
     );
     res.json({ categories: rows });
   } catch (err) {
