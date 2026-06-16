@@ -865,7 +865,7 @@ router.get("/admin/garments", ...auth, async (req, res) => {
          FROM garments g
          LEFT JOIN categories c ON c.id = g.category_id
          ${where}
-        ORDER BY c.name ASC, g.name ASC`,
+        ORDER BY g.id ASC`,
       params
     );
     res.json({ garments: rows });
