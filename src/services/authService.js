@@ -1,8 +1,13 @@
 import api from './api';
 
-export async function login(phone, password) {
-  const { data } = await api.post('/login', { phone, password });
-  return { success: true, user: data.user, token: data.token };
+export async function requestOtp(phone) {
+  const { data } = await api.post('/request-otp', { phone });
+  return data;
+}
+
+export async function verifyOtp(phone, otp) {
+  const { data } = await api.post('/verify-otp', { phone, otp });
+  return { user: data.user, token: data.token };
 }
 
 export function logout() {
