@@ -23,9 +23,20 @@ export default function Layout({ children }) {
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
       </div>
 
-      {/* Body row: Sidebar + Main */}
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={isMobile} />
+      {/* Mobile sidebar — lives outside body row so its zIndex:200 is in the root
+          stacking context and can paint above the navbar (zIndex:50) */}
+      {isMobile && (
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={true} />
+      )}
+
+      {/* Body row: desktop Sidebar + Main.
+          zIndex:1 > dot-grid zIndex:0, so content paints above the dot grid.
+          This creates a stacking context, but the mobile sidebar is now a sibling
+          so it is NOT trapped inside it. */}
+      <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative", zIndex: 1 }}>
+        {!isMobile && (
+          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={false} />
+        )}
         <main style={{
           flex: 1, overflowY: "auto",
           padding: mainPadding,
