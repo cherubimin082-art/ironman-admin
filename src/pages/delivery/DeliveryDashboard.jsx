@@ -114,7 +114,10 @@ export default function DeliveryDashboard() {
         {newAssignments.length > 0 && (
           <div style={{
             background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 16,
-            padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+            padding: "20px 24px", display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "flex-start" : "center",
+            justifyContent: "space-between", gap: 14,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{
@@ -139,7 +142,7 @@ export default function DeliveryDashboard() {
               style={{
                 padding: "10px 22px", border: "none", borderRadius: 10, cursor: "pointer",
                 background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 700,
-                transition: "opacity 0.15s", flexShrink: 0,
+                transition: "opacity 0.15s", width: isMobile ? "100%" : "auto",
               }}
               onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
               onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
@@ -201,12 +204,12 @@ export default function DeliveryDashboard() {
 
         {myRating !== null && (
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
               <div style={{
                 width: 40, height: 40, borderRadius: 12, background: "#fef9c3",
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0,
               }}>⭐</div>
-              <div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 700, color: "#111827", margin: 0 }}>
                   My Ratings
                 </h2>
@@ -215,9 +218,9 @@ export default function DeliveryDashboard() {
                 </p>
               </div>
               <div style={{
-                marginLeft: "auto",
                 background: "#fef9c3", border: "1px solid #fde047",
                 borderRadius: 12, padding: "10px 20px", textAlign: "center", flexShrink: 0,
+                width: isMobile ? "100%" : "auto",
               }}>
                 <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#854d0e", margin: 0, lineHeight: 1 }}>
                   {myRating.avg_rating}
