@@ -212,24 +212,30 @@ export default function LoginPage() {
       {/* 6-digit OTP inputs */}
       <div>
         <label style={styles.label}>Enter 6-digit OTP</label>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }} onPaste={handlePaste}>
+        <div style={{ display: "flex", gap: isMobile ? 6 : 8, marginTop: 8 }} onPaste={handlePaste}>
           {digits.map((d, i) => (
             <input
               key={i}
               ref={inputRefs[i]}
               type="tel"
+              inputMode="numeric"
               maxLength={1}
               value={d}
               onChange={e => handleDigit(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
               style={{
-                flex: 1, height: 52, textAlign: "center",
-                fontSize: 20, fontWeight: 700,
+                flex: 1, minWidth: 0,
+                height: isMobile ? 46 : 52,
+                textAlign: "center",
+                fontSize: isMobile ? 18 : 20,
+                fontWeight: 700,
                 border: `2px solid ${d ? "#DC2626" : "#e2e8f0"}`,
-                borderRadius: 12, outline: "none",
+                borderRadius: isMobile ? 10 : 12,
+                outline: "none",
                 background: d ? "#fef2f2" : "#fff",
                 color: d ? "#DC2626" : "#111827",
                 transition: "all 0.15s",
+                boxSizing: "border-box",
               }}
               onFocus={e => { e.target.style.borderColor = "#DC2626"; e.target.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.08)"; }}
               onBlur={e => { if (!d) { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; } }}
@@ -314,8 +320,8 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div style={{ ...styles.rightPanel, padding: isCompact ? "32px 20px 40px" : "48px 24px" }}>
-        <div style={{ ...styles.formContainer, maxWidth: isCompact ? "100%" : 420 }}>
+      <div style={{ ...styles.rightPanel, padding: isCompact ? "28px 20px 40px" : "48px 24px", alignItems: isCompact ? "flex-start" : "center", overflowY: "auto" }}>
+        <div style={{ ...styles.formContainer, maxWidth: isCompact ? "100%" : 420, gap: isCompact ? 18 : 24 }}>
 
           {/* Mobile compact logo */}
           {isCompact && (
@@ -363,7 +369,7 @@ export default function LoginPage() {
 
 /* ─── Styles ─────────────────────────────────────────────── */
 const styles = {
-  root: { display: "flex", minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif", background: "#f8fafc" },
+  root: { display: "flex", minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif", background: "#f8fafc", overflow: "hidden" },
   leftPanel: { flex: "0 0 50%", background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%)", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", padding: "48px" },
   blob1: { position: "absolute", top: "-80px", left: "-80px", width: 400, height: 400, background: "radial-gradient(circle, rgba(220,38,38,0.4) 0%, transparent 70%)", borderRadius: "50%", animation: "floatBlob 10s ease-in-out infinite", opacity: 0 },
   blob2: { position: "absolute", bottom: "-60px", right: "-60px", width: 350, height: 350, background: "radial-gradient(circle, rgba(220,38,38,0.35) 0%, transparent 70%)", borderRadius: "50%", animation: "floatBlob 13s ease-in-out infinite reverse", opacity: 0 },
@@ -386,7 +392,7 @@ const styles = {
   avatarStack: { display: "flex", alignItems: "center" },
   avatar: { width: 28, height: 28, borderRadius: "50%", border: "2px solid rgba(30,27,75,0.8)" },
   trustedText: { fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 },
-  rightPanel: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" },
+  rightPanel: { flex: 1, display: "flex", justifyContent: "center", background: "#f8fafc", minHeight: "100vh" },
   formContainer: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 24 },
   formHeader: { display: "flex", flexDirection: "column", gap: 6 },
   formTitle: { fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#0f172a", margin: 0 },
