@@ -41,8 +41,8 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={4}
-            placeholder="Enter 4-digit OTP"
+            maxLength={6}
+            placeholder="Enter 6-digit WhatsApp OTP"
             value={otp}
             onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
             style={{
@@ -71,12 +71,12 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
             </button>
             <button
               type="submit"
-              disabled={otp.length !== 4 || loading}
+              disabled={otp.length !== 6 || loading}
               style={{
                 flex: 2, padding: "12px 0", border: "none", borderRadius: 11,
-                cursor: otp.length !== 4 || loading ? "not-allowed" : "pointer",
-                background: otp.length === 4 && !loading ? "linear-gradient(135deg, #3b82f6, #DC2626)" : "#e5e7eb",
-                color: otp.length === 4 && !loading ? "#fff" : "#9ca3af",
+                cursor: otp.length !== 6 || loading ? "not-allowed" : "pointer",
+                background: otp.length === 6 && !loading ? "linear-gradient(135deg, #3b82f6, #DC2626)" : "#e5e7eb",
+                color: otp.length === 6 && !loading ? "#fff" : "#9ca3af",
                 fontSize: 13, fontWeight: 700,
               }}
             >
@@ -385,8 +385,8 @@ export default function ActiveDeliveryPage() {
         <OtpModal
           title={otpModal.type === "pickup" ? "Verify Pickup OTP" : "Verify Delivery OTP"}
           hint={otpModal.type === "pickup"
-            ? "Ask the customer for the 4-digit OTP they received on their screen."
-            : "Ask the customer for the 4-digit delivery OTP shown on their app."}
+            ? "Ask the customer for the 6-digit OTP sent to their WhatsApp."
+            : "Ask the customer for the 6-digit delivery OTP sent to their WhatsApp."}
           onVerify={handleOtpVerify}
           onClose={() => setOtpModal(null)}
           loading={otpLoading}

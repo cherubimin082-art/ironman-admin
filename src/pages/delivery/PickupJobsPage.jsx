@@ -76,8 +76,8 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
   const [bagId, setBagId] = useState("");
   const [err, setErr]     = useState("");
 
-  const showBag  = otp.length === 4;
-  const canConfirm = otp.length === 4 && bagId && !confirming;
+  const showBag  = otp.length === 6;
+  const canConfirm = otp.length === 6 && bagId && !confirming;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -114,8 +114,8 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={4}
-            placeholder="4-digit OTP"
+            maxLength={6}
+            placeholder="6-digit WhatsApp OTP"
             value={otp}
             onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
             autoFocus
@@ -129,10 +129,10 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
             onBlur={e => { if (!err) e.target.style.borderColor = "#e5e7eb"; }}
           />
           <p style={{ fontSize: 11, color: "#9ca3af", margin: "5px 0 0" }}>
-            Ask the customer for the OTP shown on their screen.
+            Ask the customer for the 6-digit OTP sent to their WhatsApp.
           </p>
 
-          {/* Bag dropdown — appears when OTP is 4 digits */}
+          {/* Bag dropdown — appears when OTP is 6 digits */}
           {showBag && (
             <div style={{ marginTop: 18 }}>
               <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
