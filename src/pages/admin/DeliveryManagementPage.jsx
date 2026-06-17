@@ -105,6 +105,7 @@ export default function DeliveryManagementPage() {
   const [saving,   setSaving]   = useState(false);
   const [formErr,  setFormErr]  = useState("");
   const [formOk,   setFormOk]   = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   const [form, setForm] = useState({ name: "", phone: "", password: "", status: "active", vendor_id: "" });
 
@@ -128,14 +129,14 @@ export default function DeliveryManagementPage() {
 
   function openAdd() {
     setForm({ name: "", phone: "", password: "", status: "active", vendor_id: "" });
-    setFormErr(""); setFormOk("");
+    setFormErr(""); setFormOk(""); setShowPass(false);
     setModal("add");
   }
 
   function openEdit(b) {
     setSelected(b);
     setForm({ name: b.name || "", phone: b.phone || "", password: "", status: b.status || "active", vendor_id: b.vendor_id ? String(b.vendor_id) : "" });
-    setFormErr(""); setFormOk("");
+    setFormErr(""); setFormOk(""); setShowPass(false);
     setModal("edit");
   }
 
@@ -172,6 +173,7 @@ export default function DeliveryManagementPage() {
     try {
       await api.put(`/admin/delivery-boys/${selected.id}`, {
         name: form.name, phone: form.phone, status: form.status, vendor_id: form.vendor_id,
+        password: form.password || undefined,
       });
       setFormOk("Updated successfully");
       await load();
@@ -410,6 +412,25 @@ export default function DeliveryManagementPage() {
                 <option value="inactive">Inactive</option>
                 <option value="on_leave">On Leave</option>
               </select>
+            </div>
+            <div>
+              <label style={labelSt}>New Password <span style={{ fontWeight: 400, color: "#9ca3af" }}>(leave blank to keep current)</span></label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPass ? "text" : "password"}
+                  style={{ ...inputSt, paddingRight: 40 }}
+                  placeholder="Enter new password"
+                  value={form.password}
+                  onChange={set("password")} onFocus={fo} onBlur={fb}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(v => !v)}
+                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 16, padding: 2 }}
+                >
+                  {showPass ? "🙈" : "👁"}
+                </button>
+              </div>
             </div>
             <Alert type="err" msg={formErr} />
             <Alert type="ok"  msg={formOk}  />
