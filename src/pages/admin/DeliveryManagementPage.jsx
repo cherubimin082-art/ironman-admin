@@ -96,6 +96,7 @@ export default function DeliveryManagementPage() {
   const { isMobile } = useWindowSize();
 
   const [boys,    setBoys]    = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
@@ -105,15 +106,19 @@ export default function DeliveryManagementPage() {
   const [formErr,  setFormErr]  = useState("");
   const [formOk,   setFormOk]   = useState("");
 
-  const [form, setForm] = useState({ name: "", phone: "", password: "", status: "active" });
+  const [form, setForm] = useState({ name: "", phone: "", password: "", status: "active", vendor_id: "" });
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const { data } = await api.get("/admin/delivery-boys");
-      setBoys(data.deliveryBoys || []);
+      const [boysRes, vendorsRes] = await Promise.all([
+        api.get("/admin/delivery-boys"),
+        api.get("/vendors"),
+      ]);
+      setBoys(boysRes.data.deliveryBoys || []);
+      setVendors(vendorsRes.data.vendors || []);
     } catch {
-      setError("Failed to load delivery boys. Is the server running?");
+      setError("Failed to load data. Is the server running?");
     } finally {
       setLoading(false);
     }
@@ -122,14 +127,14 @@ export default function DeliveryManagementPage() {
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
-    setForm({ name: "", phone: "", password: "", status: "active" });
+    setForm({ name: "", phone: "", password: "", status: "active", vendor_id: "" });
     setFormErr(""); setFormOk("");
     setModal("add");
   }
 
   function openEdit(b) {
     setSelected(b);
-    setForm({ name: b.name || "", phone: b.phone || "", password: "", status: b.status || "active" });
+    setForm({ name: b.name || "", phone: b.phone || "", password: "", status: b.status || "active", vendor_id: b.vendor_id ? String(b.vendor_id) : "" });
     setFormErr(""); setFormOk("");
     setModal("edit");
   }
@@ -146,8 +151,8 @@ export default function DeliveryManagementPage() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !form.password)
-      return setFormErr("Name, phone and password are required");
+    if (!form.name.trim() || !form.phone.trim() || !form.password || !form.vendor_id)
+      return setFormErr("Name, phone, password and Iron's Head are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/admin/delivery-boys", form);
@@ -161,12 +166,12 @@ export default function DeliveryManagementPage() {
 
   async function handleEdit(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim())
-      return setFormErr("Name and phone are required");
+    if (!form.name.trim() || !form.phone.trim() || !form.vendor_id)
+      return setFormErr("Name, phone and Iron's Head are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.put(`/admin/delivery-boys/${selected.id}`, {
-        name: form.name, phone: form.phone, status: form.status,
+        name: form.name, phone: form.phone, status: form.status, vendor_id: form.vendor_id,
       });
       setFormOk("Updated successfully");
       await load();
@@ -329,6 +334,16 @@ export default function DeliveryManagementPage() {
         <Modal title="Add New Delivery Boy" onClose={closeModal}>
           <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
+              <label style={labelSt}>Iron&apos;s Head *</label>
+              <select style={{ ...inputSt, cursor: "pointer" }} value={form.vendor_id}
+                onChange={set("vendor_id")} onFocus={fo} onBlur={fb}>
+                <option value="">— Select Iron&apos;s Head —</option>
+                {vendors.map(v => (
+                  <option key={v.id} value={String(v.id)}>{v.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label style={labelSt}>Full Name *</label>
               <input style={inputSt} placeholder="e.g. Kumar" value={form.name}
                 onChange={set("name")} onFocus={fo} onBlur={fb} />
@@ -367,6 +382,16 @@ export default function DeliveryManagementPage() {
       {modal === "edit" && selected && (
         <Modal title={`Edit — ${selected.name}`} onClose={closeModal}>
           <form onSubmit={handleEdit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label style={labelSt}>Iron&apos;s Head *</label>
+              <select style={{ ...inputSt, cursor: "pointer" }} value={form.vendor_id}
+                onChange={set("vendor_id")} onFocus={fo} onBlur={fb}>
+                <option value="">— Select Iron&apos;s Head —</option>
+                {vendors.map(v => (
+                  <option key={v.id} value={String(v.id)}>{v.name}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label style={labelSt}>Full Name *</label>
               <input style={inputSt} value={form.name}

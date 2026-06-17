@@ -372,7 +372,7 @@ router.delete("/admin/bags/:id", ...auth, async (req, res) => {
 router.get("/admin/delivery-boys", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT u.id, u.name, u.phone, u.status, u.created_at, u.role_title,
+      `SELECT u.id, u.name, u.phone, u.status, u.created_at, u.role_title, u.vendor_id,
               v.name AS vendor_name,
               COUNT(DISTINCT da.id) AS total_deliveries
          FROM users u
@@ -391,9 +391,9 @@ router.get("/admin/delivery-boys", ...auth, async (req, res) => {
 
 // POST /api/admin/delivery-boys
 router.post("/admin/delivery-boys", ...auth, async (req, res) => {
-  const { name, phone, password } = req.body;
-  if (!name || !phone || !password)
-    return res.status(400).json({ message: "name, phone and password are required" });
+  const { name, phone, password, vendor_id } = req.body;
+  if (!name || !phone || !password || !vendor_id)
+    return res.status(400).json({ message: "name, phone, password and Iron's Head are required" });
 
   try {
     const [[existing]] = await pool.query(
@@ -402,11 +402,17 @@ router.post("/admin/delivery-boys", ...auth, async (req, res) => {
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
 
+    const [[vendor]] = await pool.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]
+    );
+    if (!vendor)
+      return res.status(400).json({ message: "Invalid Iron's Head selected" });
+
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
-      `INSERT INTO users (name, phone, password_hash, role, status)
-       VALUES (?, ?, ?, 'delivery', 'active')`,
-      [name, phone, hash]
+      `INSERT INTO users (name, phone, password_hash, role, status, vendor_id)
+       VALUES (?, ?, ?, 'delivery', 'active', ?)`,
+      [name, phone, hash, vendor_id]
     );
     res.status(201).json({ message: "Delivery boy created successfully", id: result.insertId });
   } catch (err) {
@@ -418,9 +424,9 @@ router.post("/admin/delivery-boys", ...auth, async (req, res) => {
 // PUT /api/admin/delivery-boys/:id
 router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { name, phone, status } = req.body;
-  if (!name || !phone)
-    return res.status(400).json({ message: "name and phone are required" });
+  const { name, phone, status, vendor_id } = req.body;
+  if (!name || !phone || !vendor_id)
+    return res.status(400).json({ message: "name, phone and Iron's Head are required" });
 
   try {
     const [[person]] = await pool.query(
@@ -433,14 +439,20 @@ router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
     );
     if (dup) return res.status(409).json({ message: "Mobile number already in use" });
 
+    const [[vendor]] = await pool.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]
+    );
+    if (!vendor)
+      return res.status(400).json({ message: "Invalid Iron's Head selected" });
+
     const allowed = ["active", "inactive", "on_leave"];
     const newStatus = allowed.includes(status) ? status : undefined;
 
     await pool.query(
-      `UPDATE users SET name = ?, phone = ?
+      `UPDATE users SET name = ?, phone = ?, vendor_id = ?
        ${newStatus ? ", status = ?" : ""}
        WHERE id = ? AND role = 'delivery'`,
-      newStatus ? [name, phone, newStatus, id] : [name, phone, id]
+      newStatus ? [name, phone, vendor_id, newStatus, id] : [name, phone, vendor_id, id]
     );
     res.json({ message: "Delivery boy updated successfully" });
   } catch (err) {

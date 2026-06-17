@@ -176,16 +176,17 @@ router.put("/accept-order/:id", ...auth, async (req, res) => {
       [orderId, vendorId]
     );
 
-    // 3. Find least-loaded active delivery agent
+    // 3. Find least-loaded active delivery agent belonging to this vendor
     const [agents] = await conn.query(
       `SELECT u.id FROM users u
          LEFT JOIN delivery_assignments da
                 ON da.delivery_agent_id = u.id
                AND da.status NOT IN ("delivered","cancelled")
-        WHERE u.role = "delivery" AND u.status = "active"
+        WHERE u.role = "delivery" AND u.status = "active" AND u.vendor_id = ?
         GROUP BY u.id
         ORDER BY COUNT(da.id) ASC
-        LIMIT 1`
+        LIMIT 1`,
+      [vendorId]
     );
 
     let agentId = null;
