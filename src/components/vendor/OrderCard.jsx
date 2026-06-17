@@ -1,6 +1,35 @@
 ﻿import { useState } from "react";
 import StatusBadge from "../shared/StatusBadge";
 
+function isPickupReady(order) {
+  if (!order.pickup_date) return true;
+  const s = String(order.pickup_date);
+  const dt = new Date(s.includes("T") || s.includes(" ") ? s : s + "T00:00:00");
+  if (isNaN(dt)) return true;
+  if (order.time_slot) {
+    const startStr = order.time_slot.split(/\s*[-–]\s*/)[0].trim();
+    const m = startStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (m) {
+      let h = parseInt(m[1]);
+      const min = parseInt(m[2]);
+      const ap = (m[3] || "").toUpperCase();
+      if (ap === "PM" && h !== 12) h += 12;
+      else if (ap === "AM" && h === 12) h = 0;
+      dt.setHours(h, min, 0, 0);
+    }
+  }
+  return Date.now() >= dt.getTime();
+}
+
+function pickupFromLabel(order) {
+  if (!order.pickup_date) return "";
+  const s = String(order.pickup_date);
+  const dt = new Date(s.includes("T") || s.includes(" ") ? s : s + "T00:00:00");
+  const d = isNaN(dt) ? "" : dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const slot = order.time_slot ? order.time_slot.split(/\s*[-–]\s*/)[0].trim() : null;
+  return slot ? `${d} from ${slot}` : d;
+}
+
 const STATUS_CONFIG = {
   pending:            { accent: "#f59e0b", avatarBg: "#fffbeb" },
   vendor_accepted:    { accent: "#3b82f6", avatarBg: "#eff6ff" },
@@ -159,33 +188,48 @@ function ActionArea({ order, onStatusChange }) {
             onClose={() => setShowReject(false)}
           />
         )}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => setShowReject(true)}
-            style={{
-              flex: 1, padding: "10px 0", border: "1.5px solid #fecaca",
-              borderRadius: 10, cursor: "pointer", background: "#fef2f2",
-              color: "#dc2626", fontSize: 12.5, fontWeight: 700, transition: "all 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#fef2f2"; }}
-          >
-            Reject
-          </button>
-          <button
-            onClick={() => onStatusChange(order.id, 'accept')}
-            style={{
-              flex: 2, padding: "10px 0", border: "none", borderRadius: 10, cursor: "pointer",
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              color: "#fff", fontSize: 12.5, fontWeight: 700, letterSpacing: "0.02em",
-              transition: "opacity 0.15s, transform 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "none"; }}
-          >
-            Accept Order
-          </button>
-        </div>
+        {(() => {
+          const ready = isPickupReady(order);
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => setShowReject(true)}
+                  style={{
+                    flex: 1, padding: "10px 0", border: "1.5px solid #fecaca",
+                    borderRadius: 10, cursor: "pointer", background: "#fef2f2",
+                    color: "#dc2626", fontSize: 12.5, fontWeight: 700, transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "#fef2f2"; }}
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={() => ready && onStatusChange(order.id, 'accept')}
+                  disabled={!ready}
+                  style={{
+                    flex: 2, padding: "10px 0", border: "none", borderRadius: 10,
+                    cursor: ready ? "pointer" : "not-allowed",
+                    background: ready ? "linear-gradient(135deg, #10b981, #059669)" : "#e5e7eb",
+                    color: ready ? "#fff" : "#9ca3af",
+                    fontSize: 12.5, fontWeight: 700, letterSpacing: "0.02em",
+                    transition: "opacity 0.15s, transform 0.15s",
+                  }}
+                  onMouseEnter={e => { if (ready) { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "none"; }}
+                >
+                  {ready ? "Accept Order" : "Not Yet Available"}
+                </button>
+              </div>
+              {!ready && (
+                <p style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 600, textAlign: "center", margin: 0 }}>
+                  ⏰ Pickup scheduled: {pickupFromLabel(order)}
+                </p>
+              )}
+            </div>
+          );
+        })()}
       </>
     );
   }

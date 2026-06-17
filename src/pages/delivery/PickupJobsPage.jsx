@@ -14,6 +14,38 @@ function fmtDate(d) {
   return dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function parsePickupTime(job) {
+  if (!job.pickup_date) return null;
+  const s = String(job.pickup_date);
+  const dt = new Date(s.includes("T") || s.includes(" ") ? s : s + "T00:00:00");
+  if (isNaN(dt)) return null;
+  if (job.time_slot) {
+    const startStr = job.time_slot.split(/\s*[-–]\s*/)[0].trim();
+    const m = startStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (m) {
+      let h = parseInt(m[1]);
+      const min = parseInt(m[2]);
+      const ap = (m[3] || "").toUpperCase();
+      if (ap === "PM" && h !== 12) h += 12;
+      else if (ap === "AM" && h === 12) h = 0;
+      dt.setHours(h, min, 0, 0);
+    }
+  }
+  return dt;
+}
+
+function isPickupReady(job) {
+  const t = parsePickupTime(job);
+  return !t || Date.now() >= t.getTime();
+}
+
+function pickupFromLabel(job) {
+  if (!job.pickup_date) return "";
+  const d = fmtDate(job.pickup_date);
+  const slot = job.time_slot ? job.time_slot.split(/\s*[-–]\s*/)[0].trim() : null;
+  return slot ? `${d} from ${slot}` : d;
+}
+
 const S = {
   label: { fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" },
   divider: { height: 1, background: "#f3f4f6" },
@@ -208,6 +240,8 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
 
 // ── New Assignment card (vendor_accepted) ──────────────────────
 function AssignmentCard({ job, onAccept, accepting }) {
+  const ready = isPickupReady(job);
+  const busy  = accepting === job.id;
   return (
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ height: 4, background: "linear-gradient(90deg, #3b82f6, #DC2626)" }} />
@@ -261,21 +295,28 @@ function AssignmentCard({ job, onAccept, accepting }) {
             <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>Total</span>
             <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 22, fontWeight: 800, color: "#111827" }}>₹{job.amount}</span>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <NavigateBtn job={job} compact />
-            <button
-              onClick={() => onAccept(job.id)}
-              disabled={accepting === job.id}
-              style={{
-                flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
-                cursor: accepting === job.id ? "not-allowed" : "pointer",
-                background: accepting === job.id ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
-                color: accepting === job.id ? "#9ca3af" : "#fff",
-                fontSize: 13, fontWeight: 700,
-              }}
-            >
-              {accepting === job.id ? "Accepting..." : "Accept Assignment"}
-            </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <NavigateBtn job={job} compact />
+              <button
+                onClick={() => onAccept(job.id)}
+                disabled={busy || !ready}
+                style={{
+                  flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
+                  cursor: (busy || !ready) ? "not-allowed" : "pointer",
+                  background: (busy || !ready) ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
+                  color: (busy || !ready) ? "#9ca3af" : "#fff",
+                  fontSize: 13, fontWeight: 700,
+                }}
+              >
+                {busy ? "Accepting..." : !ready ? "Not Yet Available" : "Accept Assignment"}
+              </button>
+            </div>
+            {!ready && (
+              <p style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 600, textAlign: "center", margin: 0 }}>
+                ⏰ Pickup scheduled: {pickupFromLabel(job)}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -285,7 +326,8 @@ function AssignmentCard({ job, onAccept, accepting }) {
 
 // ── Pending Pickup card (delivery_assigned) ────────────────────
 function PendingPickupCard({ job, onReach, reaching, onRide }) {
-  const busy = reaching === job.id;
+  const busy  = reaching === job.id;
+  const ready = isPickupReady(job);
   return (
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", overflow: "hidden" }}>
       <div style={{ height: 4, background: "linear-gradient(90deg, #10b981, #3b82f6)" }} />
@@ -348,12 +390,13 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
 
         {/* Ride to Pickup — embedded map */}
         <button
-          onClick={() => onRide(job)}
+          onClick={() => ready && onRide(job)}
+          disabled={!ready}
           style={{
             width: "100%", padding: "11px 0", border: "none", borderRadius: 10,
-            cursor: "pointer",
-            background: "linear-gradient(135deg, #10b981, #059669)",
-            color: "#fff", fontSize: 13, fontWeight: 700,
+            cursor: ready ? "pointer" : "not-allowed",
+            background: ready ? "linear-gradient(135deg, #10b981, #059669)" : "#e5e7eb",
+            color: ready ? "#fff" : "#9ca3af", fontSize: 13, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
@@ -368,20 +411,27 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
           <NavigateBtn job={job} compact />
           <button
             onClick={() => onReach(job)}
-            disabled={busy}
+            disabled={busy || !ready}
             style={{
               flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
-              cursor: busy ? "not-allowed" : "pointer",
-              background: busy ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
-              color: busy ? "#9ca3af" : "#fff", fontSize: 13, fontWeight: 700,
+              cursor: (busy || !ready) ? "not-allowed" : "pointer",
+              background: (busy || !ready) ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
+              color: (busy || !ready) ? "#9ca3af" : "#fff", fontSize: 13, fontWeight: 700,
             }}
           >
             {busy ? "Notifying customer…" : "I've Reached"}
           </button>
         </div>
-        <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
-          "Ride to Pickup" shows a live map · "I've Reached" when you arrive
-        </p>
+        {!ready && (
+          <p style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 600, textAlign: "center", margin: 0 }}>
+            ⏰ Pickup scheduled: {pickupFromLabel(job)}
+          </p>
+        )}
+        {ready && (
+          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
+            "Ride to Pickup" shows a live map · "I've Reached" when you arrive
+          </p>
+        )}
       </div>
     </div>
   );
