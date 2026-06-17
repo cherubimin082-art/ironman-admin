@@ -342,7 +342,7 @@ export default function VendorManagementPage() {
   const [formOk,   setFormOk]   = useState("");
 
   const [form, setForm] = useState({
-    name: "", phone: "", password: "", zone: "", address: "", status: "active",
+    name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20,
   });
 
   const load = useCallback(async () => {
@@ -360,7 +360,7 @@ export default function VendorManagementPage() {
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
-    setForm({ name: "", phone: "", password: "", zone: "", address: "", status: "active" });
+    setForm({ name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20 });
     setFormErr(""); setFormOk("");
     setModal("add");
   }
@@ -389,7 +389,7 @@ export default function VendorManagementPage() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/admin/vendors", form);
-      setFormOk("Vendor created! 20 bags assigned automatically.");
+      setFormOk(`Vendor created! ${form.bagCount} bags assigned.`);
       await load();
       setTimeout(closeModal, 1200);
     } catch (err) {
@@ -569,11 +569,20 @@ export default function VendorManagementPage() {
         <Modal title="Add New Vendor" onClose={closeModal}>
           <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <VendorFields form={form} onChange={set} isEdit={false} isMobile={isMobile} />
-            <div style={{
-              background: "#FEF2F2", border: "1px solid #FECACA",
-              borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#B91C1C",
-            }}>
-              ℹ️ 20 laundry bags will be automatically created for this vendor.
+
+            {/* Bag count */}
+            <div>
+              <label style={labelSt}>Number of Bags to Create</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  type="number" min={1} max={200}
+                  value={form.bagCount}
+                  onChange={e => setForm(f => ({ ...f, bagCount: Math.max(1, Math.min(200, parseInt(e.target.value) || 1)) }))}
+                  style={{ ...inputSt, width: 100, textAlign: "center" }}
+                  onFocus={fo} onBlur={fb}
+                />
+                <span style={{ fontSize: 13, color: "#6b7280" }}>laundry bags will be assigned to this vendor</span>
+              </div>
             </div>
             <Alert type="err" msg={formErr} />
             <Alert type="ok"  msg={formOk}  />

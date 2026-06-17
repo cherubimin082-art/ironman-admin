@@ -197,9 +197,11 @@ router.get("/admin/vendors", ...auth, async (req, res) => {
 
 // POST /api/admin/vendors
 router.post("/admin/vendors", ...auth, async (req, res) => {
-  const { name, phone, password, zone, address } = req.body;
+  const { name, phone, password, zone, address, bagCount } = req.body;
   if (!name || !phone || !password)
     return res.status(400).json({ message: "name, phone and password are required" });
+
+  const numBags = Math.max(1, Math.min(200, parseInt(bagCount) || 20));
 
   try {
     const [[existing]] = await pool.query(
@@ -216,11 +218,10 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
     );
     const vendorId = result.insertId;
 
-    // Create 20 bags for this vendor
-    const bagValues = Array.from({ length: 20 }, (_, i) => [vendorId, i + 1, "available"]);
+    const bagValues = Array.from({ length: numBags }, (_, i) => [vendorId, i + 1, "available"]);
     await pool.query("INSERT INTO bags (vendor_id, bag_number, status) VALUES ?", [bagValues]);
 
-    res.status(201).json({ message: "Vendor created successfully", vendorId });
+    res.status(201).json({ message: "Vendor created successfully", vendorId, bagsCreated: numBags });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
