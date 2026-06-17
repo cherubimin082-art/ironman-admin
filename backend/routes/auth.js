@@ -1,7 +1,8 @@
-const express = require("express");
-const jwt     = require("jsonwebtoken");
-const https   = require("https");
-const pool    = require("../db");
+const express  = require("express");
+const jwt      = require("jsonwebtoken");
+const https    = require("https");
+const bcrypt   = require("bcryptjs");
+const pool     = require("../db");
 require("dotenv").config();
 
 const router = express.Router();
@@ -27,8 +28,12 @@ function sendWhatsAppOtp(phone10digit, otp) {
   });
 }
 
+function makeJwt(user) {
+  const payload = { id: user.id, name: user.name, phone: user.phone, role: user.role };
+  return { token: jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "12h" }), user: payload };
+}
+
 // ── POST /api/request-otp ───────────────────────────────────
-// Finds staff user by phone, generates OTP, sends via WhatsApp.
 router.post("/request-otp", async (req, res) => {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ message: "phone is required" });
@@ -59,7 +64,6 @@ router.post("/request-otp", async (req, res) => {
 });
 
 // ── POST /api/verify-otp ────────────────────────────────────
-// Verifies the OTP and returns a JWT on success.
 router.post("/verify-otp", async (req, res) => {
   const { phone, otp } = req.body;
   if (!phone || !otp)
@@ -83,12 +87,42 @@ router.post("/verify-otp", async (req, res) => {
 
     await pool.query("UPDATE users SET otp = NULL WHERE id = ?", [user.id]);
 
-    const payload = { id: user.id, name: user.name, phone: user.phone, role: user.role };
-    const token   = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "12h" });
-
+    const { token, user: payload } = makeJwt(user);
     res.json({ message: "Login successful", user: payload, token });
   } catch (err) {
     console.error("verify-otp error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── POST /api/login  (password-based) ──────────────────────
+router.post("/login", async (req, res) => {
+  const { phone, password } = req.body;
+  if (!phone || !password)
+    return res.status(400).json({ message: "phone and password are required" });
+
+  const cleanPhone = String(phone).replace(/\D/g, "");
+
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, name, phone, role, password_hash FROM users WHERE phone = ? AND role != ?",
+      [cleanPhone, "customer"]
+    );
+    if (!rows.length)
+      return res.status(404).json({ message: "Staff account not found. Contact your admin." });
+
+    const user = rows[0];
+    if (!user.password_hash)
+      return res.status(400).json({ message: "Password not set for this account. Use OTP login." });
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match)
+      return res.status(401).json({ message: "Incorrect password. Try again." });
+
+    const { token, user: payload } = makeJwt(user);
+    res.json({ message: "Login successful", user: payload, token });
+  } catch (err) {
+    console.error("login error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

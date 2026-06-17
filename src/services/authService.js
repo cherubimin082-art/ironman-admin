@@ -10,6 +10,9 @@ export async function verifyOtp(phone, otp) {
   return { user: data.user, token: data.token };
 }
 
-export function logout() {
-  return { success: true };
+export async function loginWithPassword(phone, password) {
+  const { data } = await api.post('/login', { phone, password });
+  return { user: data.user, token: data.token };
 }
+
+export function logout() { return { success: true }; }
