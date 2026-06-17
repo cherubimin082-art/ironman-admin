@@ -186,9 +186,9 @@ export default function VendorDashboard() {
               Here's your shop performance overview for today.
             </p>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", gap: 8, alignItems: isMobile ? "stretch" : "flex-end", flexShrink: 0, width: isMobile ? "100%" : "auto", flexWrap: "wrap" }}>
             <div style={{
-              display: "flex", alignItems: "center", gap: 8,
+              display: "flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
               background: "#f0fdf4", border: "1px solid #bbf7d0",
               borderRadius: 10, padding: "9px 16px",
             }}>
@@ -201,7 +201,7 @@ export default function VendorDashboard() {
               onClick={toggleBagStatus}
               disabled={bagToggling || !bagStats}
               style={{
-                display: "flex", alignItems: "center", gap: 10,
+                display: "flex", alignItems: "center", gap: 10, flex: isMobile ? 1 : "none",
                 padding: "9px 16px", borderRadius: 10, border: "none", cursor: bagToggling ? "wait" : "pointer",
                 background: bagStats?.bags_available ? "#f0fdf4" : "#fef2f2",
                 border: `1px solid ${bagStats?.bags_available ? "#bbf7d0" : "#fecaca"}`,
