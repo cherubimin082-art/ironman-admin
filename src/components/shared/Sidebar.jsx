@@ -43,7 +43,7 @@ const ADMIN_LINKS = [
   { to: "/admin/orders",     label: "Orders",     Icon: OrdersIcon    },
   { to: "/admin/customers",  label: "Customers",  Icon: CustomersIcon },
   { to: "/admin/vendors",    label: "Iron's Heads", Icon: StaffIcon     },
-  { to: "/admin/delivery",   label: "Staff",      Icon: StaffIcon     },
+  { to: "/admin/delivery",   label: "Delivery Boys", Icon: StaffIcon  },
   { to: "/admin/apartments", label: "Apartments", Icon: CustomersIcon },
   { to: "/admin/pricing",    label: "Payments",   Icon: PaymentsIcon  },
   { to: "/admin/analytics",  label: "Settings",   Icon: SettingsIcon  },
