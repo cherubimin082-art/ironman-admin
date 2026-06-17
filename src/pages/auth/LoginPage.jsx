@@ -155,12 +155,13 @@ export default function LoginPage() {
           {isCompact && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <div style={{
-                width: 64, height: 64, borderRadius: 18,
-                background: "linear-gradient(135deg, #1e1b4b 0%, #B91C1C 100%)",
+                width: 80, height: 80, borderRadius: 20,
+                background: "#fff",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 8px 24px rgba(185,28,28,0.3)",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+                border: "1px solid #e5e7eb",
               }}>
-                <img src="/logo1.png" alt="Iron Man" style={{ height: 44, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+                <img src="/logo.png" alt="Iron Man" style={{ height: 60, width: "auto", objectFit: "contain" }} />
               </div>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", margin: 0 }}>
                 Operations Portal
