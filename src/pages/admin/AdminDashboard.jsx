@@ -156,7 +156,7 @@ export default function AdminDashboard() {
             value={`₹${Math.round(stats.revenueToday).toLocaleString()}`}
             sub="from delivered orders"
             iconBg="#EDE9FE"
-            icon={<svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>}
+            icon={<span style={{ fontSize: 20, fontWeight: 900, color: "#7C3AED", lineHeight: 1 }}>₹</span>}
           />
         </div>
 
