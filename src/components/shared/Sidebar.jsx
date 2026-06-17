@@ -10,8 +10,9 @@ const DashboardIcon = () => (
 );
 const OrdersIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
-    <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57L23 6H6" />
+    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+    <rect x="9" y="3" width="6" height="4" rx="1" />
+    <line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="16" x2="13" y2="16" />
   </svg>
 );
 const CustomersIcon = () => (
@@ -20,9 +21,26 @@ const CustomersIcon = () => (
     <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
   </svg>
 );
-const StaffIcon = () => (
+const IronsHeadIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+const DeliveryBoyIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <circle cx="5.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" />
+    <path d="M15 6h-4L8 14H3" />
+    <path d="M15 6l2 5h4l-2 4h-2" />
+  </svg>
+);
+const ApartmentIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="1" y="3" width="15" height="18" rx="1" />
+    <path d="M16 8h4l3 3v9h-7" />
+    <line x1="5" y1="8" x2="5" y2="8.01" /><line x1="9" y1="8" x2="9" y2="8.01" />
+    <line x1="5" y1="12" x2="5" y2="12.01" /><line x1="9" y1="12" x2="9" y2="12.01" />
+    <line x1="5" y1="16" x2="5" y2="16.01" /><line x1="9" y1="16" x2="9" y2="16.01" />
   </svg>
 );
 const PaymentsIcon = () => (
@@ -30,46 +48,86 @@ const PaymentsIcon = () => (
     <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
   </svg>
 );
-const SettingsIcon = () => (
+const AnalyticsIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+    <line x1="2" y1="20" x2="22" y2="20" />
+  </svg>
+);
+const StaffIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+const CapacityIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+const LocationIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+const PickupIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M21 10H3" /><path d="M21 6H3" />
+    <path d="M12 14H3" /><path d="M12 18H3" />
+    <polyline points="17 14 20 17 17 20" />
+    <line x1="20" y1="17" x2="13" y2="17" />
+  </svg>
+);
+const TruckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="1" y="3" width="15" height="13" rx="1" />
+    <path d="M16 8h4l3 3v5h-7V8z" />
+    <circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+  </svg>
+);
+const CompletedIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const EarningsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
   </svg>
 );
 
 // ── Nav configs per role ──────────────────────────────────────
 const ADMIN_LINKS = [
-  { to: "/admin/dashboard",  label: "Dashboard",  Icon: DashboardIcon },
-  { to: "/admin/orders",     label: "Orders",     Icon: OrdersIcon    },
-  { to: "/admin/customers",  label: "Customers",  Icon: CustomersIcon },
-  { to: "/admin/vendors",    label: "Iron's Heads", Icon: StaffIcon     },
-  { to: "/admin/delivery",   label: "Delivery Boys", Icon: StaffIcon  },
-  { to: "/admin/apartments", label: "Apartments", Icon: CustomersIcon },
-  { to: "/admin/pricing",    label: "Payments",   Icon: PaymentsIcon  },
-  { to: "/admin/analytics",  label: "Settings",   Icon: SettingsIcon  },
+  { to: "/admin/dashboard",  label: "Dashboard",    Icon: DashboardIcon  },
+  { to: "/admin/orders",     label: "Orders",       Icon: OrdersIcon     },
+  { to: "/admin/customers",  label: "Customers",    Icon: CustomersIcon  },
+  { to: "/admin/vendors",    label: "Iron's Heads", Icon: IronsHeadIcon  },
+  { to: "/admin/delivery",   label: "Delivery Boys",Icon: DeliveryBoyIcon},
+  { to: "/admin/apartments", label: "Apartments",   Icon: ApartmentIcon  },
+  { to: "/admin/pricing",    label: "Payments",     Icon: PaymentsIcon   },
+  { to: "/admin/analytics",  label: "Settings",     Icon: AnalyticsIcon  },
 ];
 
 const VENDOR_LINKS = [
   { to: "/vendor/dashboard",  label: "Dashboard", Icon: DashboardIcon },
   { to: "/vendor/orders",     label: "Orders",    Icon: OrdersIcon    },
   { to: "/vendor/staff",      label: "Staff",     Icon: StaffIcon     },
-  { to: "/vendor/capacity",   label: "Capacity",  Icon: PaymentsIcon  },
-  { to: "/vendor/reports",    label: "Reports",   Icon: SettingsIcon  },
-  { to: "/vendor/apartments", label: "Locations", Icon: CustomersIcon },
+  { to: "/vendor/capacity",   label: "Capacity",  Icon: CapacityIcon  },
+  { to: "/vendor/reports",    label: "Reports",   Icon: AnalyticsIcon },
+  { to: "/vendor/apartments", label: "Locations", Icon: LocationIcon  },
 ];
-
-const CompletedIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
 
 const DELIVERY_LINKS = [
   { to: "/delivery/dashboard", label: "Dashboard", Icon: DashboardIcon },
-  { to: "/delivery/pickups",   label: "Pickups",   Icon: OrdersIcon    },
-  { to: "/delivery/active",    label: "Deliveries",Icon: StaffIcon     },
+  { to: "/delivery/pickups",   label: "Pickups",   Icon: PickupIcon    },
+  { to: "/delivery/active",    label: "Deliveries",Icon: TruckIcon     },
   { to: "/delivery/completed", label: "Completed", Icon: CompletedIcon },
-  { to: "/delivery/earnings",  label: "Earnings",  Icon: PaymentsIcon  },
+  { to: "/delivery/earnings",  label: "Earnings",  Icon: EarningsIcon  },
 ];
 
 const SIDEBAR_BG = "#0D1B2A";
