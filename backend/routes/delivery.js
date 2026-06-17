@@ -469,9 +469,16 @@ router.put("/delivery/end-ride/:orderId", ...auth, async (req, res) => {
 });
 
 // GET /api/delivery/available-bags/:vendorId
-// Return bags that are currently available for the given vendor
+// Return bags that are currently available for the given vendor (only when vendor has bags_available ON)
 router.get("/delivery/available-bags/:vendorId", ...auth, async (req, res) => {
   try {
+    const [[vendor]] = await pool.query(
+      "SELECT bags_available FROM users WHERE id = ? AND role = 'vendor'",
+      [req.params.vendorId]
+    );
+    if (!vendor || !vendor.bags_available) {
+      return res.json({ bags: [] });
+    }
     const [bags] = await pool.query(
       `SELECT id, bag_number FROM bags WHERE vendor_id = ? AND status = 'available' ORDER BY bag_number ASC`,
       [req.params.vendorId]

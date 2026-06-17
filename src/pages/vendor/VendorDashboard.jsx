@@ -73,6 +73,7 @@ export default function VendorDashboard() {
   const [myRating, setMyRating]               = useState(null);
   const [bagStats, setBagStats]               = useState(null);
   const [bagToggling, setBagToggling]         = useState(false);
+  const [bagError, setBagError]               = useState("");
 
   useEffect(() => {
     api.get("/vendor/completed-orders")
@@ -95,12 +96,13 @@ export default function VendorDashboard() {
   const toggleBagStatus = async () => {
     if (!bagStats || bagToggling) return;
     const next = bagStats.bags_available ? 0 : 1;
-    setBagToggling(true);
+    setBagToggling(true); setBagError("");
     try {
       await api.put("/vendor/bags-available", { bags_available: next });
       setBagStats(s => ({ ...s, bags_available: next }));
-    } catch (_) {}
-    finally { setBagToggling(false); }
+    } catch (err) {
+      setBagError(err.response?.data?.message || "Failed to update. Try again.");
+    } finally { setBagToggling(false); }
   };
 
   const { isMobile, isTablet } = useWindowSize();
@@ -226,6 +228,11 @@ export default function VendorDashboard() {
               </span>
             </button>
           </div>
+          {bagError && (
+            <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 600, margin: "6px 0 0", textAlign: "right" }}>
+              ⚠ {bagError}
+            </p>
+          )}
         </div>
 
         {/* Stats Grid */}
