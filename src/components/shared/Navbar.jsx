@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const ROLE_CONFIG = {
   vendor: {
-    label: "Vendor",
+    label: "Iron's Head",
     gradient: "linear-gradient(135deg,#DC2626,#B91C1C)",
     chipBg: "#FEF2F2", chipBorder: "#FECACA", chipColor: "#DC2626",
     dotColor: "#DC2626", dotGlow: "rgba(220,38,38,0.4)",

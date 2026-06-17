@@ -42,7 +42,7 @@ const ADMIN_LINKS = [
   { to: "/admin/dashboard",  label: "Dashboard",  Icon: DashboardIcon },
   { to: "/admin/orders",     label: "Orders",     Icon: OrdersIcon    },
   { to: "/admin/customers",  label: "Customers",  Icon: CustomersIcon },
-  { to: "/admin/vendors",    label: "Vendors",    Icon: StaffIcon     },
+  { to: "/admin/vendors",    label: "Iron's Heads", Icon: StaffIcon     },
   { to: "/admin/delivery",   label: "Staff",      Icon: StaffIcon     },
   { to: "/admin/apartments", label: "Apartments", Icon: CustomersIcon },
   { to: "/admin/pricing",    label: "Payments",   Icon: PaymentsIcon  },
@@ -191,7 +191,7 @@ export default function Sidebar({ open, onClose, isMobile }) {
               {user?.name}
             </p>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", margin: 0, textTransform: "capitalize" }}>
-              {role === "admin" ? "Administrator" : role === "vendor" ? "Vendor Account" : "Delivery Partner"}
+              {role === "admin" ? "Administrator" : role === "vendor" ? "Iron's Head Account" : "Delivery Partner"}
             </p>
           </div>
         </div>

@@ -156,7 +156,7 @@ function RevenueSection() {
             Revenue Trends
           </p>
           <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>
-            Vendor Revenue Graph
+            Iron's Head Revenue Graph
           </h3>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -217,12 +217,12 @@ function RevenueSection() {
 function TopVendorsTable({ data, loading }) {
   return (
     <Card>
-      <CardHeader subtitle="Performance" title="Top Performing Vendors" />
+      <CardHeader subtitle="Performance" title="Top Performing Iron's Heads" />
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-              {["Rank", "Vendor Name", "Total Orders", "Total Revenue", "Avg Rating"].map(h => (
+              {["Rank", "Iron's Head", "Total Orders", "Total Revenue", "Avg Rating"].map(h => (
                 <th key={h} style={{ padding: "12px 20px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
                   {h}
                 </th>
@@ -436,7 +436,7 @@ export default function AnalyticsPage() {
             Analytics
           </h1>
           <p style={{ fontSize: 13.5, color: "#9ca3af", margin: "6px 0 0" }}>
-            Live platform performance metrics, vendor rankings, and delivery insights.
+            Live platform performance metrics, Iron's Head rankings, and delivery insights.
           </p>
         </div>
 

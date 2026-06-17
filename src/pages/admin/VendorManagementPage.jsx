@@ -389,7 +389,7 @@ export default function VendorManagementPage() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/admin/vendors", form);
-      setFormOk(`Vendor created! ${form.bagCount} bags assigned.`);
+      setFormOk(`Iron's Head created! ${form.bagCount} bags assigned.`);
       await load();
       setTimeout(closeModal, 1200);
     } catch (err) {
@@ -407,7 +407,7 @@ export default function VendorManagementPage() {
         name: form.name, phone: form.phone,
         zone: form.zone, address: form.address, status: form.status,
       });
-      setFormOk("Vendor updated successfully");
+      setFormOk("Iron's Head updated successfully");
       await load();
       setTimeout(closeModal, 900);
     } catch (err) {
@@ -419,7 +419,7 @@ export default function VendorManagementPage() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.delete(`/admin/vendors/${selected.id}`);
-      setFormOk("Vendor deleted");
+      setFormOk("Iron's Head deleted");
       await load();
       setTimeout(closeModal, 900);
     } catch (err) {
@@ -438,10 +438,10 @@ export default function VendorManagementPage() {
               Admin
             </p>
             <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
-              Vendor Management
+              Iron's Head Management
             </h1>
             <p style={{ fontSize: 13.5, color: "#9ca3af", margin: "6px 0 0", fontWeight: 400 }}>
-              Create, edit, and manage iron shop vendor accounts.
+              Create, edit, and manage Iron's Head accounts.
             </p>
           </div>
           <button
@@ -457,7 +457,7 @@ export default function VendorManagementPage() {
             onMouseLeave={e => e.currentTarget.style.opacity = "1"}
           >
             <span style={{ fontSize: 20, lineHeight: 1, marginTop: -1 }}>+</span>
-            Add Vendor
+            Add Iron's Head
           </button>
         </div>
 
@@ -485,7 +485,7 @@ export default function VendorManagementPage() {
           ) : vendors.length === 0 ? (
             <div style={{ padding: "60px 24px", textAlign: "center" }}>
               <p style={{ fontSize: 15, fontWeight: 700, color: "#374151", margin: "0 0 6px" }}>No vendors yet</p>
-              <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Click "Add Vendor" to create the first one.</p>
+              <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Click "Add Iron's Head" to create the first one.</p>
             </div>
           ) : (
             <div className="si-table-wrap">
@@ -566,7 +566,7 @@ export default function VendorManagementPage() {
 
       {/* ── Add Modal ── */}
       {modal === "add" && (
-        <Modal title="Add New Vendor" onClose={closeModal}>
+        <Modal title="Add New Iron's Head" onClose={closeModal}>
           <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <VendorFields form={form} onChange={set} isEdit={false} isMobile={isMobile} />
 
@@ -581,7 +581,7 @@ export default function VendorManagementPage() {
                   style={{ ...inputSt, width: 100, textAlign: "center" }}
                   onFocus={fo} onBlur={fb}
                 />
-                <span style={{ fontSize: 13, color: "#6b7280" }}>laundry bags will be assigned to this vendor</span>
+                <span style={{ fontSize: 13, color: "#6b7280" }}>laundry bags will be assigned to this Iron's Head</span>
               </div>
             </div>
             <Alert type="err" msg={formErr} />
@@ -598,7 +598,7 @@ export default function VendorManagementPage() {
                 color: saving ? "#9ca3af" : "#fff",
                 fontSize: 13, fontWeight: 700,
                 cursor: saving ? "not-allowed" : "pointer",
-              }}>{saving ? "Creating…" : "Create Vendor"}</button>
+              }}>{saving ? "Creating…" : "Create Iron's Head"}</button>
             </div>
           </form>
         </Modal>
@@ -631,7 +631,7 @@ export default function VendorManagementPage() {
 
       {/* ── Delete Modal ── */}
       {modal === "delete" && selected && (
-        <Modal title="Delete Vendor" onClose={closeModal} maxWidth={460}>
+        <Modal title="Delete Iron's Head" onClose={closeModal} maxWidth={460}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{
               background: "#fef2f2", border: "1px solid #fecaca",
@@ -645,7 +645,7 @@ export default function VendorManagementPage() {
                 assignments and apartment slot configurations.
                 {Number(selected.total_orders) > 0 && (
                   <span style={{ display: "block", marginTop: 6, color: "#dc2626", fontWeight: 600 }}>
-                    Warning: this vendor has {selected.total_orders} order(s) on record.
+                    Warning: this Iron's Head has {selected.total_orders} order(s) on record.
                   </span>
                 )}
               </p>
@@ -664,7 +664,7 @@ export default function VendorManagementPage() {
                 color: saving ? "#9ca3af" : "#fff",
                 fontSize: 13, fontWeight: 700,
                 cursor: saving ? "not-allowed" : "pointer",
-              }}>{saving ? "Deleting…" : "Yes, Delete Vendor"}</button>
+              }}>{saving ? "Deleting…" : "Yes, Delete Iron's Head"}</button>
             </div>
           </div>
         </Modal>
