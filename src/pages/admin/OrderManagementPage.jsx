@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/shared/Layout";
 import { useOrders } from "../../context/OrderContext";
@@ -12,6 +12,21 @@ const STATUS_FILTERS = [
   { key: "ironing",         label: "Ironing"          },
   { key: "out_for_delivery",label: "Out for Delivery"  },
   { key: "delivered",       label: "Delivered"         },
+];
+
+const ALL_STATUSES = [
+  { value: "",                   label: "Any Status"         },
+  { value: "pending",            label: "Pending"            },
+  { value: "vendor_accepted",    label: "Confirmed"          },
+  { value: "delivery_assigned",  label: "Assigned"           },
+  { value: "picked_up",          label: "Picked Up"          },
+  { value: "at_vendor",          label: "At Shop"            },
+  { value: "ironing_in_progress",label: "Ironing In Progress"},
+  { value: "ready_for_delivery", label: "Ready for Delivery" },
+  { value: "picked_from_vendor", label: "In Transit"         },
+  { value: "out_for_delivery",   label: "Out for Delivery"   },
+  { value: "delivered",          label: "Delivered"          },
+  { value: "cancelled",          label: "Cancelled"          },
 ];
 
 const STATUS_STYLES = {
@@ -43,11 +58,17 @@ function initials(name) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-
 function formatDate(ts) {
   if (!ts) return "—";
   return new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
+
+const selectStyle = {
+  padding: "8px 10px", border: "1.5px solid #E2E8F0", borderRadius: 10,
+  fontSize: 13, color: "#374151", background: "white", outline: "none", width: "100%",
+};
+const labelStyle = { fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 5 };
+const inputStyle = { padding: "8px 10px", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 13, color: "#374151", outline: "none", width: "100%", boxSizing: "border-box" };
 
 export default function OrderManagementPage() {
   const { orders } = useOrders();
@@ -57,6 +78,27 @@ export default function OrderManagementPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [page, setPage]                 = useState(1);
   const [search, setSearch]             = useState("");
+
+  // Advanced filter state
+  const [showAdv, setShowAdv] = useState(false);
+  const [advStatus,   setAdvStatus]   = useState("");
+  const [advVendor,   setAdvVendor]   = useState("");
+  const [advDateFrom, setAdvDateFrom] = useState("");
+  const [advDateTo,   setAdvDateTo]   = useState("");
+  const [advSort,     setAdvSort]     = useState("newest");
+
+  // Unique Iron's Head list
+  const vendorOptions = useMemo(() => {
+    const names = [...new Set(orders.map(o => o.vendor_name || o.vendorName).filter(Boolean))].sort();
+    return names;
+  }, [orders]);
+
+  const advActive = advStatus || advVendor || advDateFrom || advDateTo || advSort !== "newest";
+
+  function resetAdv() {
+    setAdvStatus(""); setAdvVendor(""); setAdvDateFrom(""); setAdvDateTo(""); setAdvSort("newest");
+    setPage(1);
+  }
 
   const matchesFilter = (o) => {
     if (activeFilter === "all") return true;
@@ -73,7 +115,27 @@ export default function OrderManagementPage() {
     return id.includes(q) || name.includes(q);
   };
 
-  const filtered   = orders.filter(o => matchesFilter(o) && matchesSearch(o));
+  const matchesAdv = (o) => {
+    if (advStatus && o.status !== advStatus) return false;
+    if (advVendor && (o.vendor_name || o.vendorName) !== advVendor) return false;
+    if (advDateFrom) {
+      const d = new Date(o.created_at);
+      if (isNaN(d) || d < new Date(advDateFrom)) return false;
+    }
+    if (advDateTo) {
+      const d = new Date(o.created_at);
+      const to = new Date(advDateTo);
+      to.setHours(23, 59, 59, 999);
+      if (isNaN(d) || d > to) return false;
+    }
+    return true;
+  };
+
+  let filtered = orders.filter(o => matchesFilter(o) && matchesSearch(o) && matchesAdv(o));
+
+  if (advSort === "oldest") filtered = [...filtered].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  else filtered = [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activeDeliveries = orders.filter(o => ["out_for_delivery", "picked_from_vendor", "delivery_assigned"].includes(o.status)).length;
@@ -135,12 +197,86 @@ export default function OrderManagementPage() {
                   style={{ padding: "8px 12px 8px 32px", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 13, color: "#374151", outline: "none", width: isMobile ? "100%" : 200 }}
                 />
               </div>
-              <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "white", fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer" }}>
+              <button
+                onClick={() => setShowAdv(v => !v)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
+                  borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  border: showAdv || advActive ? "1.5px solid #B91C1C" : "1.5px solid #E2E8F0",
+                  background: showAdv || advActive ? "#FEF2F2" : "white",
+                  color: showAdv || advActive ? "#B91C1C" : "#374151",
+                }}
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="13" height="13"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="11" y1="18" x2="13" y2="18" /></svg>
                 Advanced Filters
+                {advActive && (
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#B91C1C", marginLeft: 2, flexShrink: 0 }} />
+                )}
               </button>
             </div>
           </div>
+
+          {/* ── Advanced Filter Panel ── */}
+          {showAdv && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #F1F5F9" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr", gap: 14, alignItems: "end" }}>
+
+                {/* Status */}
+                <div>
+                  <label style={labelStyle}>Status</label>
+                  <select value={advStatus} onChange={e => { setAdvStatus(e.target.value); setPage(1); }} style={selectStyle}>
+                    {ALL_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Iron's Head */}
+                <div>
+                  <label style={labelStyle}>Iron&apos;s Head</label>
+                  <select value={advVendor} onChange={e => { setAdvVendor(e.target.value); setPage(1); }} style={selectStyle}>
+                    <option value="">Any</option>
+                    {vendorOptions.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+
+                {/* Date From */}
+                <div>
+                  <label style={labelStyle}>Date From</label>
+                  <input type="date" value={advDateFrom} onChange={e => { setAdvDateFrom(e.target.value); setPage(1); }} style={inputStyle} />
+                </div>
+
+                {/* Date To */}
+                <div>
+                  <label style={labelStyle}>Date To</label>
+                  <input type="date" value={advDateTo} onChange={e => { setAdvDateTo(e.target.value); setPage(1); }} style={inputStyle} />
+                </div>
+
+                {/* Sort + Reset */}
+                <div>
+                  <label style={labelStyle}>Sort By</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <select value={advSort} onChange={e => { setAdvSort(e.target.value); setPage(1); }} style={{ ...selectStyle, flex: 1 }}>
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                    </select>
+                    {advActive && (
+                      <button
+                        onClick={resetAdv}
+                        style={{ padding: "8px 12px", borderRadius: 10, border: "1.5px solid #FECACA", background: "#FEF2F2", color: "#B91C1C", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Result count */}
+              <p style={{ fontSize: 12, color: "#94A3B8", margin: "12px 0 0" }}>
+                {filtered.length} order{filtered.length !== 1 ? "s" : ""} match your filters
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ── Active deliveries dark card ── */}
@@ -163,27 +299,24 @@ export default function OrderManagementPage() {
         {/* ── Orders table ── */}
         <div style={{ background: "white", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", overflow: "hidden" }}>
 
-          {/* Scrollable table */}
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <div style={{ minWidth: 520 }}>
-              {/* Table header */}
               <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px", padding: "12px 20px", background: "#0F172A" }}>
                 {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS"].map(h => (
                   <span key={h} style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>{h}</span>
                 ))}
               </div>
 
-              {/* Rows */}
               {paginated.length === 0 ? (
                 <div style={{ padding: "40px 20px", textAlign: "center" }}>
                   <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>No orders match the current filter</p>
                 </div>
               ) : paginated.map((order, idx) => {
-                const displayId  = order.order_code || `#${order.id}`;
-                const name       = order.customerName || order.customer_name || "Customer";
-                const phone      = order.customerPhone || order.phone || "";
-                const itemCount  = (order.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
-                const address    = order.address || order.apartment || "—";
+                const displayId = order.order_code || `#${order.id}`;
+                const name      = order.customerName || order.customer_name || "Customer";
+                const phone     = order.customerPhone || order.phone || "";
+                const itemCount = (order.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
+                const address   = order.address || order.apartment || "—";
 
                 return (
                   <div
