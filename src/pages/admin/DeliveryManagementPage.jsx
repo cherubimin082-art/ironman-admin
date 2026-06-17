@@ -291,6 +291,11 @@ export default function DeliveryManagementPage() {
                           <div>
                             <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827", display: "block" }}>{b.name}</span>
                             {isMobile && <span style={{ fontSize: 12, color: "#6b7280" }}>{b.phone || "—"}</span>}
+                            {b.vendor_name && (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "#B91C1C", display: "block", marginTop: 2 }}>
+                                {b.vendor_name}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>

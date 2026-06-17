@@ -41,7 +41,8 @@ export default function DeliveryDashboard() {
   const { pickupJobs, loading, loadData } = useOrders();
   const navigate = useNavigate();
 
-  const [myRating, setMyRating] = useState(null);
+  const [myRating,   setMyRating]   = useState(null);
+  const [vendorName, setVendorName] = useState(null);
   const { isMobile, isTablet } = useWindowSize();
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -49,6 +50,9 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     api.get("/delivery/my-rating")
       .then(({ data }) => setMyRating(data))
+      .catch(() => {});
+    api.get("/delivery/my-vendor")
+      .then(({ data }) => setVendorName(data.vendor_name || null))
       .catch(() => {});
   }, []);
 
@@ -94,6 +98,14 @@ export default function DeliveryDashboard() {
             <p style={{ fontSize: 14, color: "#9ca3af", margin: "7px 0 0", fontWeight: 400 }}>
               Manage your delivery assignments and pickups.
             </p>
+            {vendorName && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "5px 12px" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" style={{ width: 14, height: 14, flexShrink: 0 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+                </svg>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#B91C1C" }}>Iron&apos;s Head: {vendorName}</span>
+              </div>
+            )}
           </div>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,

@@ -72,6 +72,23 @@ async function getOrderForAgent(orderId, agentId) {
   return rows[0] || null;
 }
 
+// GET /api/delivery/my-vendor — returns the Iron's Head this delivery boy belongs to
+router.get("/delivery/my-vendor", ...auth, async (req, res) => {
+  try {
+    const [[row]] = await pool.query(
+      `SELECT v.id AS vendor_id, v.name AS vendor_name, v.phone AS vendor_phone
+         FROM users u
+         LEFT JOIN users v ON v.id = u.vendor_id
+        WHERE u.id = ?`,
+      [req.user.id]
+    );
+    res.json({ vendor_id: row?.vendor_id || null, vendor_name: row?.vendor_name || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /api/delivery/completed-orders — all delivered orders for this agent
 router.get("/delivery/completed-orders", ...auth, async (req, res) => {
   const agentId = req.user.id;
