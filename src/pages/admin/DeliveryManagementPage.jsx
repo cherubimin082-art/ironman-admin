@@ -96,7 +96,7 @@ const fmtDate = d => d
 
 // ── Main page ───────────────────────────────────────────────────
 export default function DeliveryManagementPage() {
-  const { isMobile: _ } = useWindowSize();
+  const { isMobile } = useWindowSize();
 
   const [boys,    setBoys]    = useState([]);
   const [loading, setLoading] = useState(true);
@@ -256,7 +256,7 @@ export default function DeliveryManagementPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
                 <thead>
                   <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                    {["#", "Name", "Phone", "Total Deliveries", "Status", "Created", "Actions"].map(h => (
+                    {(isMobile ? ["Name", "Status", "Actions"] : ["#", "Name", "Phone", "Total Deliveries", "Status", "Created", "Actions"]).map(h => (
                       <th key={h} style={{
                         padding: "12px 16px", fontSize: 11, fontWeight: 700,
                         color: "#9ca3af", textTransform: "uppercase",
@@ -273,7 +273,7 @@ export default function DeliveryManagementPage() {
                       onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
-                      <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>{b.id}</td>
+                      {!isMobile && <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>{b.id}</td>}
                       <td style={{ padding: "14px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{
@@ -284,17 +284,20 @@ export default function DeliveryManagementPage() {
                           }}>
                             {b.name?.[0]?.toUpperCase() ?? "?"}
                           </div>
-                          <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827" }}>{b.name}</span>
+                          <div>
+                            <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827", display: "block" }}>{b.name}</span>
+                            {isMobile && <span style={{ fontSize: 12, color: "#6b7280" }}>{b.phone || "—"}</span>}
+                          </div>
                         </div>
                       </td>
-                      <td style={{ padding: "14px 16px", fontSize: 13, color: "#374151", whiteSpace: "nowrap" }}>{b.phone || "—"}</td>
-                      <td style={{ padding: "14px 16px" }}>
+                      {!isMobile && <td style={{ padding: "14px 16px", fontSize: 13, color: "#374151", whiteSpace: "nowrap" }}>{b.phone || "—"}</td>}
+                      {!isMobile && <td style={{ padding: "14px 16px" }}>
                         <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981" }}>
                           {b.total_deliveries || 0}
                         </span>
-                      </td>
+                      </td>}
                       <td style={{ padding: "14px 16px" }}><StatusBadge status={b.status} /></td>
-                      <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>{fmtDate(b.created_at)}</td>
+                      {!isMobile && <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>{fmtDate(b.created_at)}</td>}
                       <td style={{ padding: "14px 16px" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => openEdit(b)} style={{

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/shared/Layout";
 import { useOrders } from "../../context/OrderContext";
+import { useWindowSize } from "../../hooks/useWindowSize";
 
 const BG = "#F5F5F8";
 const PAGE_SIZE = 10;
@@ -51,6 +52,7 @@ function formatDate(ts) {
 export default function OrderManagementPage() {
   const { orders } = useOrders();
   const navigate   = useNavigate();
+  const { isMobile } = useWindowSize();
 
   const [activeFilter, setActiveFilter] = useState("all");
   const [page, setPage]                 = useState(1);
@@ -80,7 +82,7 @@ export default function OrderManagementPage() {
 
   return (
     <Layout>
-      <div style={{ background: BG, minHeight: "100vh", padding: "32px 28px" }}>
+      <div style={{ background: BG, minHeight: "100vh", padding: isMobile ? "4px 0" : "32px 28px" }}>
 
         {/* ── Header ── */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
@@ -130,7 +132,7 @@ export default function OrderManagementPage() {
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
                   placeholder="Search orders…"
-                  style={{ padding: "8px 12px 8px 32px", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 13, color: "#374151", outline: "none", width: 200 }}
+                  style={{ padding: "8px 12px 8px 32px", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 13, color: "#374151", outline: "none", width: isMobile ? "100%" : 200 }}
                 />
               </div>
               <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "white", fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer" }}>
@@ -161,60 +163,65 @@ export default function OrderManagementPage() {
         {/* ── Orders table ── */}
         <div style={{ background: "white", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", overflow: "hidden" }}>
 
-          {/* Table header */}
-          <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px", padding: "12px 20px", background: "#0F172A" }}>
-            {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS"].map(h => (
-              <span key={h} style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>{h}</span>
-            ))}
-          </div>
-
-          {/* Rows */}
-          {paginated.length === 0 ? (
-            <div style={{ padding: "40px 20px", textAlign: "center" }}>
-              <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>No orders match the current filter</p>
-            </div>
-          ) : paginated.map((order, idx) => {
-            const displayId  = order.order_code || `#${order.id}`;
-            const name       = order.customerName || order.customer_name || "Customer";
-            const phone      = order.customerPhone || order.phone || "";
-            const itemCount  = (order.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
-            const address    = order.address || order.apartment || "—";
-
-            return (
-              <div
-                key={order.id}
-                style={{
-                  display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px",
-                  padding: "16px 20px", alignItems: "center",
-                  borderBottom: idx < paginated.length - 1 ? "1px solid #F8F9FB" : "none",
-                  transition: "background 0.1s",
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >
-                <span style={{ fontSize: 13.5, fontWeight: 800, color: "#B91C1C" }}>{displayId}</span>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 99, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#B91C1C" }}>{initials(name)}</span>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", margin: 0 }}>{name}</p>
-                    {phone && <p style={{ fontSize: 11.5, color: "#94A3B8", margin: "1px 0 0" }}>{phone}</p>}
-                  </div>
-                </div>
-
-                <div>
-                  <p style={{ fontSize: 13, color: "#374151", margin: "0 0 2px" }}>
-                    {itemCount > 0 ? `${itemCount} Items` : "—"}{order.created_at ? ` · ${formatDate(order.created_at)}` : ""}
-                  </p>
-                  <p style={{ fontSize: 11.5, color: "#94A3B8", margin: 0 }}>{address}</p>
-                </div>
-
-                <StatusBadge status={order.status} />
+          {/* Scrollable table */}
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div style={{ minWidth: 520 }}>
+              {/* Table header */}
+              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px", padding: "12px 20px", background: "#0F172A" }}>
+                {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS"].map(h => (
+                  <span key={h} style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>{h}</span>
+                ))}
               </div>
-            );
-          })}
+
+              {/* Rows */}
+              {paginated.length === 0 ? (
+                <div style={{ padding: "40px 20px", textAlign: "center" }}>
+                  <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>No orders match the current filter</p>
+                </div>
+              ) : paginated.map((order, idx) => {
+                const displayId  = order.order_code || `#${order.id}`;
+                const name       = order.customerName || order.customer_name || "Customer";
+                const phone      = order.customerPhone || order.phone || "";
+                const itemCount  = (order.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
+                const address    = order.address || order.apartment || "—";
+
+                return (
+                  <div
+                    key={order.id}
+                    style={{
+                      display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px",
+                      padding: "16px 20px", alignItems: "center",
+                      borderBottom: idx < paginated.length - 1 ? "1px solid #F8F9FB" : "none",
+                      transition: "background 0.1s",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
+                    <span style={{ fontSize: 13.5, fontWeight: 800, color: "#B91C1C" }}>{displayId}</span>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 99, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: "#B91C1C" }}>{initials(name)}</span>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", margin: 0 }}>{name}</p>
+                        {phone && <p style={{ fontSize: 11.5, color: "#94A3B8", margin: "1px 0 0" }}>{phone}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p style={{ fontSize: 13, color: "#374151", margin: "0 0 2px" }}>
+                        {itemCount > 0 ? `${itemCount} Items` : "—"}{order.created_at ? ` · ${formatDate(order.created_at)}` : ""}
+                      </p>
+                      <p style={{ fontSize: 11.5, color: "#94A3B8", margin: 0 }}>{address}</p>
+                    </div>
+
+                    <StatusBadge status={order.status} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (

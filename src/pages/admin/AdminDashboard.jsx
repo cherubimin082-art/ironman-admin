@@ -3,6 +3,7 @@ import Layout from "../../components/shared/Layout";
 import { useOrders } from "../../context/OrderContext";
 import api from "../../services/api";
 import { useEffect, useState } from "react";
+import { useWindowSize } from "../../hooks/useWindowSize";
 
 const BG = "#F5F5F8";
 
@@ -11,7 +12,7 @@ function StatCard({ label, value, sub, subColor, icon, iconBg }) {
   return (
     <div style={{
       background: "white", borderRadius: 16, padding: "20px 22px",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flex: 1, minWidth: 0,
+      boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flex: "1 1 140px",
     }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
         <p style={{ fontSize: 10.5, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>{label}</p>
@@ -79,6 +80,7 @@ function QuickBtn({ label, icon }) {
 export default function AdminDashboard() {
   const { orders } = useOrders();
   const navigate   = useNavigate();
+  const { isMobile } = useWindowSize();
 
   const [stats, setStats] = useState({ totalToday: 0, ongoing: 0, completedToday: 0, revenueToday: 0 });
 
@@ -105,7 +107,7 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
-      <div style={{ background: BG, minHeight: "100vh", padding: "32px 28px" }}>
+      <div style={{ background: BG, minHeight: "100vh", padding: isMobile ? "4px 0" : "32px 28px" }}>
 
         {/* ── Header ── */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
@@ -159,7 +161,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* ── Live Orders + Quick Actions ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 20, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 240px", gap: 20, alignItems: "start" }}>
 
           {/* Live Orders table */}
           <div style={{ background: "white", borderRadius: 18, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", overflow: "hidden" }}>
@@ -170,61 +172,66 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {/* Table header */}
-            <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 130px 60px 120px 100px 80px", gap: 0, padding: "10px 22px", background: "#F8F9FB", borderBottom: "1px solid #F4F4F8" }}>
-              {["ORDER ID", "CUSTOMER", "STATUS", "ITEMS", "TIMING", "STAFF", "ACTION"].map(h => (
-                <span key={h} style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em" }}>{h}</span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            {liveOrders.length === 0 ? (
-              <div style={{ padding: "32px 22px", textAlign: "center" }}>
-                <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>No orders yet today</p>
-              </div>
-            ) : liveOrders.map((order, idx) => {
-              const ini = initials(order.customerName || order.customer_name || "");
-              const displayId = order.order_code || `#${order.id}`;
-              const itemCount = (() => {
-                const arr = order.rawItems || [];
-                const n = arr.reduce((s, i) => s + (i.quantity || 1), 0);
-                return n || "—";
-              })();
-              return (
-                <div
-                  key={order.id}
-                  style={{
-                    display: "grid", gridTemplateColumns: "110px 1fr 130px 60px 120px 100px 80px",
-                    gap: 0, padding: "14px 22px", alignItems: "center",
-                    borderBottom: idx < liveOrders.length - 1 ? "1px solid #F8F9FB" : "none",
-                    transition: "background 0.1s",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}>{displayId}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 99, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#B91C1C" }}>{ini}</span>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{order.customerName || order.customer_name || "Customer"}</span>
-                  </div>
-                  <div><StatusBadge status={order.status} /></div>
-                  <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{itemCount}</span>
-                  <div>
-                    <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 2px" }}>{formatDate(order.pickup_date)}</p>
-                    <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>{order.time || "—"}</p>
-                  </div>
-                  <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>{order.vendor_name || order.vendorName || "Unassigned"}</span>
-                  <button
-                    onClick={() => navigate("/admin/orders")}
-                    style={{ fontSize: 11.5, fontWeight: 700, color: "#B91C1C", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                  >
-                    View Detail
-                  </button>
+            {/* Scrollable table */}
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ minWidth: 680 }}>
+                {/* Table header */}
+                <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 130px 60px 120px 100px 80px", gap: 0, padding: "10px 22px", background: "#F8F9FB", borderBottom: "1px solid #F4F4F8" }}>
+                  {["ORDER ID", "CUSTOMER", "STATUS", "ITEMS", "TIMING", "STAFF", "ACTION"].map(h => (
+                    <span key={h} style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", letterSpacing: "0.06em" }}>{h}</span>
+                  ))}
                 </div>
-              );
-            })}
+
+                {/* Rows */}
+                {liveOrders.length === 0 ? (
+                  <div style={{ padding: "32px 22px", textAlign: "center" }}>
+                    <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>No orders yet today</p>
+                  </div>
+                ) : liveOrders.map((order, idx) => {
+                  const ini = initials(order.customerName || order.customer_name || "");
+                  const displayId = order.order_code || `#${order.id}`;
+                  const itemCount = (() => {
+                    const arr = order.rawItems || [];
+                    const n = arr.reduce((s, i) => s + (i.quantity || 1), 0);
+                    return n || "—";
+                  })();
+                  return (
+                    <div
+                      key={order.id}
+                      style={{
+                        display: "grid", gridTemplateColumns: "110px 1fr 130px 60px 120px 100px 80px",
+                        gap: 0, padding: "14px 22px", alignItems: "center",
+                        borderBottom: idx < liveOrders.length - 1 ? "1px solid #F8F9FB" : "none",
+                        transition: "background 0.1s",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C" }}>{displayId}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 99, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#B91C1C" }}>{ini}</span>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{order.customerName || order.customer_name || "Customer"}</span>
+                      </div>
+                      <div><StatusBadge status={order.status} /></div>
+                      <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{itemCount}</span>
+                      <div>
+                        <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 2px" }}>{formatDate(order.pickup_date)}</p>
+                        <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>{order.time || "—"}</p>
+                      </div>
+                      <span style={{ fontSize: 12, color: "#64748B", fontWeight: 500 }}>{order.vendor_name || order.vendorName || "Unassigned"}</span>
+                      <button
+                        onClick={() => navigate("/admin/orders")}
+                        style={{ fontSize: 11.5, fontWeight: 700, color: "#B91C1C", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                      >
+                        View Detail
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Quick Actions */}

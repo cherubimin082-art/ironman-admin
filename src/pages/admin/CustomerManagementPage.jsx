@@ -218,7 +218,8 @@ export default function CustomerManagementPage() {
 
         {/* Table */}
         <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", boxShadow: "0 2px 10px rgba(0,0,0,0.04)", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="si-table-wrap">
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 500 }}>
             <thead>
               <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
                 {["Name", "Phone", "Apartment", "Joined", "Actions"].map(h => (
@@ -260,6 +261,7 @@ export default function CustomerManagementPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {modal === "add" && (
