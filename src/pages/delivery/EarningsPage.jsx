@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "../../components/shared/Layout";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import api from "../../services/api";
+import { useWindowSize } from "../../hooks/useWindowSize";
 
 const WEEKLY_PLACEHOLDER = [
   { day: "Mon", earnings: 0 },
@@ -43,23 +44,23 @@ function MetricCard({ label, value, sub, accent, bg, border, icon }) {
       onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; }}
     >
       <div style={{ height: 3, background: accent }} />
-      <div style={{ padding: "20px 22px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+      <div style={{ padding: "16px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <div style={{
-            width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
             background: bg, color: accent,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             {icon}
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
             {label}
           </span>
         </div>
-        <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 32, fontWeight: 800, color: "#111827", margin: "0 0 5px", lineHeight: 1 }}>
+        <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: "0 0 4px", lineHeight: 1 }}>
           {value}
         </p>
-        <p style={{ fontSize: 12.5, color: "#9ca3af", margin: 0, fontWeight: 500 }}>{sub}</p>
+        <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontWeight: 500 }}>{sub}</p>
       </div>
     </div>
   );
@@ -71,9 +72,10 @@ function fmtDate(ts) {
 }
 
 export default function EarningsPage() {
-  const [orders, setOrders]           = useState([]);
+  const [orders, setOrders]            = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
-  const [loading, setLoading]         = useState(true);
+  const [loading, setLoading]          = useState(true);
+  const { isMobile, isTablet }         = useWindowSize();
 
   useEffect(() => {
     api.get("/delivery/completed-orders")
@@ -87,20 +89,16 @@ export default function EarningsPage() {
 
   const todayOrders = orders.filter(o => {
     const d = new Date(o.delivered_at || o.created_at);
-    const today = new Date();
-    return d.getDate() === today.getDate() &&
-           d.getMonth() === today.getMonth() &&
-           d.getFullYear() === today.getFullYear();
+    const t = new Date();
+    return d.getDate() === t.getDate() && d.getMonth() === t.getMonth() && d.getFullYear() === t.getFullYear();
   });
   const todayRevenue = todayOrders.reduce((s, o) => s + parseFloat(o.total || 0), 0);
   const avgPerTrip   = orders.length ? Math.round(totalRevenue / orders.length) : 0;
 
-  // Build weekly chart from real orders (last 7 days)
-  const weeklyMap = {};
   const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const weeklyMap = {};
   orders.forEach(o => {
-    const d = new Date(o.delivered_at || o.created_at);
-    const key = DAYS[d.getDay()];
+    const key = DAYS[new Date(o.delivered_at || o.created_at).getDay()];
     weeklyMap[key] = (weeklyMap[key] || 0) + parseFloat(o.total || 0);
   });
   const weekly = WEEKLY_PLACEHOLDER.map(d => ({ ...d, earnings: Math.round(weeklyMap[d.day] || 0) }));
@@ -139,15 +137,18 @@ export default function EarningsPage() {
     },
   ];
 
+  const gridCols = isMobile ? "1fr 1fr" : isTablet ? "repeat(3, 1fr)" : "repeat(3, 1fr)";
+
   return (
     <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
+        {/* Header */}
         <div>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
             Financials
           </p>
-          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
             Earnings
           </h1>
           <p style={{ fontSize: 13.5, color: "#9ca3af", margin: "6px 0 0", fontWeight: 400 }}>
@@ -155,15 +156,17 @@ export default function EarningsPage() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {/* Metric cards — 2-col on mobile, 3-col on tablet/desktop */}
+        <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: isMobile ? 10 : 16 }}>
           {metrics.map(m => <MetricCard key={m.label} {...m} />)}
         </div>
 
+        {/* Chart */}
         <div style={{
           background: "#fff", borderRadius: 18, border: "1px solid #e5e7eb",
           boxShadow: "0 2px 10px rgba(0,0,0,0.05)", overflow: "hidden",
         }}>
-          <div style={{ padding: "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
+          <div style={{ padding: isMobile ? "16px" : "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
             <p style={{ fontSize: 10.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>
               Revenue Trend
             </p>
@@ -171,9 +174,9 @@ export default function EarningsPage() {
               Earnings by Day (₹)
             </h3>
           </div>
-          <div style={{ padding: "20px 24px" }}>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={weekly} margin={{ left: -20, right: 0, top: 4, bottom: 0 }}>
+          <div style={{ padding: isMobile ? "16px 8px" : "20px 24px" }}>
+            <ResponsiveContainer width="100%" height={isMobile ? 180 : 240}>
+              <AreaChart data={weekly} margin={{ left: isMobile ? -28 : -20, right: 4, top: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="earningsGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor="#10b981" stopOpacity={0.18} />
@@ -181,24 +184,25 @@ export default function EarningsPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#9ca3af", fontWeight: 600 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: isMobile ? 10 : 11, fill: "#9ca3af", fontWeight: 600 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: isMobile ? 10 : 11, fill: "#9ca3af" }} />
                 <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#f3f4f6", strokeWidth: 1 }} />
                 <Area type="monotone" dataKey="earnings" stroke="#10b981" strokeWidth={2.5}
                   fill="url(#earningsGrad)"
-                  dot={{ fill: "#10b981", r: 4, strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: "#10b981", strokeWidth: 0 }}
+                  dot={{ fill: "#10b981", r: isMobile ? 3 : 4, strokeWidth: 0 }}
+                  activeDot={{ r: isMobile ? 5 : 6, fill: "#10b981", strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Delivery History */}
         <div style={{
           background: "#fff", borderRadius: 18, border: "1px solid #e5e7eb",
           boxShadow: "0 2px 10px rgba(0,0,0,0.05)", overflow: "hidden",
         }}>
-          <div style={{ padding: "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
+          <div style={{ padding: isMobile ? "16px" : "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
             <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>
               Delivery History
             </h3>
@@ -208,38 +212,72 @@ export default function EarningsPage() {
             <div style={{ padding: "40px 24px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Loading…</div>
           ) : orders.length === 0 ? (
             <div style={{ padding: "40px 24px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No deliveries yet.</div>
+          ) : isMobile ? (
+            /* Mobile: card list */
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              {orders.map((o, idx) => (
+                <div key={o.id} style={{
+                  padding: "14px 16px",
+                  borderBottom: idx < orders.length - 1 ? "1px solid #f9fafb" : "none",
+                  display: "flex", alignItems: "center", gap: 12,
+                }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: "#f0fdf4", color: "#10b981",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 13, fontWeight: 800,
+                  }}>
+                    {o.customer_name?.[0]?.toUpperCase() ?? "?"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0 }}>
+                      {o.order_code || `#${o.id}`}
+                    </p>
+                    <p style={{ fontSize: 12, color: "#9ca3af", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {o.customer_name} · {fmtDate(o.delivered_at || o.created_at)}
+                    </p>
+                  </div>
+                  <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981", flexShrink: 0 }}>
+                    ₹{parseFloat(o.total || 0).toFixed(0)}
+                  </span>
+                </div>
+              ))}
+            </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                  {["Order ID", "Customer", "Date", "Amount"].map((h, i) => (
-                    <th key={h} style={{
-                      padding: "12px 20px", fontSize: 11, fontWeight: 700, color: "#9ca3af",
-                      textTransform: "uppercase", letterSpacing: "0.07em",
-                      textAlign: i === 3 ? "right" : "left",
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o, idx) => (
-                  <tr key={o.id}
-                    style={{ borderBottom: idx < orders.length - 1 ? "1px solid #f9fafb" : "none", transition: "background 0.12s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                  >
-                    <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: "#111827" }}>{o.order_code || `#${o.id}`}</td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 600, color: "#374151" }}>{o.customer_name}</td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#9ca3af" }}>{fmtDate(o.delivered_at || o.created_at)}</td>
-                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                      <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981" }}>
-                        ₹{parseFloat(o.total || 0).toFixed(0)}
-                      </span>
-                    </td>
+            /* Desktop: table */
+            <div className="si-table-wrap">
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
+                <thead>
+                  <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
+                    {["Order ID", "Customer", "Date", "Amount"].map((h, i) => (
+                      <th key={h} style={{
+                        padding: "12px 20px", fontSize: 11, fontWeight: 700, color: "#9ca3af",
+                        textTransform: "uppercase", letterSpacing: "0.07em",
+                        textAlign: i === 3 ? "right" : "left",
+                      }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {orders.map((o, idx) => (
+                    <tr key={o.id}
+                      style={{ borderBottom: idx < orders.length - 1 ? "1px solid #f9fafb" : "none", transition: "background 0.12s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: "#111827" }}>{o.order_code || `#${o.id}`}</td>
+                      <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 600, color: "#374151" }}>{o.customer_name}</td>
+                      <td style={{ padding: "14px 20px", fontSize: 13, color: "#9ca3af" }}>{fmtDate(o.delivered_at || o.created_at)}</td>
+                      <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981" }}>
+                          ₹{parseFloat(o.total || 0).toFixed(0)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
