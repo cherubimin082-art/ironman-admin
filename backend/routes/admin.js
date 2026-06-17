@@ -231,9 +231,11 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
 // PUT /api/admin/vendors/:id
 router.put("/admin/vendors/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { name, phone, zone, address, status } = req.body;
+  const { name, phone, zone, address, status, password } = req.body;
   if (!name || !phone)
     return res.status(400).json({ message: "name and phone are required" });
+  if (password && password.length < 6)
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
 
   try {
     const [[vendor]] = await pool.query(
@@ -248,14 +250,17 @@ router.put("/admin/vendors/:id", ...auth, async (req, res) => {
 
     const allowed = ["active", "inactive", "on_leave"];
     const newStatus = allowed.includes(status) ? status : undefined;
+    const newHash = password ? await bcrypt.hash(password, 10) : null;
+
+    const setClauses = ["name = ?", "phone = ?", "zone = ?", "address = ?"];
+    const values     = [name, phone, zone || null, address || null];
+    if (newStatus) { setClauses.push("status = ?");        values.push(newStatus); }
+    if (newHash)   { setClauses.push("password_hash = ?"); values.push(newHash);   }
+    values.push(id);
 
     await pool.query(
-      `UPDATE users SET name = ?, phone = ?, zone = ?, address = ?
-       ${newStatus ? ", status = ?" : ""}
-       WHERE id = ? AND role = 'vendor'`,
-      newStatus
-        ? [name, phone, zone || null, address || null, newStatus, id]
-        : [name, phone, zone || null, address || null, id]
+      `UPDATE users SET ${setClauses.join(", ")} WHERE id = ? AND role = 'vendor'`,
+      values
     );
     res.json({ message: "Vendor updated successfully" });
   } catch (err) {

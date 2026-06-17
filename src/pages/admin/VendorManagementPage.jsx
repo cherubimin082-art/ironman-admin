@@ -279,6 +279,7 @@ function BagsModal({ vendor, onClose }) {
 
 // ── Vendor form fields (module-level so React doesn't remount on each keystroke) ──
 function VendorFields({ form, onChange, isEdit, isMobile }) {
+  const [showPass, setShowPass] = useState(false);
   return (
     <>
       <div>
@@ -291,13 +292,22 @@ function VendorFields({ form, onChange, isEdit, isMobile }) {
         <input style={inputSt} placeholder="10-digit mobile" value={form.phone}
           onChange={onChange("phone")} onFocus={fo} onBlur={fb} />
       </div>
-      {!isEdit && (
-        <div>
-          <label style={labelSt}>Password *</label>
-          <input type="password" style={inputSt} placeholder="Min 6 characters" value={form.password}
-            onChange={onChange("password")} onFocus={fo} onBlur={fb} />
+      <div>
+        <label style={labelSt}>{isEdit ? "New Password" : "Password *"}</label>
+        <div style={{ position: "relative" }}>
+          <input
+            type={showPass ? "text" : "password"}
+            style={{ ...inputSt, paddingRight: 42 }}
+            placeholder={isEdit ? "Leave blank to keep current" : "Min 6 characters"}
+            value={form.password}
+            onChange={onChange("password")} onFocus={fo} onBlur={fb}
+          />
+          <button type="button" onClick={() => setShowPass(p => !p)} style={{
+            position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+            background: "none", border: "none", cursor: "pointer", color: "#6b7280", fontSize: 13, padding: 0,
+          }}>{showPass ? "Hide" : "Show"}</button>
         </div>
-      )}
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
         <div>
           <label style={labelSt}>Zone / Area</label>
@@ -406,6 +416,7 @@ export default function VendorManagementPage() {
       await api.put(`/admin/vendors/${selected.id}`, {
         name: form.name, phone: form.phone,
         zone: form.zone, address: form.address, status: form.status,
+        ...(form.password.trim() && { password: form.password.trim() }),
       });
       setFormOk("Iron's Head updated successfully");
       await load();
