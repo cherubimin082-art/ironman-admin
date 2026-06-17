@@ -34,7 +34,7 @@ const fmtDate = d => d
   ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
   : "—";
 
-const EMPTY_FORM = { name: "", mobile_number: "", role_title: "" };
+const EMPTY_FORM = { name: "", mobile_number: "", role_title: "", password: "" };
 
 // ── Shared UI components ────────────────────────────────────────────────────
 
@@ -90,6 +90,7 @@ function Modal({ title, onClose, children, maxWidth = 460 }) {
 // If defined inside StaffPage, a new function reference is created on every render,
 // causing React to unmount+remount the form on every keystroke → inputs lose focus.
 function StaffForm({ onSubmit, form, onFieldChange, mode, onClose, saving, formErr, formOk }) {
+  const [showPass, setShowPass] = useState(false);
   const remaining = 10 - form.mobile_number.length;
   return (
     <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -123,12 +124,45 @@ function StaffForm({ onSubmit, form, onFieldChange, mode, onClose, saving, formE
       </div>
       <div>
         <label style={labelSt}>
+          Password{" "}
+          <span style={{ color: "#9ca3af", fontWeight: 500 }}>
+            {mode === "edit" ? "(leave blank to keep current)" : "*"}
+          </span>
+        </label>
+        <div style={{ position: "relative" }}>
+          <input
+            style={{ ...inputSt, paddingRight: 44 }}
+            type={showPass ? "text" : "password"}
+            placeholder={mode === "edit" ? "Enter new password to change" : "Set a password"}
+            value={form.password}
+            onChange={e => onFieldChange("password", e.target.value)}
+            onFocus={fo} onBlur={fb}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPass(v => !v)}
+            style={{
+              position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              color: "#9ca3af", display: "flex", alignItems: "center",
+            }}
+          >
+            {showPass ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            )}
+          </button>
+        </div>
+      </div>
+      <div>
+        <label style={labelSt}>
           Role / Title{" "}
           <span style={{ color: "#9ca3af", fontWeight: 500 }}>(optional)</span>
         </label>
         <input
           style={inputSt}
-          placeholder="e.g. Ironing Staff, Helper"
+          placeholder="e.g. Rider, Helper"
           value={form.role_title}
           onChange={e => onFieldChange("role_title", e.target.value)}
           onFocus={fo} onBlur={fb}
@@ -193,7 +227,7 @@ export default function StaffPage() {
   }
   function openEdit(s) {
     setSelected(s);
-    setForm({ name: s.name, mobile_number: s.mobile_number, role_title: s.role_title || "" });
+    setForm({ name: s.name, mobile_number: s.mobile_number, role_title: s.role_title || "", password: "" });
     setFormErr(""); setFormOk("");
     setModal("edit");
   }
@@ -202,16 +236,18 @@ export default function StaffPage() {
     setModal("delete");
   }
 
-  function validate() {
-    if (!form.name.trim())                        return "Full name is required.";
-    if (!form.mobile_number)                       return "Mobile number is required.";
-    if (!/^\d{10}$/.test(form.mobile_number))     return "Enter a valid 10-digit mobile number.";
+  function validate(requirePassword = false) {
+    if (!form.name.trim())                    return "Full name is required.";
+    if (!form.mobile_number)                  return "Mobile number is required.";
+    if (!/^\d{10}$/.test(form.mobile_number)) return "Enter a valid 10-digit mobile number.";
+    if (requirePassword && !form.password)    return "Password is required.";
+    if (form.password && form.password.length < 6) return "Password must be at least 6 characters.";
     return null;
   }
 
   async function handleAdd(e) {
     e.preventDefault();
-    const err = validate();
+    const err = validate(true);
     if (err) return setFormErr(err);
     setSaving(true); setFormErr(""); setFormOk("");
     try {

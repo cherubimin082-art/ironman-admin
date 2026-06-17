@@ -1,5 +1,6 @@
 const express = require("express");
 const http    = require("http");
+const bcrypt  = require("bcryptjs");
 const pool    = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
@@ -516,13 +517,14 @@ router.get("/vendor/staff", ...auth, async (req, res) => {
 // POST /api/vendor/staff — add staff member
 router.post("/vendor/staff", ...auth, async (req, res) => {
   const vendorId = req.user.id;
-  const { name, mobile_number, role_title } = req.body;
+  const { name, mobile_number, role_title, password } = req.body;
   if (!name?.trim() || !mobile_number?.trim())
     return res.status(400).json({ message: "Name and mobile number are required" });
   try {
+    const hash = password ? await bcrypt.hash(password, 10) : null;
     const [result] = await pool.query(
-      `INSERT INTO vendor_staff (vendor_id, name, mobile_number, role_title) VALUES (?, ?, ?, ?)`,
-      [vendorId, name.trim(), mobile_number.trim(), role_title?.trim() || null]
+      `INSERT INTO vendor_staff (vendor_id, name, mobile_number, role_title, password_hash) VALUES (?, ?, ?, ?, ?)`,
+      [vendorId, name.trim(), mobile_number.trim(), role_title?.trim() || null, hash]
     );
     res.status(201).json({ message: "Staff added", id: result.insertId });
   } catch (err) {
@@ -535,15 +537,20 @@ router.post("/vendor/staff", ...auth, async (req, res) => {
 router.put("/vendor/staff/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id }   = req.params;
-  const { name, mobile_number, role_title } = req.body;
+  const { name, mobile_number, role_title, password } = req.body;
   if (!name?.trim() || !mobile_number?.trim())
     return res.status(400).json({ message: "Name and mobile number are required" });
   try {
-    const [result] = await pool.query(
-      `UPDATE vendor_staff SET name = ?, mobile_number = ?, role_title = ?
-        WHERE id = ? AND vendor_id = ?`,
-      [name.trim(), mobile_number.trim(), role_title?.trim() || null, id, vendorId]
-    );
+    let query, params;
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      query  = `UPDATE vendor_staff SET name = ?, mobile_number = ?, role_title = ?, password_hash = ? WHERE id = ? AND vendor_id = ?`;
+      params = [name.trim(), mobile_number.trim(), role_title?.trim() || null, hash, id, vendorId];
+    } else {
+      query  = `UPDATE vendor_staff SET name = ?, mobile_number = ?, role_title = ? WHERE id = ? AND vendor_id = ?`;
+      params = [name.trim(), mobile_number.trim(), role_title?.trim() || null, id, vendorId];
+    }
+    const [result] = await pool.query(query, params);
     if (!result.affectedRows)
       return res.status(404).json({ message: "Staff member not found" });
     res.json({ message: "Staff updated" });
