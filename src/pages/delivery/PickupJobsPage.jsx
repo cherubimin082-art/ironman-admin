@@ -9,9 +9,9 @@ import RideMapModal from "../../components/delivery/RideMapModal";
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(d) {
   if (!d) return "—";
-  return new Date(d + "T00:00:00").toLocaleDateString("en-IN", {
-    day: "numeric", month: "short", year: "numeric",
-  });
+  const dt = new Date(String(d).includes("T") || String(d).includes(" ") ? d : d + "T00:00:00");
+  if (isNaN(dt)) return "—";
+  return dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 const S = {
