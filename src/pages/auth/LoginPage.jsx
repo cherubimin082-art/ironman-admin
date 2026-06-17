@@ -296,7 +296,7 @@ export default function LoginPage() {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button
-          onClick={() => { setStep("phone"); setDigits(["","","","","",""]); setError(""); clearInterval(timerRef.current); }}
+          onClick={() => { setStep("phone"); setDigits(["","","",""]); setError(""); clearInterval(timerRef.current); }}
           style={{ fontSize: 12, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
         >
           ← Change number
