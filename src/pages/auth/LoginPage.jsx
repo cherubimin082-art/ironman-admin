@@ -260,9 +260,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* 6-digit OTP boxes */}
+      {/* 4-digit OTP boxes */}
       <div>
-        <label style={styles.label}>Enter 6-digit OTP</label>
+        <label style={styles.label}>Enter 4-digit OTP</label>
         <div style={{ display: "flex", gap: isMobile ? 6 : 8, marginTop: 8 }} onPaste={handlePaste}>
           {digits.map((d, i) => (
             <input
@@ -421,7 +421,7 @@ export default function LoginPage() {
             </h2>
             <p style={{ ...styles.formSub, textAlign: isCompact ? "center" : "left" }}>
               {method === "otp" && step === "verify"
-                ? "Enter the 6-digit code sent to your WhatsApp"
+                ? "Enter the 4-digit code sent to your WhatsApp"
                 : "Sign in to your staff account"}
             </p>
           </div>

@@ -132,7 +132,7 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
             Ask the customer for the 4-digit OTP sent to their WhatsApp.
           </p>
 
-          {/* Bag dropdown — appears when OTP is 6 digits */}
+          {/* Bag dropdown — appears when OTP is 4 digits */}
           {showBag && (
             <div style={{ marginTop: 18 }}>
               <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
