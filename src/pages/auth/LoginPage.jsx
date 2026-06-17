@@ -47,12 +47,12 @@ export default function LoginPage() {
   const [phone, setPhone]       = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [digits, setDigits]     = useState(["", "", "", "", "", ""]);
+  const [digits, setDigits]     = useState(["", "", "", ""]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [countdown, setCountdown] = useState(0);
 
-  const inputRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+  const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const timerRef  = useRef(null);
 
   const { signIn }  = useAuth();
@@ -73,7 +73,7 @@ export default function LoginPage() {
     setMethod(m);
     setStep("phone");
     setError("");
-    setDigits(["", "", "", "", "", ""]);
+    setDigits(["", "", "", ""]);
     setPassword("");
     clearInterval(timerRef.current);
   }
@@ -112,7 +112,7 @@ export default function LoginPage() {
       finish(await verifyOtp(phone.replace(/\D/g, ""), otp));
     } catch (err) {
       setError(err.response?.data?.message || "Incorrect OTP. Try again.");
-      setDigits(["", "", "", "", "", ""]);
+      setDigits(["", "", "", ""]);
       setTimeout(() => inputRefs[0].current?.focus(), 50);
     } finally { setLoading(false); }
   }
@@ -120,8 +120,8 @@ export default function LoginPage() {
   function handleDigit(idx, val) {
     const d = val.replace(/\D/g, "").slice(-1);
     const next = [...digits]; next[idx] = d; setDigits(next); setError("");
-    if (d && idx < 5) inputRefs[idx + 1].current?.focus();
-    if (next.every(x => x) && idx === 5) handleVerifyOtp(next.join(""));
+    if (d && idx < 3) inputRefs[idx + 1].current?.focus();
+    if (next.every(x => x) && idx === 3) handleVerifyOtp(next.join(""));
   }
 
   function handleKeyDown(idx, e) {
@@ -129,8 +129,8 @@ export default function LoginPage() {
   }
 
   function handlePaste(e) {
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (pasted.length === 6) { setDigits(pasted.split("")); inputRefs[5].current?.focus(); handleVerifyOtp(pasted); }
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+    if (pasted.length === 4) { setDigits(pasted.split("")); inputRefs[3].current?.focus(); handleVerifyOtp(pasted); }
   }
 
   async function handleResend() {
@@ -138,7 +138,7 @@ export default function LoginPage() {
     setLoading(true); setError("");
     try {
       await requestOtp(phone.replace(/\D/g, ""));
-      setDigits(["", "", "", "", "", ""]);
+      setDigits(["", "", "", ""]);
       setTimeout(() => inputRefs[0].current?.focus(), 50);
       startCountdown();
     } catch (err) {

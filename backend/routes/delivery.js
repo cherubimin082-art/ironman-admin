@@ -230,7 +230,7 @@ router.put("/delivery/reached-for-pickup/:orderId", ...auth, async (req, res) =>
     const [[{ pickup_otp: existing }]] = await pool.query(
       `SELECT pickup_otp FROM orders WHERE id = ?`, [orderId]
     );
-    const PICKUP_OTP = existing || String(Math.floor(100000 + Math.random() * 900000));
+    const PICKUP_OTP = existing || String(Math.floor(1000 + Math.random() * 9000));
 
     if (!existing) {
       await pool.query(`UPDATE orders SET pickup_otp = ? WHERE id = ?`, [PICKUP_OTP, orderId]);
@@ -430,7 +430,7 @@ router.put("/delivery/end-ride/:orderId", ...auth, async (req, res) => {
     const [[{ delivery_otp: existing }]] = await pool.query(
       `SELECT delivery_otp FROM orders WHERE id = ?`, [orderId]
     );
-    const DELIVERY_OTP = existing || String(Math.floor(100000 + Math.random() * 900000));
+    const DELIVERY_OTP = existing || String(Math.floor(1000 + Math.random() * 9000));
 
     if (!existing) {
       await pool.query(`UPDATE orders SET delivery_otp = ? WHERE id = ?`, [DELIVERY_OTP, orderId]);

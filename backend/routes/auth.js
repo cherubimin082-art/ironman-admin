@@ -50,7 +50,7 @@ router.post("/request-otp", async (req, res) => {
     if (!rows.length)
       return res.status(404).json({ message: "Staff account not found. Contact your admin." });
 
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const otp = String(Math.floor(1000 + Math.random() * 9000));
     await pool.query("UPDATE users SET otp = ? WHERE id = ?", [otp, rows[0].id]);
 
     try { await sendWhatsAppOtp(cleanPhone, otp); }
