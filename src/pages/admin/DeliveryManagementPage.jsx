@@ -90,9 +90,6 @@ function Alert({ type, msg }) {
   );
 }
 
-const fmtDate = d => d
-  ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-  : "—";
 
 // ── Main page ───────────────────────────────────────────────────
 export default function DeliveryManagementPage() {
@@ -256,7 +253,7 @@ export default function DeliveryManagementPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
                 <thead>
                   <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                    {(isMobile ? ["Name", "Status", "Actions"] : ["#", "Name", "Phone", "Total Deliveries", "Status", "Created", "Actions"]).map(h => (
+                    {(isMobile ? ["Name", "Status", "Actions"] : ["#", "Name", "Phone", "Iron's Head", "Deliveries", "Status", "Actions"]).map(h => (
                       <th key={h} style={{
                         padding: "12px 16px", fontSize: 11, fontWeight: 700,
                         color: "#9ca3af", textTransform: "uppercase",
@@ -291,13 +288,19 @@ export default function DeliveryManagementPage() {
                         </div>
                       </td>
                       {!isMobile && <td style={{ padding: "14px 16px", fontSize: 13, color: "#374151", whiteSpace: "nowrap" }}>{b.phone || "—"}</td>}
+                      {!isMobile && (
+                        <td style={{ padding: "14px 16px" }}>
+                          {b.vendor_name
+                            ? <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA" }}>{b.vendor_name}</span>
+                            : <span style={{ fontSize: 12, color: "#d1d5db" }}>Admin</span>}
+                        </td>
+                      )}
                       {!isMobile && <td style={{ padding: "14px 16px" }}>
                         <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981" }}>
                           {b.total_deliveries || 0}
                         </span>
                       </td>}
                       <td style={{ padding: "14px 16px" }}><StatusBadge status={b.status} /></td>
-                      {!isMobile && <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>{fmtDate(b.created_at)}</td>}
                       <td style={{ padding: "14px 16px" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button onClick={() => openEdit(b)} style={{

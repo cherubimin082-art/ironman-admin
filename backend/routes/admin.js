@@ -372,9 +372,11 @@ router.delete("/admin/bags/:id", ...auth, async (req, res) => {
 router.get("/admin/delivery-boys", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT u.id, u.name, u.phone, u.status, u.created_at,
+      `SELECT u.id, u.name, u.phone, u.status, u.created_at, u.role_title,
+              v.name AS vendor_name,
               COUNT(DISTINCT da.id) AS total_deliveries
          FROM users u
+         LEFT JOIN users v ON v.id = u.vendor_id
          LEFT JOIN delivery_assignments da ON da.delivery_agent_id = u.id
         WHERE u.role = 'delivery'
         GROUP BY u.id

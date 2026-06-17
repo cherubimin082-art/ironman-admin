@@ -498,13 +498,13 @@ router.delete("/vendor/capacity/:apartment", ...auth, async (req, res) => {
 
 // ── Staff Management ───────────────────────────────────────────────────
 
-// GET /api/vendor/staff — list all staff for this vendor
+// GET /api/vendor/staff — list delivery boys belonging to this vendor
 router.get("/vendor/staff", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   try {
     const [rows] = await pool.query(
-      `SELECT id, name, mobile_number, role_title, created_at
-         FROM vendor_staff WHERE vendor_id = ? ORDER BY created_at DESC`,
+      `SELECT id, name, phone AS mobile_number, role_title, status, created_at
+         FROM users WHERE role = 'delivery' AND vendor_id = ? ORDER BY created_at DESC`,
       [vendorId]
     );
     res.json({ staff: rows });
@@ -514,26 +514,35 @@ router.get("/vendor/staff", ...auth, async (req, res) => {
   }
 });
 
-// POST /api/vendor/staff — add staff member
+// POST /api/vendor/staff — create delivery boy account linked to this vendor
 router.post("/vendor/staff", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { name, mobile_number, role_title, password } = req.body;
   if (!name?.trim() || !mobile_number?.trim())
     return res.status(400).json({ message: "Name and mobile number are required" });
+  if (!password)
+    return res.status(400).json({ message: "Password is required" });
   try {
-    const hash = password ? await bcrypt.hash(password, 10) : null;
-    const [result] = await pool.query(
-      `INSERT INTO vendor_staff (vendor_id, name, mobile_number, role_title, password_hash) VALUES (?, ?, ?, ?, ?)`,
-      [vendorId, name.trim(), mobile_number.trim(), role_title?.trim() || null, hash]
+    const [[existing]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ?", [mobile_number.trim()]
     );
-    res.status(201).json({ message: "Staff added", id: result.insertId });
+    if (existing)
+      return res.status(409).json({ message: "Mobile number already registered" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.query(
+      `INSERT INTO users (name, phone, password_hash, role, status, vendor_id, role_title)
+       VALUES (?, ?, ?, 'delivery', 'active', ?, ?)`,
+      [name.trim(), mobile_number.trim(), hash, vendorId, role_title?.trim() || null]
+    );
+    res.status(201).json({ message: "Delivery boy added", id: result.insertId });
   } catch (err) {
     console.error("vendor/staff POST error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// PUT /api/vendor/staff/:id — update staff member
+// PUT /api/vendor/staff/:id — update delivery boy (vendor can only edit their own)
 router.put("/vendor/staff/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id }   = req.params;
@@ -541,37 +550,47 @@ router.put("/vendor/staff/:id", ...auth, async (req, res) => {
   if (!name?.trim() || !mobile_number?.trim())
     return res.status(400).json({ message: "Name and mobile number are required" });
   try {
-    let query, params;
+    const [[person]] = await pool.query(
+      "SELECT id FROM users WHERE id = ? AND vendor_id = ? AND role = 'delivery'", [id, vendorId]
+    );
+    if (!person) return res.status(404).json({ message: "Delivery boy not found" });
+
+    const [[dup]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND id != ?", [mobile_number.trim(), id]
+    );
+    if (dup) return res.status(409).json({ message: "Mobile number already in use" });
+
     if (password) {
       const hash = await bcrypt.hash(password, 10);
-      query  = `UPDATE vendor_staff SET name = ?, mobile_number = ?, role_title = ?, password_hash = ? WHERE id = ? AND vendor_id = ?`;
-      params = [name.trim(), mobile_number.trim(), role_title?.trim() || null, hash, id, vendorId];
+      await pool.query(
+        `UPDATE users SET name=?, phone=?, role_title=?, password_hash=? WHERE id=? AND vendor_id=?`,
+        [name.trim(), mobile_number.trim(), role_title?.trim() || null, hash, id, vendorId]
+      );
     } else {
-      query  = `UPDATE vendor_staff SET name = ?, mobile_number = ?, role_title = ? WHERE id = ? AND vendor_id = ?`;
-      params = [name.trim(), mobile_number.trim(), role_title?.trim() || null, id, vendorId];
+      await pool.query(
+        `UPDATE users SET name=?, phone=?, role_title=? WHERE id=? AND vendor_id=?`,
+        [name.trim(), mobile_number.trim(), role_title?.trim() || null, id, vendorId]
+      );
     }
-    const [result] = await pool.query(query, params);
-    if (!result.affectedRows)
-      return res.status(404).json({ message: "Staff member not found" });
-    res.json({ message: "Staff updated" });
+    res.json({ message: "Delivery boy updated" });
   } catch (err) {
     console.error("vendor/staff PUT error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// DELETE /api/vendor/staff/:id — remove staff member
+// DELETE /api/vendor/staff/:id — remove delivery boy (vendor can only delete their own)
 router.delete("/vendor/staff/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id }   = req.params;
   try {
     const [result] = await pool.query(
-      `DELETE FROM vendor_staff WHERE id = ? AND vendor_id = ?`,
+      `DELETE FROM users WHERE id = ? AND vendor_id = ? AND role = 'delivery'`,
       [id, vendorId]
     );
     if (!result.affectedRows)
-      return res.status(404).json({ message: "Staff member not found" });
-    res.json({ message: "Staff deleted" });
+      return res.status(404).json({ message: "Delivery boy not found" });
+    res.json({ message: "Delivery boy deleted" });
   } catch (err) {
     console.error("vendor/staff DELETE error:", err);
     res.status(500).json({ message: "Server error" });
