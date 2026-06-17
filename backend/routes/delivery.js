@@ -1,11 +1,28 @@
 const express = require("express");
 const http    = require("http");
+const https   = require("https");
 const pool    = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
 
 const router = express.Router();
 const auth   = [verifyToken, requireRole("delivery")];
+
+// ── WhatsApp OTP sender ─────────────────────────────────────
+function sendWhatsAppOtp(phone10digit, otp) {
+  const phone = "91" + phone10digit;
+  const path  = `/webhook/014bb05a-ec6e-4cda-b3dc-614b418dfe79?phone_number=${phone}&otp=${otp}`;
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      { hostname: "automate.cherubim.in", path, method: "POST",
+        headers: { Authorization: "Basic b3RwX2F1dGg6QzAwTDc4Njk1NTk5" } },
+      res => { res.resume(); resolve(res.statusCode); }
+    );
+    req.setTimeout(8000, () => { req.destroy(); reject(new Error("webhook timeout")); });
+    req.on("error", reject);
+    req.end();
+  });
+}
 
 // Bridge: customer frontend connects to port 5001 (customer backend).
 // This backend runs on 5002 with its own Socket.IO instance, so direct
@@ -213,10 +230,17 @@ router.put("/delivery/reached-for-pickup/:orderId", ...auth, async (req, res) =>
     const [[{ pickup_otp: existing }]] = await pool.query(
       `SELECT pickup_otp FROM orders WHERE id = ?`, [orderId]
     );
-    const PICKUP_OTP = existing || String(Math.floor(1000 + Math.random() * 9000));
+    const PICKUP_OTP = existing || String(Math.floor(100000 + Math.random() * 900000));
 
     if (!existing) {
       await pool.query(`UPDATE orders SET pickup_otp = ? WHERE id = ?`, [PICKUP_OTP, orderId]);
+    }
+
+    // Send OTP to customer via WhatsApp
+    const [[customer]] = await pool.query(`SELECT phone FROM users WHERE id = ?`, [order.customer_id]);
+    if (customer?.phone) {
+      try { await sendWhatsAppOtp(customer.phone, PICKUP_OTP); }
+      catch (err) { console.error("[pickup-otp] WhatsApp error:", err.message); }
     }
 
     emitToCustomer(order.customer_id, "show_pickup_otp", { orderId, otp: PICKUP_OTP });
@@ -406,15 +430,20 @@ router.put("/delivery/end-ride/:orderId", ...auth, async (req, res) => {
     const [[{ delivery_otp: existing }]] = await pool.query(
       `SELECT delivery_otp FROM orders WHERE id = ?`, [orderId]
     );
-    const DELIVERY_OTP = existing || String(Math.floor(1000 + Math.random() * 9000));
+    const DELIVERY_OTP = existing || String(Math.floor(100000 + Math.random() * 900000));
 
     if (!existing) {
       await pool.query(`UPDATE orders SET delivery_otp = ? WHERE id = ?`, [DELIVERY_OTP, orderId]);
     }
 
-    console.log(`[end-ride] orderId=${orderId} delivery_otp=${DELIVERY_OTP}`);
-    emitToCustomer(order.customer_id, "show_delivery_otp", { orderId, otp: DELIVERY_OTP });
+    // Send OTP to customer via WhatsApp
+    const [[customer]] = await pool.query(`SELECT phone FROM users WHERE id = ?`, [order.customer_id]);
+    if (customer?.phone) {
+      try { await sendWhatsAppOtp(customer.phone, DELIVERY_OTP); }
+      catch (err) { console.error("[delivery-otp] WhatsApp error:", err.message); }
+    }
 
+    emitToCustomer(order.customer_id, "show_delivery_otp", { orderId, otp: DELIVERY_OTP });
     res.json({ message: "Customer notified with delivery OTP" });
   } catch (err) {
     console.error(err);
