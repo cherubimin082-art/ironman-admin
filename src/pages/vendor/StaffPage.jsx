@@ -150,7 +150,7 @@ function StaffForm({ onSubmit, form, onFieldChange, mode, onClose, saving, formE
             width: "100%",
           }}
         >
-          {saving ? "Saving…" : mode === "add" ? "Add Staff" : "Save Changes"}
+          {saving ? "Saving…" : mode === "add" ? "Add Delivery Boy" : "Save Changes"}
         </button>
       </div>
     </form>
@@ -178,7 +178,7 @@ export default function StaffPage() {
     try {
       const { data } = await api.get("/vendor/staff");
       setStaff(data.staff || []);
-    } catch { setError("Failed to load staff. Please try again."); }
+    } catch { setError("Failed to load delivery boys. Please try again."); }
     finally { setLoading(false); }
   }, []);
 
@@ -216,11 +216,11 @@ export default function StaffPage() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/vendor/staff", form);
-      setFormOk("Staff member added successfully.");
+      setFormOk("Delivery boy added successfully.");
       await load();
       setTimeout(closeModal, 900);
     } catch (err) {
-      setFormErr(err?.response?.data?.message || "Failed to add staff.");
+      setFormErr(err?.response?.data?.message || "Failed to add delivery boy.");
     } finally { setSaving(false); }
   }
 
@@ -231,7 +231,7 @@ export default function StaffPage() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.put(`/vendor/staff/${selected.id}`, form);
-      setFormOk("Staff member updated successfully.");
+      setFormOk("Delivery boy updated successfully.");
       await load();
       setTimeout(closeModal, 900);
     } catch (err) {
@@ -243,7 +243,7 @@ export default function StaffPage() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.delete(`/vendor/staff/${selected.id}`);
-      setFormOk("Staff member removed.");
+      setFormOk("Delivery boy removed.");
       await load();
       setTimeout(closeModal, 900);
     } catch (err) {
@@ -264,10 +264,10 @@ export default function StaffPage() {
               Team Management
             </p>
             <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
-              Manage Staff
+              Manage Delivery Boys
             </h1>
             <p style={{ fontSize: 13.5, color: "#9ca3af", margin: "6px 0 0" }}>
-              Add and manage your ironing shop staff members.
+              Add and manage your ironing shop delivery boys.
             </p>
           </div>
 
@@ -278,14 +278,14 @@ export default function StaffPage() {
             color: "#fff", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
             boxShadow: "0 4px 14px rgba(16,185,129,0.3)", minHeight: 44,
           }}>
-            <span style={{ fontSize: 19, lineHeight: 1 }}>+</span> Add Staff
+            <span style={{ fontSize: 19, lineHeight: 1 }}>+</span> Add Delivery Boy
           </button>
         </div>
 
         {/* Summary row */}
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 14 }}>
           {[
-            { label: "Total Staff",      value: totalCount,                                                                                          color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" },
+            { label: "Total Delivery Boys", value: totalCount,                                                                                          color: "#B91C1C", bg: "#FEF2F2", border: "#FECACA" },
             { label: "Added This Month", value: staff.filter(s => new Date(s.created_at).getMonth() === new Date().getMonth()).length, color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc" },
             { label: "With Role Title",  value: staff.filter(s => s.role_title).length,                                                              color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
           ].map(item => (
@@ -310,7 +310,7 @@ export default function StaffPage() {
           {loading && (
             <div style={{ padding: "48px 24px", textAlign: "center", color: "#9ca3af" }}>
               <div style={{ width: 28, height: 28, border: "3px solid #e5e7eb", borderTopColor: "#10b981", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto 12px" }} />
-              Loading staff…
+              Loading delivery boys…
             </div>
           )}
 
@@ -323,13 +323,13 @@ export default function StaffPage() {
           {!loading && !error && staff.length === 0 && (
             <div style={{ padding: "56px 24px", textAlign: "center" }}>
               <div style={{ fontSize: 40, marginBottom: 14 }}>👥</div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "#374151", margin: "0 0 6px" }}>No staff added yet</p>
-              <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 20px" }}>Add your first staff member to get started.</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: "#374151", margin: "0 0 6px" }}>No delivery boys added yet</p>
+              <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 20px" }}>Add your first delivery boy to get started.</p>
               <button onClick={openAdd} style={{
                 padding: "10px 22px", borderRadius: 10, border: "none",
                 background: "linear-gradient(135deg,#10b981,#059669)",
                 color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-              }}>Add First Staff Member</button>
+              }}>Add First Delivery Boy</button>
             </div>
           )}
 
@@ -341,7 +341,7 @@ export default function StaffPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 540 }}>
                     <thead>
                       <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                        {["Staff Member", "Mobile Number", "Role / Title", "Added On", "Actions"].map(h => (
+                        {["Delivery Boy", "Mobile Number", "Role / Title", "Added On", "Actions"].map(h => (
                           <th key={h} style={{ padding: "12px 18px", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", textAlign: "left", whiteSpace: "nowrap" }}>
                             {h}
                           </th>
@@ -428,7 +428,7 @@ export default function StaffPage() {
 
       {/* Add Modal */}
       {modal === "add" && (
-        <Modal title="Add Staff Member" onClose={closeModal}>
+        <Modal title="Add Delivery Boy" onClose={closeModal}>
           <StaffForm
             onSubmit={handleAdd}
             form={form}
@@ -460,13 +460,13 @@ export default function StaffPage() {
 
       {/* Delete Modal */}
       {modal === "delete" && selected && (
-        <Modal title="Remove Staff Member" onClose={closeModal} maxWidth={420}>
+        <Modal title="Remove Delivery Boy" onClose={closeModal} maxWidth={420}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 18px" }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#dc2626", margin: "0 0 8px" }}>⚠️ Cannot be undone</p>
               <p style={{ fontSize: 13, color: "#374151", margin: 0, lineHeight: 1.6 }}>
                 Remove <strong>{selected.name}</strong>
-                {selected.role_title ? ` (${selected.role_title})` : ""} from your staff list?
+                {selected.role_title ? ` (${selected.role_title})` : ""} from your delivery boys list?
               </p>
             </div>
             <Alert type="err" msg={formErr} />
@@ -479,7 +479,7 @@ export default function StaffPage() {
                 color: saving ? "#9ca3af" : "#fff",
                 fontSize: 13, fontWeight: 700,
                 cursor: saving ? "not-allowed" : "pointer",
-              }}>{saving ? "Removing…" : "Remove Staff"}</button>
+              }}>{saving ? "Removing…" : "Remove Delivery Boy"}</button>
             </div>
           </div>
         </Modal>
