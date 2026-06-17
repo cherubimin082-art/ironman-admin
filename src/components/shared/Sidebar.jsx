@@ -29,10 +29,11 @@ const IronsHeadIcon = () => (
 );
 const DeliveryBoyIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <circle cx="5" cy="17" r="2" /><circle cx="19" cy="17" r="2" />
-    <path d="M3 17H1v-4l4-4h5l3 4h5l1 4H21" />
-    <path d="M9 9V5h3l2 4" />
-    <path d="M5 13H1" />
+    <circle cx="5.5" cy="17.5" r="2.5" />
+    <circle cx="18.5" cy="17.5" r="2.5" />
+    <path d="M5.5 17.5h7L15 9l2 3h3" />
+    <path d="M12 17.5l-2-5 4-3.5" />
+    <circle cx="15" cy="5" r="1.5" />
   </svg>
 );
 const ApartmentIcon = () => (
