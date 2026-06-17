@@ -8,4 +8,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  res => res,
+  err => {
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.removeItem('sia_token');
+      localStorage.removeItem('sia_user');
+      window.location.href = '/';
+    }
+    return Promise.reject(err);
+  }
+);
+
 export default api;
