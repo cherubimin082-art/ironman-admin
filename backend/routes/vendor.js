@@ -669,7 +669,7 @@ router.get("/vendor/bag-stats", ...auth, async (req, res) => {
       [vendorId]
     );
     const [[user]] = await pool.query(
-      "SELECT bags_available FROM users WHERE id = ?", [vendorId]
+      "SELECT bags_available, status FROM users WHERE id = ?", [vendorId]
     );
     res.json({ stats: {
       total:          parseInt(stats.total     || 0),
@@ -677,6 +677,7 @@ router.get("/vendor/bag-stats", ...auth, async (req, res) => {
       in_use:         parseInt(stats.in_use    || 0),
       missing:        parseInt(stats.missing   || 0),
       bags_available: user?.bags_available ?? 1,
+      vendor_status:  user?.status ?? "active",
     }});
   } catch (err) {
     console.error("bag-stats error:", err);

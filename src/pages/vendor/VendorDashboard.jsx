@@ -170,14 +170,20 @@ export default function VendorDashboard() {
               Here's your shop performance overview for today.
             </p>
           </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: "#f0fdf4", border: "1px solid #bbf7d0",
-            borderRadius: 10, padding: "9px 16px", flexShrink: 0,
-          }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>Shop Active</span>
-          </div>
+          {(() => {
+            const vs = bagStats?.vendor_status ?? "active";
+            const cfg = vs === "inactive"
+              ? { bg: "#f3f4f6", border: "#d1d5db", dot: "#6b7280", shadow: "rgba(107,114,128,0.2)", text: "#374151", label: "Shop Inactive" }
+              : vs === "on_leave"
+              ? { bg: "#fff7ed", border: "#fed7aa", dot: "#f97316", shadow: "rgba(249,115,22,0.2)", text: "#c2410c", label: "On Leave" }
+              : { bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e", shadow: "rgba(34,197,94,0.2)", text: "#16a34a", label: "Shop Active" };
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 10, padding: "9px 16px", flexShrink: 0 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.dot, boxShadow: `0 0 0 3px ${cfg.shadow}` }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: cfg.text }}>{cfg.label}</span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Stats Grid */}
