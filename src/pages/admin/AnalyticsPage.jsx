@@ -102,6 +102,17 @@ function SummaryCards({ data, loading }) {
     { label: "Orders This Week",   value: data?.this_week,         fmt: v => v,                  accent: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
     { label: "Orders This Month",  value: data?.this_month,        fmt: v => v,                  accent: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
     { label: "Revenue This Month", value: data?.revenue_this_month, fmt: v => `₹${Number(v).toLocaleString("en-IN")}`, accent: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
+    {
+      label: "Cancelled This Month",
+      value: data?.cancelled_this_month,
+      fmt: v => v,
+      accent: "#6b7280",
+      bg: "#f9fafb",
+      border: "#e5e7eb",
+      sub: data?.cancelled_amount_this_month > 0
+        ? `₹${Number(data.cancelled_amount_this_month).toLocaleString("en-IN")} lost`
+        : null,
+    },
   ];
 
   return (
@@ -117,9 +128,14 @@ function SummaryCards({ data, loading }) {
           {loading ? (
             <Skeleton h={36} r={8} />
           ) : (
-            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 32, fontWeight: 800, color: c.accent, margin: 0, lineHeight: 1 }}>
-              {c.value !== undefined ? c.fmt(c.value) : "—"}
-            </p>
+            <>
+              <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 32, fontWeight: 800, color: c.accent, margin: 0, lineHeight: 1 }}>
+                {c.value !== undefined ? c.fmt(c.value) : "—"}
+              </p>
+              {c.sub && (
+                <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", margin: "6px 0 0" }}>{c.sub}</p>
+              )}
+            </>
           )}
         </div>
       ))}

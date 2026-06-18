@@ -661,13 +661,13 @@ router.delete("/admin/apartments-list/:id", ...auth, async (req, res) => {
 router.get("/admin/analytics", ...auth, async (req, res) => {
   try {
     const [[today]] = await pool.query(
-      `SELECT COUNT(*) AS count FROM orders WHERE DATE(created_at) = CURDATE()`
+      `SELECT COUNT(*) AS count FROM orders WHERE DATE(created_at) = CURDATE() AND status != 'cancelled'`
     );
     const [[week]] = await pool.query(
-      `SELECT COUNT(*) AS count FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
+      `SELECT COUNT(*) AS count FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND status != 'cancelled'`
     );
     const [[month]] = await pool.query(
-      `SELECT COUNT(*) AS count FROM orders WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())`
+      `SELECT COUNT(*) AS count FROM orders WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW()) AND status != 'cancelled'`
     );
     const [[revenue]] = await pool.query(
       `SELECT COALESCE(SUM(total), 0) AS total FROM orders
@@ -675,11 +675,19 @@ router.get("/admin/analytics", ...auth, async (req, res) => {
           AND MONTH(created_at) = MONTH(NOW())
           AND YEAR(created_at)  = YEAR(NOW())`
     );
+    const [[cancelled]] = await pool.query(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS amount FROM orders
+        WHERE status = 'cancelled'
+          AND MONTH(created_at) = MONTH(NOW())
+          AND YEAR(created_at)  = YEAR(NOW())`
+    );
     res.json({
-      today:               today.count,
-      this_week:           week.count,
-      this_month:          month.count,
-      revenue_this_month:  parseFloat(revenue.total || 0),
+      today:                    today.count,
+      this_week:                week.count,
+      this_month:               month.count,
+      revenue_this_month:       parseFloat(revenue.total || 0),
+      cancelled_this_month:     cancelled.count,
+      cancelled_amount_this_month: parseFloat(cancelled.amount || 0),
     });
   } catch (err) {
     console.error("analytics summary error:", err);
@@ -768,7 +776,8 @@ router.get("/admin/analytics/top-vendors", ...auth, async (req, res) => {
 router.get("/admin/analytics/apartments", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT apartment, COUNT(id) AS total_orders,
+      `SELECT apartment,
+              SUM(status != 'cancelled') AS total_orders,
               COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0) AS total_revenue
          FROM orders
         WHERE apartment IS NOT NULL AND apartment != ''
