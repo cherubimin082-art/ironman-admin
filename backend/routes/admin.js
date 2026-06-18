@@ -60,7 +60,7 @@ router.get("/dashboard-stats", ...auth, async (req, res) => {
     const [[totals]] = await pool.query(
       `SELECT
          COUNT(*) AS total_orders,
-         SUM(total) AS total_revenue,
+         SUM(CASE WHEN status != "cancelled" THEN total ELSE 0 END) AS total_revenue,
          SUM(status = "pending")          AS pending_count,
          SUM(status = "vendor_accepted")  AS accepted_count,
          SUM(status = "in_progress")      AS in_progress_count,
@@ -768,7 +768,8 @@ router.get("/admin/analytics/top-vendors", ...auth, async (req, res) => {
 router.get("/admin/analytics/apartments", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT apartment, COUNT(id) AS total_orders, COALESCE(SUM(total), 0) AS total_revenue
+      `SELECT apartment, COUNT(id) AS total_orders,
+              COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0) AS total_revenue
          FROM orders
         WHERE apartment IS NOT NULL AND apartment != ''
         GROUP BY apartment
