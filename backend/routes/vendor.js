@@ -406,11 +406,13 @@ router.get("/vendor/orders-by-apartment/:apartment", ...auth, async (req, res) =
     const [orders] = await pool.query(
       `SELECT o.id, o.order_code, o.status, o.pickup_date, o.time_slot, o.total, o.created_at,
               u.name AS customer_name, u.phone AS customer_phone,
+              apt.delivery_time AS apt_delivery_time,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name, "quantity", oi.quantity)
               ) AS items
          FROM orders o
          JOIN users u ON u.id = o.customer_id
+         LEFT JOIN apartments apt ON apt.name = o.apartment
          JOIN order_items oi ON oi.order_id = o.id
         WHERE o.vendor_id = ? AND o.apartment = ?
         GROUP BY o.id

@@ -387,7 +387,7 @@ export default function ApartmentManagementPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: "#f9fafb" }}>
-                        {["Order ID", "Customer", "Garments", "Pickup Date", "Pickup Time", "Amount", "Status"].map(h => (
+                        {["Order ID", "Customer", "Garments", "Pickup Date", "Pickup Time", "Delivery Time", "Amount", "Status"].map(h => (
                           <th key={h} style={{
                             padding: "10px 16px", textAlign: "left",
                             fontSize: 11, fontWeight: 700, color: "#9ca3af",
@@ -415,6 +415,11 @@ export default function ApartmentManagementPage() {
                           </td>
                           <td style={{ padding: "12px 16px", color: "#374151", whiteSpace: "nowrap" }}>
                             {order.time_slot || "—"}
+                          </td>
+                          <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                            {order.apt_delivery_time
+                              ? <span style={{ color: "#2563eb", fontWeight: 600 }}>{order.apt_delivery_time}</span>
+                              : <span style={{ color: "#9ca3af" }}>—</span>}
                           </td>
                           <td style={{ padding: "12px 16px", fontWeight: 700, color: "#111827", whiteSpace: "nowrap" }}>
                             ₹{parseFloat(order.total || 0).toFixed(0)}

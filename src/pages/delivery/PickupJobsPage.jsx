@@ -365,9 +365,13 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
             <p style={S.label}>Address</p>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0, lineHeight: 1.45 }}>{job.customer_address || "—"}</p>
           </div>
-          <div style={{ gridColumn: "1 / -1" }}>
+          <div>
             <p style={S.label}>Pickup Time</p>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{job.time_slot || "—"}</p>
+          </div>
+          <div>
+            <p style={S.label}>Delivery Time</p>
+            <p style={{ fontSize: 12.5, fontWeight: 600, color: job.apt_delivery_time ? "#2563eb" : "#374151", margin: 0 }}>{job.apt_delivery_time || "—"}</p>
           </div>
           {job.vendor_name && (
             <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between" }}>

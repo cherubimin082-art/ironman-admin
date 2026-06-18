@@ -581,12 +581,17 @@ router.delete("/admin/customers/:id", ...auth, async (req, res) => {
 async function ensureApartmentsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS apartments (
-      id          INT AUTO_INCREMENT PRIMARY KEY,
-      name        VARCHAR(255) NOT NULL UNIQUE,
-      pickup_time VARCHAR(100) NOT NULL,
-      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      name          VARCHAR(255) NOT NULL UNIQUE,
+      pickup_time   VARCHAR(100) NOT NULL,
+      delivery_time VARCHAR(100) NULL,
+      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // add delivery_time if missing (existing installs)
+  await pool.query(`
+    ALTER TABLE apartments ADD COLUMN IF NOT EXISTS delivery_time VARCHAR(100) NULL
+  `).catch(() => {});
 }
 
 // GET /api/admin/apartments-list
@@ -603,14 +608,14 @@ router.get("/admin/apartments-list", ...auth, async (req, res) => {
 
 // POST /api/admin/apartments-list
 router.post("/admin/apartments-list", ...auth, async (req, res) => {
-  const { name, pickup_time } = req.body;
+  const { name, pickup_time, delivery_time } = req.body;
   if (!name?.trim() || !pickup_time?.trim())
     return res.status(400).json({ message: "Apartment name and pickup time are required" });
   try {
     await ensureApartmentsTable();
     const [result] = await pool.query(
-      "INSERT INTO apartments (name, pickup_time) VALUES (?, ?)",
-      [name.trim(), pickup_time.trim()]
+      "INSERT INTO apartments (name, pickup_time, delivery_time) VALUES (?, ?, ?)",
+      [name.trim(), pickup_time.trim(), delivery_time?.trim() || null]
     );
     res.status(201).json({ message: "Apartment added", id: result.insertId });
   } catch (err) {
@@ -623,14 +628,14 @@ router.post("/admin/apartments-list", ...auth, async (req, res) => {
 // PUT /api/admin/apartments-list/:id
 router.put("/admin/apartments-list/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { name, pickup_time } = req.body;
+  const { name, pickup_time, delivery_time } = req.body;
   if (!name?.trim() || !pickup_time?.trim())
     return res.status(400).json({ message: "Apartment name and pickup time are required" });
   try {
     await ensureApartmentsTable();
     const [result] = await pool.query(
-      "UPDATE apartments SET name = ?, pickup_time = ? WHERE id = ?",
-      [name.trim(), pickup_time.trim(), id]
+      "UPDATE apartments SET name = ?, pickup_time = ?, delivery_time = ? WHERE id = ?",
+      [name.trim(), pickup_time.trim(), delivery_time?.trim() || null, id]
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Apartment not found" });

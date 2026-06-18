@@ -414,13 +414,18 @@ export default function PricingPage() {
         {error && <Alert type="err" msg={error} />}
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Tab label="Categories" count={categories.length}
-            active={activeTab === "categories"} onClick={() => setActiveTab("categories")} />
-          <Tab label="Garments" count={garments.length}
-            active={activeTab === "garments"}
-            onClick={() => { setActiveTab("garments"); if (categories.length === 0) loadCategories(); }} />
-        </div>
+        {(() => {
+          const totalGarments = categories.reduce((s, c) => s + (Number(c.garment_count) || 0), 0);
+          return (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Tab label="Categories" count={categories.length}
+                active={activeTab === "categories"} onClick={() => setActiveTab("categories")} />
+              <Tab label="Garments" count={activeTab === "garments" ? garments.length : totalGarments}
+                active={activeTab === "garments"}
+                onClick={() => { setActiveTab("garments"); if (categories.length === 0) loadCategories(); }} />
+            </div>
+          );
+        })()}
 
         {/* ── CATEGORIES TAB ── */}
         {activeTab === "categories" && (
@@ -488,7 +493,7 @@ export default function PricingPage() {
                                 padding: 0,
                               }}
                             >
-                              {cat.garment_count || 0}
+                              {Number(cat.garment_count) || 0}
                             </button>
                           </td>
                           <td style={{ padding: "14px 16px", fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>{fmtDate(cat.created_at)}</td>

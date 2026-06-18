@@ -125,6 +125,7 @@ router.get("/delivery/assigned-orders", ...auth, async (req, res) => {
               v.name AS vendor_name, v.address AS vendor_address, v.bags_available AS vendor_bags_flag,
               da.status AS assignment_status, da.current_latitude, da.current_longitude,
               b.bag_number,
+              apt.delivery_time AS apt_delivery_time,
               (SELECT COUNT(*) FROM bags WHERE vendor_id = o.vendor_id AND status = 'available') AS vendor_available_bags,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name, "quantity", oi.quantity)
@@ -133,6 +134,7 @@ router.get("/delivery/assigned-orders", ...auth, async (req, res) => {
          JOIN users u ON u.id = o.customer_id
          LEFT JOIN users v ON v.id = o.vendor_id
          LEFT JOIN bags b ON b.id = o.bag_id
+         LEFT JOIN apartments apt ON apt.name = o.apartment
          JOIN order_items oi ON oi.order_id = o.id
          JOIN delivery_assignments da ON da.order_id = o.id
         WHERE da.delivery_agent_id = ?

@@ -85,6 +85,13 @@ function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit }) {
           {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
+      <div>
+        <label style={labelSt}>Delivery Time Slot</label>
+        <select value={form.delivery_time} onChange={set("delivery_time")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb}>
+          <option value="">— Select a time slot —</option>
+          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
       <Alert type="error" msg={formErr} />
       <Alert type="ok"    msg={formOk}  />
       <button type="submit" disabled={saving} style={{ padding: "11px 0", borderRadius: 10, border: "none", background: "#B91C1C", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
@@ -102,7 +109,7 @@ export default function ApartmentsPage() {
   const [saving, setSaving]         = useState(false);
   const [formErr, setFormErr]       = useState("");
   const [formOk, setFormOk]         = useState("");
-  const [form, setForm]             = useState({ name: "", pickup_time: "" });
+  const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,12 +125,12 @@ export default function ApartmentsPage() {
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
   const closeModal = () => { setModal(null); setSelected(null); setFormErr(""); setFormOk(""); };
 
-  function openAdd() { setForm({ name: "", pickup_time: "" }); setFormErr(""); setFormOk(""); setModal("add"); }
-  function openEdit(a) { setSelected(a); setForm({ name: a.name, pickup_time: a.pickup_time }); setFormErr(""); setFormOk(""); setModal("edit"); }
+  function openAdd() { setForm({ name: "", pickup_time: "", delivery_time: "" }); setFormErr(""); setFormOk(""); setModal("add"); }
+  function openEdit(a) { setSelected(a); setForm({ name: a.name, pickup_time: a.pickup_time, delivery_time: a.delivery_time || "" }); setFormErr(""); setFormOk(""); setModal("edit"); }
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.pickup_time.trim()) return setFormErr("Both fields are required");
+    if (!form.name.trim() || !form.pickup_time.trim()) return setFormErr("Name and pickup time are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/admin/apartments-list", form);
@@ -135,7 +142,7 @@ export default function ApartmentsPage() {
 
   async function handleEdit(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.pickup_time.trim()) return setFormErr("Both fields are required");
+    if (!form.name.trim() || !form.pickup_time.trim()) return setFormErr("Name and pickup time are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.put(`/admin/apartments-list/${selected.id}`, form);
@@ -208,9 +215,17 @@ export default function ApartmentsPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</p>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "3px 10px" }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "#16a34a" }}>{a.pickup_time}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "3px 10px", width: "fit-content" }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#16a34a" }}>Pickup: {a.pickup_time}</span>
+                      </div>
+                      {a.delivery_time && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "3px 10px", width: "fit-content" }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#2563eb" }}>Delivery: {a.delivery_time}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
