@@ -95,7 +95,7 @@ router.get("/delivery/completed-orders", ...auth, async (req, res) => {
   try {
     const [orders] = await pool.query(
       `SELECT o.id, o.order_code, o.total, o.created_at,
-              u.name AS customer_name, u.address AS customer_address,
+              u.name AS customer_name, u.address AS customer_address, u.apartment AS customer_apartment,
               da.delivered_at,
               JSON_ARRAYAGG(
                 JSON_OBJECT('garment_name', oi.garment_name, 'quantity', oi.quantity)

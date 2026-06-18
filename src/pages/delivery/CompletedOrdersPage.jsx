@@ -130,8 +130,10 @@ export default function CompletedOrdersPage() {
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{o.customer_name || "—"}</span>
                 </div>
-                {o.customer_address && (
-                  <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.4 }}>{o.customer_address}</p>
+                {(o.customer_apartment || o.customer_address) && (
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: 0, lineHeight: 1.4 }}>
+                    {[o.customer_apartment, o.customer_address].filter(Boolean).join(", ")}
+                  </p>
                 )}
                 <p style={{ fontSize: 11.5, color: "#9ca3af", margin: 0, fontWeight: 500 }}>
                   {formatDt(o.delivered_at)}
@@ -154,7 +156,7 @@ export default function CompletedOrdersPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
                 <thead>
                   <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                    {["Order ID", "Customer", "Address", "Amount", "Delivered On"].map((h, i) => (
+                    {["Order ID", "Customer", "Apartment / Address", "Amount", "Delivered On"].map((h, i) => (
                       <th key={h} style={{
                         padding: "11px 20px", fontSize: 11, fontWeight: 700, color: "#9ca3af",
                         textTransform: "uppercase", letterSpacing: "0.07em",
@@ -184,8 +186,13 @@ export default function CompletedOrdersPage() {
                       <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 600, color: "#374151" }}>
                         {o.customer_name}
                       </td>
-                      <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#6b7280", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {o.customer_address || "—"}
+                      <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#6b7280", maxWidth: 220 }}>
+                        {o.customer_apartment && (
+                          <span style={{ display: "block", fontWeight: 700, color: "#374151", marginBottom: 2 }}>{o.customer_apartment}</span>
+                        )}
+                        <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {o.customer_address || "—"}
+                        </span>
                       </td>
                       <td style={{ padding: "14px 20px", textAlign: "right" }}>
                         <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 800, color: "#10b981" }}>
