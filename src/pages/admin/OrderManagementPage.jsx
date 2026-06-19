@@ -70,6 +70,40 @@ const selectStyle = {
 const labelStyle = { fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 5 };
 const inputStyle = { padding: "8px 10px", border: "1.5px solid #E2E8F0", borderRadius: 10, fontSize: 13, color: "#374151", outline: "none", width: "100%", boxSizing: "border-box" };
 
+function exportCSV(rows) {
+  const STATUS_LABEL = {
+    pending: "Pending", vendor_accepted: "Confirmed", delivery_assigned: "Assigned",
+    picked_up: "Picked Up", at_vendor: "At Shop", ironing_in_progress: "Ironing In Progress",
+    in_progress: "In Progress", ready_for_delivery: "Ready for Delivery",
+    picked_from_vendor: "In Transit", out_for_delivery: "Out for Delivery",
+    delivered: "Delivered", cancelled: "Cancelled",
+  };
+  const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const headers = ["Order ID", "Customer", "Phone", "Apartment", "Status", "Items", "Amount (₹)", "Date", "Iron's Head"];
+  const lines = rows.map(o => {
+    const itemCount = (o.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
+    return [
+      o.order_code || o.id,
+      o.customerName || o.customer_name || "",
+      o.customerPhone || o.phone || "",
+      o.address || o.apartment || "",
+      STATUS_LABEL[o.status] || o.status || "",
+      itemCount,
+      o.total_amount ?? o.total ?? "",
+      o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "",
+      o.vendor_name || o.vendorName || "",
+    ].map(esc).join(",");
+  });
+  const csv = [headers.map(esc).join(","), ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function OrderManagementPage() {
   const { orders } = useOrders();
   const navigate   = useNavigate();
@@ -153,7 +187,7 @@ export default function OrderManagementPage() {
             <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Managing {orders.length.toLocaleString()} active logistics and laundry cycles.</p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "white", fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer" }}>
+            <button onClick={() => exportCSV(filtered)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "white", fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer" }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export Report
             </button>
