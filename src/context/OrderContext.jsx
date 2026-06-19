@@ -68,7 +68,7 @@ export function OrderProvider({ children }) {
     }
     loadData();
     if (!socket) {
-      socket = io('http://localhost:5002');
+      socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5002');
       socket.on('connect', () => {
         if (user.role === 'vendor')        socket.emit('join_vendor', user.id);
         else if (user.role === 'delivery') socket.emit('join_delivery', user.id);
