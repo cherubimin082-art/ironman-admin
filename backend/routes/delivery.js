@@ -155,21 +155,31 @@ router.get("/delivery/assigned-orders", ...auth, async (req, res) => {
 router.put("/delivery/accept-order/:id", ...auth, async (req, res) => {
   const orderId = req.params.id;
   const agentId = req.user.id;
+  const conn = await pool.getConnection();
   try {
-    const order = await getOrderForAgent(orderId, agentId);
-    if (!order || order.status !== "vendor_accepted")
-      return res.status(404).json({ message: "Order not available to accept" });
+    await conn.beginTransaction();
 
-    await pool.query(
-      `UPDATE orders SET status = "delivery_assigned" WHERE id = ?`, [orderId]
+    const [upd] = await conn.query(
+      `UPDATE orders SET status = "delivery_assigned"
+        WHERE id = ? AND status = "vendor_accepted"`, [orderId]
     );
-    await pool.query(
+    if (!upd.affectedRows) {
+      await conn.rollback();
+      return res.status(404).json({ message: "Order not available to accept" });
+    }
+    await conn.query(
       `UPDATE delivery_assignments SET status = "accepted" WHERE order_id = ?`, [orderId]
     );
-    await pool.query(
+    await conn.query(
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "delivery_assigned", ?)`,
       [orderId, agentId]
     );
+
+    const [[orderRow]] = await conn.query(
+      `SELECT customer_id, vendor_id FROM orders WHERE id = ?`, [orderId]
+    );
+    await conn.commit();
+    conn.release();
 
     // Fetch agent name + phone to send to customer
     const [agentRows] = await pool.query(
@@ -179,12 +189,10 @@ router.put("/delivery/accept-order/:id", ...auth, async (req, res) => {
 
     try {
       const io = getIO();
-      // Standard status update
-      broadcast(io, { customerId: order.customer_id, vendorId: order.vendor_id }, "order_status_update", {
+      broadcast(io, { customerId: orderRow.customer_id, vendorId: orderRow.vendor_id }, "order_status_update", {
         orderId, status: "delivery_assigned", agentId
       });
-      // Richer event so customer can show agent name + phone
-      emitToCustomer(order.customer_id, "delivery_accepted", {
+      emitToCustomer(orderRow.customer_id, "delivery_accepted", {
         orderId,
         agentName:  agent.name  || "Delivery Agent",
         agentPhone: agent.phone || "",
@@ -194,6 +202,8 @@ router.put("/delivery/accept-order/:id", ...auth, async (req, res) => {
 
     res.json({ message: "Order accepted", orderId, status: "delivery_assigned" });
   } catch (err) {
+    await conn.rollback().catch(() => {});
+    conn.release();
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
@@ -262,7 +272,7 @@ router.put("/delivery/reached-for-pickup/:orderId", ...auth, async (req, res) =>
       catch (err) { console.error("[pickup-otp] WhatsApp error:", err.message); }
     }
 
-    emitToCustomer(order.customer_id, "show_pickup_otp", { orderId, otp: PICKUP_OTP });
+    emitToCustomer(order.customer_id, "show_pickup_otp", { orderId });
     res.json({ message: "Customer notified with pickup OTP" });
   } catch (err) {
     console.error(err);
@@ -462,7 +472,7 @@ router.put("/delivery/end-ride/:orderId", ...auth, async (req, res) => {
       catch (err) { console.error("[delivery-otp] WhatsApp error:", err.message); }
     }
 
-    emitToCustomer(order.customer_id, "show_delivery_otp", { orderId, otp: DELIVERY_OTP });
+    emitToCustomer(order.customer_id, "show_delivery_otp", { orderId });
     res.json({ message: "Customer notified with delivery OTP" });
   } catch (err) {
     console.error(err);
@@ -519,29 +529,44 @@ router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
     if (String(otp).trim() !== String(pickup_otp).trim())
       return res.status(400).json({ message: "Incorrect OTP. Ask the customer for the correct code." });
 
-    // Verify bag belongs to this vendor and is available
-    const [bagRows] = await pool.query(
-      `SELECT id, bag_number, status FROM bags WHERE id = ? AND vendor_id = ?`,
-      [bag_id, vendor_id]
-    );
-    if (!bagRows.length)
-      return res.status(400).json({ message: "Invalid bag selection" });
-    if (bagRows[0].status !== "available")
-      return res.status(400).json({ message: "Selected bag is already in use. Choose another." });
+    // Verify bag and claim it atomically to prevent two agents grabbing the same bag
+    const bagConn = await pool.getConnection();
+    let bag_number;
+    try {
+      await bagConn.beginTransaction();
+      const [bagRows] = await bagConn.query(
+        `SELECT id, bag_number, status FROM bags WHERE id = ? AND vendor_id = ? FOR UPDATE`,
+        [bag_id, vendor_id]
+      );
+      if (!bagRows.length) {
+        await bagConn.rollback();
+        bagConn.release();
+        return res.status(400).json({ message: "Invalid bag selection" });
+      }
+      if (bagRows[0].status !== "available") {
+        await bagConn.rollback();
+        bagConn.release();
+        return res.status(400).json({ message: "Selected bag is already in use. Choose another." });
+      }
+      bag_number = bagRows[0].bag_number;
 
-    // OTP correct + bag available — commit everything
-    await pool.query(`UPDATE orders SET status = 'picked_up', bag_id = ? WHERE id = ?`, [bag_id, orderId]);
-    await pool.query(`UPDATE bags SET status = 'in_use' WHERE id = ?`, [bag_id]);
-    await pool.query(
-      `UPDATE delivery_assignments SET status = 'picked_up', pickup_otp_verified = 1, pickup_at = NOW() WHERE order_id = ?`,
-      [orderId]
-    );
-    await pool.query(
-      `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, 'picked_up', ?)`,
-      [orderId, agentId]
-    );
-
-    const { bag_number } = bagRows[0];
+      await bagConn.query(`UPDATE orders SET status = 'picked_up', bag_id = ? WHERE id = ?`, [bag_id, orderId]);
+      await bagConn.query(`UPDATE bags SET status = 'in_use' WHERE id = ?`, [bag_id]);
+      await bagConn.query(
+        `UPDATE delivery_assignments SET status = 'picked_up', pickup_otp_verified = 1, pickup_at = NOW() WHERE order_id = ?`,
+        [orderId]
+      );
+      await bagConn.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, 'picked_up', ?)`,
+        [orderId, agentId]
+      );
+      await bagConn.commit();
+    } catch (e) {
+      await bagConn.rollback().catch(() => {});
+      bagConn.release();
+      throw e;
+    }
+    bagConn.release();
 
     try {
       const io = getIO();

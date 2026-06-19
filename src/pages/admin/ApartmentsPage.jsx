@@ -111,13 +111,17 @@ export default function ApartmentsPage() {
   const [formOk, setFormOk]         = useState("");
   const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "" });
 
+  const [loadErr, setLoadErr] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadErr("");
     try {
       const { data } = await api.get("/admin/apartments-list");
       setApartments(data.apartments || []);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+    } catch {
+      setLoadErr("Failed to load apartments. Please refresh.");
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -182,8 +186,15 @@ export default function ApartmentsPage() {
           </button>
         </div>
 
+        {/* Load error */}
+        {loadErr && (
+          <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: "12px 16px", marginBottom: 16, color: "#B91C1C", fontSize: 13.5, fontWeight: 600 }}>
+            {loadErr}
+          </div>
+        )}
+
         {/* Empty state */}
-        {!loading && apartments.length === 0 && (
+        {!loading && !loadErr && apartments.length === 0 && (
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "56px 24px", textAlign: "center" }}>
             <div style={{ width: 52, height: 52, borderRadius: 14, background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">

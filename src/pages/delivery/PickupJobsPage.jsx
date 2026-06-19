@@ -556,10 +556,12 @@ export default function PickupJobsPage() {
     // Fetch available bags for this vendor
     setBagsLoading(true);
     let bags = [];
-    try {
-      const { data } = await api.get(`/delivery/available-bags/${order.vendor_id}`);
-      bags = data.bags || [];
-    } catch (_) {}
+    if (order.vendor_id) {
+      try {
+        const { data } = await api.get(`/delivery/available-bags/${order.vendor_id}`);
+        bags = data.bags || [];
+      } catch (_) {}
+    }
     setAvailableBags(bags);
     setBagsLoading(false);
     setReaching(null);

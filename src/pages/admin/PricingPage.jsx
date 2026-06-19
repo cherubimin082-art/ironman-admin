@@ -312,7 +312,7 @@ export default function PricingPage() {
 
   // ── Garment handlers ─────────────────────────────────────────
   function openAddGmt() {
-    setGmtForm({ category_id: categories[0]?.id ?? "", name: "", price: "", image_url: "" });
+    setGmtForm({ category_id: String(categories[0]?.id ?? ""), name: "", price: "", image_url: "" });
     setFormErr(""); setFormOk("");
     setModal("addGmt");
   }

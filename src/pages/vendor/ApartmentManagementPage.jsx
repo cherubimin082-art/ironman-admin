@@ -98,7 +98,7 @@ export default function ApartmentManagementPage() {
         (data.slots || []).forEach(s => { map[s.apartment] = { pickup_time: s.pickup_time, delivery_time: s.delivery_time }; });
         setSavedSlots(map);
       })
-      .catch(() => {});
+      .catch(() => setSaveErr("Failed to load saved slots. Please refresh the page."));
   }, []);
 
   // When apartment changes, pre-fill fields and fetch orders

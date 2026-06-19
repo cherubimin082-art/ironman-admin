@@ -264,10 +264,11 @@ router.put("/reject-order/:id", ...auth, async (req, res) => {
 
     const [rows] = await pool.query(`SELECT customer_id FROM orders WHERE id = ?`, [orderId]);
     try {
-      const customerId = rows[0].customer_id;
-      emitToCustomer(customerId, "order_rejected", {
-        orderId: parseInt(orderId), reason: reason?.trim() || null
-      });
+      if (rows.length > 0) {
+        emitToCustomer(rows[0].customer_id, "order_rejected", {
+          orderId: parseInt(orderId), reason: reason?.trim() || null
+        });
+      }
       getIO().to("admin_room").emit("order_rejected", { orderId: parseInt(orderId) });
     } catch (_) {}
 
@@ -605,10 +606,12 @@ router.put("/order-in-progress/:id", ...auth, async (req, res) => {
   const orderId  = req.params.id;
   const vendorId = req.user.id;
   try {
-    await pool.query(
+    const [result] = await pool.query(
       `UPDATE orders SET status = "in_progress" WHERE id = ? AND vendor_id = ?`,
       [orderId, vendorId]
     );
+    if (!result.affectedRows)
+      return res.status(404).json({ message: "Order not found or not yours" });
     await pool.query(
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "in_progress", ?)`,
       [orderId, vendorId]
@@ -616,7 +619,7 @@ router.put("/order-in-progress/:id", ...auth, async (req, res) => {
     const [rows] = await pool.query(`SELECT customer_id FROM orders WHERE id = ?`, [orderId]);
     try {
       const io = getIO();
-      emitToCustomer(rows[0].customer_id, "order_status_update", { orderId, status: "in_progress" });
+      if (rows.length > 0) emitToCustomer(rows[0].customer_id, "order_status_update", { orderId, status: "in_progress" });
       io.to("admin_room").emit("order_status_update", { orderId, status: "in_progress" });
     } catch (_) {}
     res.json({ message: "Order marked in progress", orderId, status: "in_progress" });
