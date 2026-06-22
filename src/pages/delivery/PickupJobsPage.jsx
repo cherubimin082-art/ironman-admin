@@ -104,18 +104,26 @@ function EmptyState({ message }) {
 
 // ── OTP + Bag modal ────────────────────────────────────────────
 function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming }) {
-  const [otp, setOtp]     = useState("");
-  const [bagId, setBagId] = useState("");
-  const [err, setErr]     = useState("");
+  const [otp, setOtp]         = useState("");
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [err, setErr]         = useState("");
 
-  const showBag  = otp.length === 4;
-  const canConfirm = otp.length === 4 && bagId && !confirming;
+  const showBags   = otp.length === 4;
+  const canConfirm = otp.length === 4 && selectedIds.size > 0 && !confirming;
+
+  function toggleBag(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setErr("");
     try {
-      await onConfirm(otp, bagId);
+      await onConfirm(otp, [...selectedIds]);
     } catch (ex) {
       setErr(ex.response?.data?.message || "Failed. Try again.");
     }
@@ -129,6 +137,7 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
       <div style={{
         background: "#fff", borderRadius: 20, padding: "28px 24px",
         width: "100%", maxWidth: 400, boxShadow: "0 24px 60px rgba(0,0,0,0.2)",
+        maxHeight: "90vh", overflowY: "auto",
       }}>
         <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 20, fontWeight: 800, color: "#111827", margin: "0 0 4px" }}>
           Confirm Pickup
@@ -149,7 +158,7 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
             maxLength={4}
             placeholder="4-digit OTP"
             value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
+            onChange={e => { setOtp(e.target.value.replace(/\D/g, "")); setErr(""); }}
             autoFocus
             style={{
               width: "100%", padding: "13px 16px", borderRadius: 12, fontSize: 22, fontWeight: 800,
@@ -164,36 +173,57 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
             Ask the customer for the 4-digit OTP sent to their WhatsApp.
           </p>
 
-          {/* Bag dropdown — appears when OTP is 4 digits */}
-          {showBag && (
+          {/* Bag checkboxes — appear when OTP is 4 digits */}
+          {showBags && (
             <div style={{ marginTop: 18 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
-                Assign Bag Number
-              </label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Select Bags
+                </label>
+                {selectedIds.size > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "2px 9px" }}>
+                    {selectedIds.size} selected
+                  </span>
+                )}
+              </div>
               {bagsLoading ? (
                 <p style={{ fontSize: 12.5, color: "#9ca3af" }}>Loading available bags…</p>
               ) : bags.length === 0 ? (
                 <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#dc2626", fontWeight: 600 }}>
-                  No bags available at this Iron's Head right now.
+                  No bags available at this Iron&apos;s Head right now.
                 </div>
               ) : (
-                <select
-                  value={bagId}
-                  onChange={e => setBagId(e.target.value)}
-                  style={{
-                    width: "100%", padding: "11px 14px", borderRadius: 11, fontSize: 14, fontWeight: 600,
-                    border: "2px solid #e5e7eb", outline: "none", background: "#fff",
-                    appearance: "none", boxSizing: "border-box", cursor: "pointer",
-                  }}
-                  onFocus={e => { e.target.style.borderColor = "#3b82f6"; }}
-                  onBlur={e => { e.target.style.borderColor = "#e5e7eb"; }}
-                >
-                  <option value="" disabled>Select a bag…</option>
-                  {bags.map(b => (
-                    <option key={b.id} value={b.id}>Bag #{b.bag_number}</option>
-                  ))}
-                </select>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {bags.map(b => {
+                    const checked = selectedIds.has(b.id);
+                    return (
+                      <label
+                        key={b.id}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 12,
+                          padding: "12px 14px", borderRadius: 11, cursor: "pointer",
+                          border: checked ? "2px solid #10b981" : "2px solid #e5e7eb",
+                          background: checked ? "#f0fdf4" : "#fff",
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleBag(b.id)}
+                          style={{ width: 18, height: 18, accentColor: "#10b981", flexShrink: 0, cursor: "pointer" }}
+                        />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: checked ? "#065f46" : "#374151" }}>
+                          Bag #{b.bag_number}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
+              <p style={{ fontSize: 11, color: "#9ca3af", margin: "8px 0 0" }}>
+                Select all bags needed for this order. Tick multiple if clothes need more than one bag.
+              </p>
             </div>
           )}
 
@@ -229,7 +259,7 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
               {confirming && (
                 <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
               )}
-              {confirming ? "Confirming…" : "Confirm Pickup"}
+              {confirming ? "Confirming…" : `Confirm Pickup${selectedIds.size > 1 ? ` (${selectedIds.size} bags)` : ""}`}
             </button>
           </div>
         </form>
@@ -452,9 +482,9 @@ function TransitCard({ job, onDrop, transitBusy }) {
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>{job.apartment || "—"}</p>
-          {job.bag_number && (
+          {(job.bag_numbers || job.bag_number) && (
             <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
-              Bag <span style={{ fontWeight: 700, color: "#374151" }}>#{job.bag_number}</span>
+              Bag <span style={{ fontWeight: 700, color: "#374151" }}>#{String(job.bag_numbers || job.bag_number).split(",").join(", #")}</span>
             </p>
           )}
         </div>
@@ -486,7 +516,7 @@ function AtVendorRow({ job }) {
         </p>
         <p style={{ fontSize: 12, color: "#c2410c", margin: "2px 0 0" }}>
           Clothes are at the iron shop.
-          {job.bag_number ? ` Bag #${job.bag_number}.` : ""} Waiting for ironing to complete…
+          {(job.bag_numbers || job.bag_number) ? ` Bag #${String(job.bag_numbers || job.bag_number).split(",").join(", #")}.` : ""} Waiting for ironing to complete…
         </p>
       </div>
     </div>
@@ -568,15 +598,15 @@ export default function PickupJobsPage() {
     setPickupModal({ order });
   }
 
-  // Confirm pickup (OTP + bag)
-  async function handleConfirmPickup(otp, bagId) {
+  // Confirm pickup (OTP + bag_ids[])
+  async function handleConfirmPickup(otp, bagIds) {
     if (!pickupModal) return;
     setConfirming(true);
     try {
-      await deliveryAction(pickupModal.order.id, "confirm_pickup", { otp, bag_id: bagId });
+      await deliveryAction(pickupModal.order.id, "confirm_pickup", { otp, bag_ids: bagIds });
       setPickupModal(null);
     } catch (err) {
-      // Refresh bag list — another agent may have taken the selected bag
+      // Refresh bag list — another agent may have taken a selected bag
       try {
         const { data } = await api.get(`/delivery/available-bags/${pickupModal.order.vendor_id}`);
         setAvailableBags(data.bags || []);

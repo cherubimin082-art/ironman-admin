@@ -125,6 +125,11 @@ router.get("/delivery/assigned-orders", ...auth, async (req, res) => {
               v.name AS vendor_name, v.address AS vendor_address, v.bags_available AS vendor_bags_flag,
               da.status AS assignment_status, da.current_latitude, da.current_longitude,
               b.bag_number,
+              COALESCE(
+                (SELECT GROUP_CONCAT(DISTINCT b2.bag_number ORDER BY b2.bag_number SEPARATOR ',')
+                   FROM order_bags ob2 JOIN bags b2 ON b2.id = ob2.bag_id WHERE ob2.order_id = o.id),
+                IF(b.bag_number IS NOT NULL, CAST(b.bag_number AS CHAR), NULL)
+              ) AS bag_numbers,
               apt.delivery_time AS apt_delivery_time,
               (SELECT COUNT(*) FROM bags WHERE vendor_id = o.vendor_id AND status = 'available') AS vendor_available_bags,
               JSON_ARRAYAGG(
@@ -503,13 +508,14 @@ router.get("/delivery/available-bags/:vendorId", ...auth, async (req, res) => {
 });
 
 // PUT /api/delivery/confirm-pickup/:orderId
-// Body: { otp, bag_id } — verifies pickup OTP, assigns bag, marks order picked_up
+// Body: { otp, bag_ids: [id, ...] } — verifies pickup OTP, assigns bags, marks order picked_up
 router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
   const orderId = req.params.orderId;
   const agentId = req.user.id;
-  const { otp, bag_id } = req.body;
+  const { otp, bag_ids } = req.body;
 
-  if (!bag_id) return res.status(400).json({ message: "Please select a bag" });
+  const ids = Array.isArray(bag_ids) ? bag_ids.map(Number).filter(Boolean) : [];
+  if (!ids.length) return res.status(400).json({ message: "Please select at least one bag" });
 
   try {
     const [rows] = await pool.query(
@@ -529,29 +535,37 @@ router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
     if (String(otp).trim() !== String(pickup_otp).trim())
       return res.status(400).json({ message: "Incorrect OTP. Ask the customer for the correct code." });
 
-    // Verify bag and claim it atomically to prevent two agents grabbing the same bag
+    // Lock all selected bags atomically to prevent race conditions
     const bagConn = await pool.getConnection();
-    let bag_number;
+    let bag_numbers;
     try {
       await bagConn.beginTransaction();
+      const ph = ids.map(() => "?").join(",");
       const [bagRows] = await bagConn.query(
-        `SELECT id, bag_number, status FROM bags WHERE id = ? AND vendor_id = ? FOR UPDATE`,
-        [bag_id, vendor_id]
+        `SELECT id, bag_number, status FROM bags WHERE id IN (${ph}) AND vendor_id = ? FOR UPDATE`,
+        [...ids, vendor_id]
       );
-      if (!bagRows.length) {
+      if (bagRows.length !== ids.length) {
         await bagConn.rollback();
         bagConn.release();
-        return res.status(400).json({ message: "Invalid bag selection" });
+        return res.status(400).json({ message: "One or more selected bags are invalid" });
       }
-      if (bagRows[0].status !== "available") {
+      const inUse = bagRows.filter(b => b.status !== "available");
+      if (inUse.length) {
         await bagConn.rollback();
         bagConn.release();
-        return res.status(400).json({ message: "Selected bag is already in use. Choose another." });
+        return res.status(400).json({
+          message: `Bag${inUse.length > 1 ? "s" : ""} #${inUse.map(b => b.bag_number).join(", #")} already in use. Choose others.`
+        });
       }
-      bag_number = bagRows[0].bag_number;
+      bag_numbers = bagRows.map(b => b.bag_number).sort((a, b) => a - b);
 
-      await bagConn.query(`UPDATE orders SET status = 'picked_up', bag_id = ? WHERE id = ?`, [bag_id, orderId]);
-      await bagConn.query(`UPDATE bags SET status = 'in_use' WHERE id = ?`, [bag_id]);
+      await bagConn.query(`UPDATE orders SET status = 'picked_up', bag_id = ? WHERE id = ?`, [ids[0], orderId]);
+      await bagConn.query(`UPDATE bags SET status = 'in_use' WHERE id IN (${ph})`, ids);
+      await bagConn.query(
+        `INSERT IGNORE INTO order_bags (order_id, bag_id) VALUES ${ids.map(() => "(?, ?)").join(",")}`,
+        ids.flatMap(bid => [orderId, bid])
+      );
       await bagConn.query(
         `UPDATE delivery_assignments SET status = 'picked_up', pickup_otp_verified = 1, pickup_at = NOW() WHERE order_id = ?`,
         [orderId]
@@ -574,11 +588,11 @@ router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
         orderId, status: "picked_up"
       });
       emitToCustomer(customer_id, "order_picked_up", {
-        orderId, message: "Delivery agent has picked up your clothes", bag_number
+        orderId, message: "Delivery agent has picked up your clothes", bag_numbers
       });
     } catch (_) {}
 
-    res.json({ message: "Pickup confirmed", orderId, status: "picked_up", bag_number });
+    res.json({ message: "Pickup confirmed", orderId, status: "picked_up", bag_numbers });
   } catch (err) {
     console.error("confirm-pickup error:", err);
     res.status(500).json({ message: "Server error" });
@@ -621,12 +635,17 @@ router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) =
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "delivered", ?)`,
       [orderId, agentId]
     );
+    // Release all bags assigned to this order (multi-bag support)
     const [bagResult] = await pool.query(
-      `UPDATE bags b JOIN orders o ON o.bag_id = b.id SET b.status = 'available' WHERE o.id = ?`,
+      `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
       [orderId]
     );
+    // Fallback for orders placed before multi-bag migration (only orders.bag_id set)
     if (bagResult.affectedRows === 0) {
-      console.warn(`[verify-delivery-otp] bag not released for order ${orderId} — bag_id may be null`);
+      await pool.query(
+        `UPDATE bags b JOIN orders o ON o.bag_id = b.id SET b.status = 'available' WHERE o.id = ?`,
+        [orderId]
+      );
     }
 
     try {
