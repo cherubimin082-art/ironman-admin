@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
@@ -33,6 +33,7 @@ export function OrderProvider({ children }) {
   const [pickupJobs, setPickupJobs]         = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading]               = useState(false);
+  const loadDataRef = useRef(null);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -59,6 +60,9 @@ export function OrderProvider({ children }) {
     }
   }, [user]);
 
+  // Keep ref always pointing to latest loadData so socket callbacks never go stale
+  useEffect(() => { loadDataRef.current = loadData; }, [loadData]);
+
   useEffect(() => {
     if (!user) {
       if (socket) { socket.disconnect(); socket = null; }
@@ -74,17 +78,16 @@ export function OrderProvider({ children }) {
         else if (user.role === 'delivery') socket.emit('join_delivery', user.id);
         else if (user.role === 'admin')    socket.emit('join_admin');
       });
-      socket.on('new_order',                () => loadData());
-      socket.on('order_update',             () => loadData());
-      socket.on('order_status_update',      () => loadData());
-      // delivery-specific events
-      socket.on('new_delivery_order',       () => loadData());
-      socket.on('order_ready_for_pickup',   () => loadData()); // legacy
-      socket.on('order_ready_for_delivery', () => loadData());
-      // vendor-specific
-      socket.on('order_at_vendor',          () => loadData());
-      socket.on('order_ironing',            () => loadData());
-      socket.on('order_delivered',          () => loadData());
+      const reload = () => loadDataRef.current?.();
+      socket.on('new_order',                reload);
+      socket.on('order_update',             reload);
+      socket.on('order_status_update',      reload);
+      socket.on('new_delivery_order',       reload);
+      socket.on('order_ready_for_pickup',   reload);
+      socket.on('order_ready_for_delivery', reload);
+      socket.on('order_at_vendor',          reload);
+      socket.on('order_ironing',            reload);
+      socket.on('order_delivered',          reload);
     }
   }, [user, loadData]);
 
