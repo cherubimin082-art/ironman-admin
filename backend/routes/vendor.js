@@ -377,6 +377,27 @@ router.put("/vendor/apartment-slot", ...auth, async (req, res) => {
        ON DUPLICATE KEY UPDATE pickup_time = VALUES(pickup_time), delivery_time = VALUES(delivery_time), updated_at = NOW()`,
       [vendorId, apartment.trim(), pickup_time.trim(), delivery_time.trim()]
     );
+
+    // Sync time_slot on all active orders for this apartment so vendor/delivery see correct time
+    await pool.query(
+      `UPDATE orders SET time_slot = ? WHERE apartment = ? AND status NOT IN ('delivered','cancelled')`,
+      [pickup_time.trim(), apartment.trim()]
+    );
+
+    // Notify admin and assigned delivery agents in real time
+    try {
+      const io = getIO();
+      io.to('admin_room').emit('order_status_update', { apartment: apartment.trim(), pickup_time: pickup_time.trim() });
+
+      const [affected] = await pool.query(
+        `SELECT DISTINCT delivery_agent_id FROM orders WHERE apartment = ? AND delivery_agent_id IS NOT NULL AND status NOT IN ('delivered','cancelled')`,
+        [apartment.trim()]
+      );
+      for (const { delivery_agent_id } of affected) {
+        io.to('delivery_' + delivery_agent_id).emit('order_status_update', { apartment: apartment.trim(), pickup_time: pickup_time.trim() });
+      }
+    } catch (_) {}
+
     res.json({ message: "Slot updated", apartment: apartment.trim(), pickup_time: pickup_time.trim(), delivery_time: delivery_time.trim() });
   } catch (err) {
     console.error("apartment-slot PUT error:", err);
