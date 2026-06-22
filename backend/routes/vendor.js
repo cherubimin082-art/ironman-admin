@@ -378,7 +378,13 @@ router.put("/vendor/apartment-slot", ...auth, async (req, res) => {
       [vendorId, apartment.trim(), pickup_time.trim(), delivery_time.trim()]
     );
 
-    // Sync time_slot on all active orders for this apartment so vendor/delivery see correct time
+    // Keep apartments table in sync so all display queries (which JOIN apartments) get correct times
+    await pool.query(
+      `UPDATE apartments SET pickup_time = ?, delivery_time = ? WHERE name = ?`,
+      [pickup_time.trim(), delivery_time.trim(), apartment.trim()]
+    );
+
+    // Sync time_slot on all active orders for this apartment so vendor/delivery see correct pickup time
     await pool.query(
       `UPDATE orders SET time_slot = ? WHERE apartment = ? AND status NOT IN ('delivered','cancelled')`,
       [pickup_time.trim(), apartment.trim()]

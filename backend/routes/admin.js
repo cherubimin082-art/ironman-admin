@@ -639,6 +639,27 @@ router.put("/admin/apartments-list/:id", ...auth, async (req, res) => {
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Apartment not found" });
+
+    // Notify vendor and delivery agents so their pages reload without refresh
+    try {
+      const io = getIO();
+      io.to('vendor_room').emit('order_status_update', { apartment: name.trim(), pickup_time: pickup_time.trim(), delivery_time: delivery_time?.trim() });
+
+      // Sync time_slot on pending orders for this apartment
+      await pool.query(
+        `UPDATE orders SET time_slot = ? WHERE apartment = ? AND status NOT IN ('delivered','cancelled')`,
+        [pickup_time.trim(), name.trim()]
+      );
+
+      const [affected] = await pool.query(
+        `SELECT DISTINCT delivery_agent_id FROM orders WHERE apartment = ? AND delivery_agent_id IS NOT NULL AND status NOT IN ('delivered','cancelled')`,
+        [name.trim()]
+      );
+      for (const { delivery_agent_id } of affected) {
+        io.to('delivery_' + delivery_agent_id).emit('order_status_update', { apartment: name.trim(), pickup_time: pickup_time.trim() });
+      }
+    } catch (_) {}
+
     res.json({ message: "Apartment updated" });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY")
