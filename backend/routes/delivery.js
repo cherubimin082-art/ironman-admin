@@ -278,6 +278,7 @@ router.put("/delivery/reached-for-pickup/:orderId", ...auth, async (req, res) =>
     }
 
     emitToCustomer(order.customer_id, "show_pickup_otp", { orderId });
+    broadcast(getIO(), { vendorId: order.vendor_id }, "order_status_update", { orderId, status: "reached_for_pickup" });
     res.json({ message: "Customer notified with pickup OTP" });
   } catch (err) {
     console.error(err);
@@ -478,6 +479,7 @@ router.put("/delivery/end-ride/:orderId", ...auth, async (req, res) => {
     }
 
     emitToCustomer(order.customer_id, "show_delivery_otp", { orderId });
+    broadcast(getIO(), { vendorId: order.vendor_id }, "order_status_update", { orderId, status: "reached_for_delivery" });
     res.json({ message: "Customer notified with delivery OTP" });
   } catch (err) {
     console.error(err);

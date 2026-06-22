@@ -299,12 +299,16 @@ router.put("/vendor/start-ironing/:orderId", ...auth, async (req, res) => {
       );
     } catch (_) {}
 
-    const [rows] = await pool.query(`SELECT customer_id FROM orders WHERE id = ?`, [orderId]);
+    const [rows] = await pool.query(
+      `SELECT customer_id, delivery_agent_id FROM orders WHERE id = ?`, [orderId]
+    );
     try {
       const io = getIO();
       emitToCustomer(rows[0].customer_id, "order_status_update", { orderId, status: "ironing_in_progress" });
       io.to("admin_room").emit("order_status_update", { orderId, status: "ironing_in_progress" });
       io.to("admin_room").emit("order_ironing", { orderId });
+      if (rows[0].delivery_agent_id)
+        io.to("delivery_" + rows[0].delivery_agent_id).emit("order_status_update", { orderId, status: "ironing_in_progress" });
     } catch (_) {}
 
     res.json({ message: "Ironing started", orderId, status: "ironing_in_progress" });
