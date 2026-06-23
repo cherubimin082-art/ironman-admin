@@ -31,6 +31,8 @@ pipeline {
         sh 'cp capacitor.config.delivery.ts capacitor.config.ts'
         sh 'npx cap add android || true'
         sh 'npx cap sync android'
+        sh '''sed -i 's|<string name="app_name">.*</string>|<string name="app_name">Ironman Delivery Partner</string>|g' android/app/src/main/res/values/strings.xml'''
+        sh '''sed -i 's|<string name="title_activity_main">.*</string>|<string name="title_activity_main">Ironman Delivery Partner</string>|g' android/app/src/main/res/values/strings.xml'''
       }
     }
 
