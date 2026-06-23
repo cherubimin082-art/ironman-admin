@@ -5,7 +5,7 @@ import { useWindowSize } from "../../hooks/useWindowSize";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 function UpdateBanner() {
   const [show, setShow] = useState(false);

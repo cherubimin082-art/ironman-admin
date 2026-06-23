@@ -1016,7 +1016,7 @@ router.post("/admin/upload-image", ...auth, upload.single("image"), (req, res) =
 });
 
 // GET /api/app-version — public, used by delivery APK to check for updates
-const DELIVERY_APK_VERSION = "1.1.0";
+const DELIVERY_APK_VERSION = "1.2.0";
 router.get("/app-version", (_req, res) => {
   res.json({
     version: DELIVERY_APK_VERSION,

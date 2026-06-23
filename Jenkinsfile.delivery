@@ -38,7 +38,7 @@ pipeline {
       steps {
         dir('android') {
           sh 'chmod +x gradlew'
-          sh './gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"'
+          sh './gradlew clean assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"'
         }
       }
     }
