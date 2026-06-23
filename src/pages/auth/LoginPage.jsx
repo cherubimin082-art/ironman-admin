@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { requestOtp, verifyOtp, loginWithPassword } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 import { useWindowSize } from "../../hooks/useWindowSize";
@@ -58,10 +58,6 @@ export default function LoginPage() {
   const { user, signIn } = useAuth();
   const navigate    = useNavigate();
 
-  // If already logged in (e.g. APK reopened), go straight to dashboard
-  useEffect(() => {
-    if (user) navigate(ROLE_REDIRECT[user.role] || "/", { replace: true });
-  }, [user]);
   const { isMobile, isTablet } = useWindowSize();
   const isCompact   = isMobile || isTablet;
 
@@ -73,6 +69,8 @@ export default function LoginPage() {
   }, [step]);
 
   useEffect(() => () => clearInterval(timerRef.current), []);
+
+  if (user) return <Navigate to={ROLE_REDIRECT[user.role] || "/"} replace />;
 
   function switchMethod(m) {
     setMethod(m);
