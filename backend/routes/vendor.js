@@ -730,11 +730,12 @@ router.get("/vendor/bag-stats", ...auth, async (req, res) => {
 
 // ── Iron Shop Tablet ───────────────────────────────────────────────────────
 
-// GET /api/vendor/tablet-bags — all pending/ironing bags for this vendor's orders
+// GET /api/vendor/tablet-bags — all vendor bags: active-order bags + available/empty bags
 router.get("/vendor/tablet-bags", ...tabletAuth, async (req, res) => {
   const vendorId = req.user.vendor_id || req.user.id;
   try {
-    const [bags] = await pool.query(
+    // Bags currently assigned to active orders
+    const [activeBags] = await pool.query(
       `SELECT
          ob.id          AS bag_id,
          b.bag_number,
@@ -748,19 +749,48 @@ router.get("/vendor/tablet-bags", ...tabletAuth, async (req, res) => {
            JSON_OBJECT('garment_name', oi.garment_name, 'quantity', oi.quantity)
          ) AS items
        FROM order_bags ob
-       JOIN bags b        ON b.id  = ob.bag_id
-       JOIN orders o      ON o.id  = ob.order_id
-       JOIN users u       ON u.id  = o.customer_id
+       JOIN bags b         ON b.id  = ob.bag_id
+       JOIN orders o       ON o.id  = ob.order_id
+       JOIN users u        ON u.id  = o.customer_id
        JOIN order_items oi ON oi.order_id = o.id
        WHERE o.vendor_id = ?
          AND o.status IN ('picked_up', 'at_vendor', 'ironing_in_progress')
          AND ob.ironing_status != 'completed'
        GROUP BY ob.id, b.bag_number, ob.ironing_status,
-                o.id, o.order_code, o.status, o.delivery_agent_id, u.name
-       ORDER BY o.status = 'at_vendor' DESC, o.status = 'ironing_in_progress' DESC, ob.id`,
+                o.id, o.order_code, o.status, o.delivery_agent_id, u.name`,
       [vendorId]
     );
-    res.json({ bags });
+
+    // All vendor bags not currently in use (available / empty)
+    const activeBagNumbers = activeBags.map(b => b.bag_number);
+    const [allBags] = await pool.query(
+      `SELECT id AS bag_id, bag_number FROM bags WHERE vendor_id = ? ORDER BY bag_number`,
+      [vendorId]
+    );
+    const emptyBags = allBags
+      .filter(b => !activeBagNumbers.includes(b.bag_number))
+      .map(b => ({
+        bag_id: b.bag_id,
+        bag_number: b.bag_number,
+        ironing_status: null,
+        order_id: null,
+        order_code: null,
+        order_status: 'available',
+        delivery_agent_id: null,
+        customer_name: null,
+        items: [],
+      }));
+
+    // Active bags first (sorted: ironing → at_vendor → picked_up), then empty bags by number
+    const sorted = [
+      ...activeBags.sort((a, b) => {
+        const rank = s => s === 'ironing_in_progress' ? 0 : s === 'at_vendor' ? 1 : 2;
+        return rank(a.order_status) - rank(b.order_status) || a.bag_number - b.bag_number;
+      }),
+      ...emptyBags,
+    ];
+
+    res.json({ bags: sorted });
   } catch (err) {
     console.error("tablet-bags GET error:", err);
     res.status(500).json({ message: "Server error" });

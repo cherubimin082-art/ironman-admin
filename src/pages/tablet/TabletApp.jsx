@@ -111,10 +111,28 @@ function LoginScreen({ onLogin }) {
 
 // ── Bag Card ─────────────────────────────────────────────────
 function BagCard({ bag, activeBagId, actionBagId, onStart, onComplete }) {
+  const isEmpty    = bag.order_status === "available";
   const isAtShop   = bag.order_status === "at_vendor" || bag.order_status === "ironing_in_progress";
   const isIroning  = bag.ironing_status === "ironing";
-  const isDisabled = activeBagId && !isIroning;
+  const isDisabled = !isEmpty && activeBagId && !isIroning;
   const isLoading  = actionBagId === bag.bag_id;
+
+  if (isEmpty) {
+    return (
+      <div style={{
+        background: "#111827", border: "1.5px dashed rgba(255,255,255,0.08)",
+        borderRadius: 24, padding: 28, display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", minHeight: 180, gap: 12,
+        opacity: 0.5,
+      }}>
+        <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
+          🛍️
+        </div>
+        <p style={{ fontSize: 32, fontWeight: 900, color: "rgba(255,255,255,0.2)", margin: 0, fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>#{bag.bag_number}</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.2)", margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>Empty</p>
+      </div>
+    );
+  }
 
   let items = [];
   try { items = typeof bag.items === "string" ? JSON.parse(bag.items) : (bag.items || []); } catch {}
@@ -335,6 +353,7 @@ export default function TabletApp() {
   const ironingCount  = bags.filter(b => b.ironing_status === "ironing").length;
   const atShopCount   = bags.filter(b => b.order_status === "at_vendor" || b.order_status === "ironing_in_progress").length;
   const comingCount   = bags.filter(b => b.order_status === "picked_up").length;
+  const emptyCount    = bags.filter(b => b.order_status === "available").length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#0A0F1E", fontFamily: "'Plus Jakarta Sans', sans-serif", position: "relative" }}>
@@ -383,6 +402,12 @@ export default function TabletApp() {
                 <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "3px 0 0" }}>Coming</p>
               </div>
             )}
+            {emptyCount > 0 && (
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: 14, padding: "10px 18px", textAlign: "center" }}>
+                <p style={{ fontSize: 22, fontWeight: 900, color: "rgba(255,255,255,0.2)", margin: 0, lineHeight: 1 }}>{emptyCount}</p>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.15)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "3px 0 0" }}>Empty</p>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(16,185,129,0.1)", border: "1.5px solid rgba(16,185,129,0.25)", borderRadius: 99, padding: "8px 16px" }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#10B981", display: "inline-block", animation: "blink 1.4s infinite" }} />
               <span style={{ fontSize: 13, fontWeight: 800, color: "#10B981" }}>LIVE</span>
@@ -405,8 +430,8 @@ export default function TabletApp() {
         ) : (
           <>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 24, fontWeight: 600 }}>
-              {bags.length} bag{bags.length !== 1 ? "s" : ""} in queue
-              {activeBagId ? " • 1 being ironed now — others locked until complete" : " • tap a green bag to start ironing"}
+              {atShopCount + comingCount} bag{atShopCount + comingCount !== 1 ? "s" : ""} with clothes • {emptyCount} empty
+              {activeBagId ? " • 1 being ironed — others locked until complete" : atShopCount > 0 ? " • tap a green bag to start ironing" : ""}
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
               {bags.map(bag => (
