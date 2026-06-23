@@ -170,15 +170,14 @@ function OrderDetailDrawer({ order, onClose }) {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
 
-          {/* Delivery Boy Location — most prominent */}
-          {(hasPickupLoc || hasDeliveryLoc) && (
-            <div style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
+          {/* Delivery Boy Location — always visible */}
+          <div style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "#15803D", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
                 <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="currentColor"/></svg>
                 Delivery Boy Locations
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {hasPickupLoc && (
+                {hasPickupLoc ? (
                   <a href={`https://www.google.com/maps?q=${order.pickup_latitude},${order.pickup_longitude}`} target="_blank" rel="noreferrer" style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
                     background: "#fff", borderRadius: 10, border: "1px solid #BBF7D0",
@@ -193,8 +192,18 @@ function OrderDetailDrawer({ order, onClose }) {
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                   </a>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#fff", borderRadius: 10, border: "1px solid #E5E7EB" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="#D1D5DB"/></svg>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 12.5, fontWeight: 700, color: "#6B7280", margin: "0 0 1px" }}>Pickup Location</p>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Not captured yet</p>
+                    </div>
+                  </div>
                 )}
-                {hasDeliveryLoc && (
+                {hasDeliveryLoc ? (
                   <a href={`https://www.google.com/maps?q=${order.delivery_latitude},${order.delivery_longitude}`} target="_blank" rel="noreferrer" style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
                     background: "#fff", borderRadius: 10, border: "1px solid #FECACA",
@@ -209,10 +218,19 @@ function OrderDetailDrawer({ order, onClose }) {
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                   </a>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#fff", borderRadius: 10, border: "1px solid #E5E7EB" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="#D1D5DB"/></svg>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 12.5, fontWeight: 700, color: "#6B7280", margin: "0 0 1px" }}>Delivery Location</p>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Not captured yet</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-          )}
 
           {/* Order info */}
           <div style={{ marginBottom: 18 }}>
