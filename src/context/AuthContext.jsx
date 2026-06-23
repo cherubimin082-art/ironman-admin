@@ -2,23 +2,34 @@ import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+const tokenKey = (role) => `sia_token_${role}`;
+const userKey  = (role) => `sia_user_${role}`;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const stored = localStorage.getItem('sia_user');
+      const role = sessionStorage.getItem('sia_active_role');
+      if (!role) return null;
+      const stored = localStorage.getItem(userKey(role));
       return stored ? JSON.parse(stored) : null;
     } catch { return null; }
   });
 
   function signIn(userData, token) {
-    localStorage.setItem('sia_token', token);
-    localStorage.setItem('sia_user', JSON.stringify(userData));
+    const role = userData.role;
+    localStorage.setItem(tokenKey(role), token);
+    localStorage.setItem(userKey(role), JSON.stringify(userData));
+    sessionStorage.setItem('sia_active_role', role);
     setUser(userData);
   }
 
   function signOut() {
-    localStorage.removeItem('sia_token');
-    localStorage.removeItem('sia_user');
+    const role = sessionStorage.getItem('sia_active_role');
+    if (role) {
+      localStorage.removeItem(tokenKey(role));
+      localStorage.removeItem(userKey(role));
+    }
+    sessionStorage.removeItem('sia_active_role');
     setUser(null);
   }
 
