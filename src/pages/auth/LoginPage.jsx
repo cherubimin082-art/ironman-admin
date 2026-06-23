@@ -372,7 +372,9 @@ export default function LoginPage() {
         <div style={styles.gridOverlay} />
         <div style={styles.leftContent}>
           <div style={styles.brandRow}>
-            <img src="/logo.png" alt="Iron Man" style={{ height: 110, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+            <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: 18, padding: "10px 18px", display: "inline-flex" }}>
+              <img src="/logo.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain" }} />
+            </div>
           </div>
           <div style={styles.heroBlock}>
             <div style={styles.tagPill}><span style={styles.tagDot} />Operations Platform</div>
@@ -404,11 +406,6 @@ export default function LoginPage() {
       {/* ── Right form panel ── */}
       <div style={{ ...styles.rightPanel, padding: isCompact ? "28px 20px 40px" : "48px 24px", alignItems: isCompact ? "flex-start" : "center", overflowY: "auto" }}>
         <div style={{ ...styles.formContainer, maxWidth: isCompact ? "100%" : 420, gap: isCompact ? 18 : 24 }}>
-
-          {/* Logo — always visible on form side */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: isCompact ? "center" : "flex-start", gap: 6, marginBottom: 4 }}>
-            <img src="/logo.png" alt="Iron Man" style={{ height: isCompact ? 64 : 72, width: "auto", objectFit: "contain" }} />
-          </div>
 
           {/* Header */}
           <div style={styles.formHeader}>
