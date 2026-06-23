@@ -735,9 +735,11 @@ router.get("/vendor/tablet-bags", ...tabletAuth, async (req, res) => {
   const vendorId = req.user.vendor_id || req.user.id;
   try {
     // Bags currently assigned to active orders
+    // ob_id = order_bags.id  (used by start/complete API routes)
+    // bag_number             (unique physical bag label, used as React key)
     const [activeBags] = await pool.query(
       `SELECT
-         ob.id          AS bag_id,
+         ob.id          AS ob_id,
          b.bag_number,
          ob.ironing_status,
          o.id           AS order_id,
@@ -761,16 +763,16 @@ router.get("/vendor/tablet-bags", ...tabletAuth, async (req, res) => {
       [vendorId]
     );
 
-    // All vendor bags not currently in use (available / empty)
+    // All vendor bags not currently showing as active
     const activeBagNumbers = activeBags.map(b => b.bag_number);
     const [allBags] = await pool.query(
-      `SELECT id AS bag_id, bag_number FROM bags WHERE vendor_id = ? ORDER BY bag_number`,
+      `SELECT bag_number FROM bags WHERE vendor_id = ? ORDER BY bag_number`,
       [vendorId]
     );
     const emptyBags = allBags
       .filter(b => !activeBagNumbers.includes(b.bag_number))
       .map(b => ({
-        bag_id: b.bag_id,
+        ob_id: null,
         bag_number: b.bag_number,
         ironing_status: null,
         order_id: null,

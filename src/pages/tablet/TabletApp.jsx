@@ -135,12 +135,12 @@ function LoginScreen({ onLogin }) {
 }
 
 // ── Bag Card ─────────────────────────────────────────────────
-function BagCard({ bag, activeBagId, actionBagId, onStart, onComplete }) {
+function BagCard({ bag, activeObId, actionObId, onStart, onComplete }) {
   const isEmpty    = bag.order_status === "available";
   const isAtShop   = bag.order_status === "at_vendor" || bag.order_status === "ironing_in_progress";
   const isIroning  = bag.ironing_status === "ironing";
-  const isDisabled = !isEmpty && activeBagId && !isIroning;
-  const isLoading  = actionBagId === bag.bag_id;
+  const isDisabled = !isEmpty && activeObId && !isIroning;
+  const isLoading  = actionObId === bag.ob_id;
 
   if (isEmpty) {
     return (
@@ -249,7 +249,7 @@ function BagCard({ bag, activeBagId, actionBagId, onStart, onComplete }) {
         </div>
       ) : isIroning ? (
         <button
-          onClick={() => !isLoading && onComplete(bag.bag_id)}
+          onClick={() => !isLoading && onComplete(bag.ob_id)}
           disabled={isLoading}
           style={{
             width: "100%", padding: "18px", borderRadius: 14, border: "none",
@@ -263,7 +263,7 @@ function BagCard({ bag, activeBagId, actionBagId, onStart, onComplete }) {
         </button>
       ) : (
         <button
-          onClick={() => !isLoading && onStart(bag.bag_id)}
+          onClick={() => !isLoading && onStart(bag.ob_id)}
           disabled={isLoading}
           style={{
             width: "100%", padding: "18px", borderRadius: 14, border: "none",
@@ -286,7 +286,7 @@ export default function TabletApp() {
   const [user,  setUser]          = useState(() => { try { return JSON.parse(sessionStorage.getItem(USER_KEY)); } catch { return null; } });
   const [bags,  setBags]          = useState([]);
   const [loading, setLoading]     = useState(false);
-  const [actionBagId, setAction]  = useState(null);
+  const [actionObId, setAction]   = useState(null);
   const [toast, setToast]         = useState(null);
   const socketRef                 = useRef(null);
 
@@ -374,7 +374,7 @@ export default function TabletApp() {
 
   if (!token || !user) return <LoginScreen onLogin={handleLogin} />;
 
-  const activeBagId   = bags.find(b => b.ironing_status === "ironing")?.bag_id ?? null;
+  const activeObId    = bags.find(b => b.ironing_status === "ironing")?.ob_id ?? null;
   const ironingCount  = bags.filter(b => b.ironing_status === "ironing").length;
   const atShopCount   = bags.filter(b => b.order_status === "at_vendor" || b.order_status === "ironing_in_progress").length;
   const comingCount   = bags.filter(b => b.order_status === "picked_up").length;
@@ -456,15 +456,15 @@ export default function TabletApp() {
           <>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 24, fontWeight: 600 }}>
               {atShopCount + comingCount} bag{atShopCount + comingCount !== 1 ? "s" : ""} with clothes • {emptyCount} empty
-              {activeBagId ? " • 1 being ironed — others locked until complete" : atShopCount > 0 ? " • tap a green bag to start ironing" : ""}
+              {activeObId ? " • 1 being ironed — others locked until complete" : atShopCount > 0 ? " • tap a green bag to start ironing" : ""}
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
               {bags.map(bag => (
                 <BagCard
-                  key={bag.bag_id}
+                  key={bag.bag_number}
                   bag={bag}
-                  activeBagId={activeBagId}
-                  actionBagId={actionBagId}
+                  activeObId={activeObId}
+                  actionObId={actionObId}
                   onStart={startIron}
                   onComplete={completeIron}
                 />
