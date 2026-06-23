@@ -159,10 +159,6 @@ function BagCard({ bag, activeObId, actionObId, onStart, onComplete }) {
     );
   }
 
-  let items = [];
-  try { items = typeof bag.items === "string" ? JSON.parse(bag.items) : (bag.items || []); } catch {}
-  items = items.filter(i => i?.garment_name);
-
   const cardBg     = isIroning ? "linear-gradient(135deg,#064E3B,#065F46)" : isAtShop ? "#1E293B" : "#111827";
   const borderColor = isIroning ? "#10B981" : isAtShop ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)";
 
@@ -223,20 +219,6 @@ function BagCard({ bag, activeObId, actionObId, onStart, onComplete }) {
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: 0 }}>{bag.customer_name}</p>
       </div>
 
-      {/* Items */}
-      {items.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>Clothes in bag</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-            {items.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "rgba(255,255,255,0.04)", borderRadius: 9 }}>
-                <span style={{ fontSize: 14, color: isAtShop ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)", fontWeight: 600 }}>{item.garment_name}</span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: isIroning ? "#10B981" : "rgba(255,255,255,0.35)", background: isIroning ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.06)", padding: "3px 12px", borderRadius: 99 }}>×{item.quantity || 1}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Action */}
       {!isAtShop ? (
