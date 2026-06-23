@@ -72,23 +72,43 @@ export function OrderProvider({ children }) {
     }
     loadData();
     if (!socket) {
-      socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5002');
-      socket.on('connect', () => {
+      socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5002', {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: Infinity,
+      });
+      const joinRooms = () => {
         if (user.role === 'vendor')        socket.emit('join_vendor', user.id);
         else if (user.role === 'delivery') socket.emit('join_delivery', user.id);
         else if (user.role === 'admin')    socket.emit('join_admin');
-      });
+      };
+      socket.on('connect', joinRooms);
+      // On reconnect after drop, re-join rooms and refresh data
+      socket.on('reconnect', () => { joinRooms(); loadDataRef.current?.(); });
+
       const reload = () => loadDataRef.current?.();
       socket.on('new_order',                reload);
       socket.on('order_update',             reload);
       socket.on('order_status_update',      reload);
       socket.on('new_delivery_order',       reload);
+      socket.on('new_assignment',           reload);   // admin assigns delivery agent
+      socket.on('assignment_updated',       reload);
       socket.on('order_ready_for_pickup',   reload);
       socket.on('order_ready_for_delivery', reload);
       socket.on('order_at_vendor',          reload);
       socket.on('order_ironing',            reload);
       socket.on('order_delivered',          reload);
     }
+
+    // When APK comes back to foreground, refresh data (socket may have missed events)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadDataRef.current?.();
+        if (socket && !socket.connected) socket.connect();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [user, loadData]);
 
   // Vendor API actions

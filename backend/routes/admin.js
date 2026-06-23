@@ -36,6 +36,11 @@ router.get("/all-orders", ...auth, async (req, res) => {
               ua.name  AS agent_name,
               da.pickup_latitude, da.pickup_longitude,
               da.delivery_latitude, da.delivery_longitude,
+              COALESCE(
+                (SELECT GROUP_CONCAT(DISTINCT b2.bag_number ORDER BY b2.bag_number SEPARATOR ',')
+                   FROM order_bags ob2 JOIN bags b2 ON b2.id = ob2.bag_id WHERE ob2.order_id = o.id),
+                (SELECT CAST(b3.bag_number AS CHAR) FROM bags b3 WHERE b3.id = o.bag_id)
+              ) AS bag_numbers,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name,
                             "quantity",     oi.quantity,
@@ -1008,6 +1013,16 @@ router.post("/admin/upload-image", ...auth, upload.single("image"), (req, res) =
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   const url = `https://admin.ironman.today/api/uploads/${req.file.filename}`;
   res.json({ url });
+});
+
+// GET /api/app-version — public, used by delivery APK to check for updates
+const DELIVERY_APK_VERSION = "1.1.0";
+router.get("/app-version", (_req, res) => {
+  res.json({
+    version: DELIVERY_APK_VERSION,
+    download_url: "https://admin.ironman.today/downloads/ironman-delivery.apk",
+    force_update: false,
+  });
 });
 
 module.exports = router;

@@ -106,9 +106,13 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
   try {
     const [orders] = await pool.query(
       `SELECT o.*, u.name AS customer_name, u.phone AS customer_phone, u.address AS customer_address,
-              b.bag_number,
               da.pickup_latitude, da.pickup_longitude,
               da.delivery_latitude, da.delivery_longitude,
+              COALESCE(
+                (SELECT GROUP_CONCAT(DISTINCT b2.bag_number ORDER BY b2.bag_number SEPARATOR ',')
+                   FROM order_bags ob2 JOIN bags b2 ON b2.id = ob2.bag_id WHERE ob2.order_id = o.id),
+                (SELECT CAST(b3.bag_number AS CHAR) FROM bags b3 WHERE b3.id = o.bag_id)
+              ) AS bag_numbers,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name, "quantity", oi.quantity,
                             "unit_price", oi.unit_price, "subtotal", oi.subtotal)
@@ -116,7 +120,6 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
          FROM orders o
          JOIN users u ON u.id = o.customer_id
          JOIN order_items oi ON oi.order_id = o.id
-         LEFT JOIN bags b ON b.id = o.bag_id
          LEFT JOIN delivery_assignments da ON da.order_id = o.id
         WHERE o.status IN ("pending", "cancelled")
            OR o.vendor_id = ?
