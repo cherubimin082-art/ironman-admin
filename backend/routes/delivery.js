@@ -368,6 +368,24 @@ router.put("/delivery/dropped-at-vendor/:orderId", ...auth, async (req, res) => 
       [orderId, agentId]
     );
 
+    // Auto-assign an available bag if none were assigned during pickup
+    const [[existing]] = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM order_bags WHERE order_id = ?`, [orderId]
+    );
+    if (existing.cnt === 0) {
+      const [[availBag]] = await pool.query(
+        `SELECT id FROM bags WHERE vendor_id = ? AND status = 'available' ORDER BY id LIMIT 1`,
+        [order.vendor_id]
+      );
+      if (availBag) {
+        await pool.query(
+          `INSERT IGNORE INTO order_bags (order_id, bag_id) VALUES (?, ?)`, [orderId, availBag.id]
+        );
+        await pool.query(`UPDATE bags SET status = 'in_use' WHERE id = ?`, [availBag.id]);
+        await pool.query(`UPDATE orders SET bag_id = ? WHERE id = ? AND bag_id IS NULL`, [availBag.id, orderId]);
+      }
+    }
+
     try {
       broadcast(getIO(), { customerId: order.customer_id, vendorId: order.vendor_id }, "order_status_update", {
         orderId, status: "at_vendor"

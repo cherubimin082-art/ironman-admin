@@ -239,8 +239,8 @@ function BagCard({ bag, activeBagId, actionBagId, onStart, onComplete }) {
 
 // ── Main Tablet App ───────────────────────────────────────────
 export default function TabletApp() {
-  const [token, setToken]         = useState(() => localStorage.getItem(TOKEN_KEY));
-  const [user,  setUser]          = useState(() => { try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; } });
+  const [token, setToken]         = useState(() => sessionStorage.getItem(TOKEN_KEY));
+  const [user,  setUser]          = useState(() => { try { return JSON.parse(sessionStorage.getItem(USER_KEY)); } catch { return null; } });
   const [bags,  setBags]          = useState([]);
   const [loading, setLoading]     = useState(false);
   const [actionBagId, setAction]  = useState(null);
@@ -248,15 +248,15 @@ export default function TabletApp() {
   const socketRef                 = useRef(null);
 
   const handleLogin = (tok, usr) => {
-    localStorage.setItem(TOKEN_KEY, tok);
-    localStorage.setItem(USER_KEY, JSON.stringify(usr));
+    sessionStorage.setItem(TOKEN_KEY, tok);
+    sessionStorage.setItem(USER_KEY, JSON.stringify(usr));
     setToken(tok);
     setUser(usr);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
     setToken(null);
     setUser(null);
     setBags([]);
@@ -387,12 +387,6 @@ export default function TabletApp() {
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#10B981", display: "inline-block", animation: "blink 1.4s infinite" }} />
               <span style={{ fontSize: 13, fontWeight: 800, color: "#10B981" }}>LIVE</span>
             </div>
-            <button
-              onClick={handleLogout}
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 16px", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-            >
-              Sign Out
-            </button>
           </div>
         </div>
 
