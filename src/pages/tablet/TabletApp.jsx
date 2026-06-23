@@ -19,6 +19,7 @@ function LoginScreen({ onLogin }) {
   const [password, setPassword] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -42,7 +43,7 @@ function LoginScreen({ onLogin }) {
     }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <img src="/logo.png" alt="logo" style={{ height: 56, objectFit: "contain", marginBottom: 20 }} />
+          <img src="/logo.png" alt="logo" style={{ height: 56, objectFit: "contain", marginBottom: 20, display: "block", margin: "0 auto 20px" }} />
           <h1 style={{ fontSize: 28, fontWeight: 900, color: "white", margin: "0 0 6px", fontFamily: "'Outfit', sans-serif" }}>
             Iron Shop Tablet
           </h1>
@@ -58,7 +59,7 @@ function LoginScreen({ onLogin }) {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="ironman@shop.com"
+              placeholder="example@ironman.com"
               required
               style={{
                 width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
@@ -71,18 +72,42 @@ function LoginScreen({ onLogin }) {
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.05)", color: "white", fontSize: 15,
-                outline: "none", boxSizing: "border-box",
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPass ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                style={{
+                  width: "100%", padding: "14px 48px 14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.05)", color: "white", fontSize: 15,
+                  outline: "none", boxSizing: "border-box",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(v => !v)}
+                style={{
+                  position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", padding: 4,
+                  color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center",
+                }}
+              >
+                {showPass ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           {error && (
