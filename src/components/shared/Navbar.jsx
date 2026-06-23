@@ -73,7 +73,7 @@ export default function Navbar({ onMenuClick }) {
 
           {/* Logo mark */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src="/logo1.png" alt="Iron Man" style={{ height: 36, width: "auto", objectFit: "contain" }} />
+            <img src="/logo.png" alt="Iron Man" style={{ height: 36, width: "auto", objectFit: "contain" }} />
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{
                 width: 6, height: 6, borderRadius: "50%",

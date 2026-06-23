@@ -372,7 +372,7 @@ export default function LoginPage() {
         <div style={styles.gridOverlay} />
         <div style={styles.leftContent}>
           <div style={styles.brandRow}>
-            <img src="/logo1.png" alt="Iron Man" style={{ height: 110, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+            <img src="/logo.png" alt="Iron Man" style={{ height: 110, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
           </div>
           <div style={styles.heroBlock}>
             <div style={styles.tagPill}><span style={styles.tagDot} />Operations Platform</div>

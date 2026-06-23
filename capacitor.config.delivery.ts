@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'today.ironman.delivery',
-  appName: 'Iron Delivery',
+  appName: 'Ironman Delivery Partner',
   webDir: 'dist',
   android: {
     buildOptions: {
