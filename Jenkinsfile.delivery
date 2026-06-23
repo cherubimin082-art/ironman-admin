@@ -28,6 +28,7 @@ pipeline {
 
     stage('Sync Capacitor') {
       steps {
+        sh 'cp capacitor.config.delivery.ts capacitor.config.ts'
         sh 'npx cap sync android'
       }
     }
