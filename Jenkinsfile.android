@@ -28,6 +28,7 @@ pipeline {
 
     stage('Sync Capacitor') {
       steps {
+        sh 'npx cap add android || true'
         sh 'npx cap sync android'
       }
     }
