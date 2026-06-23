@@ -371,8 +371,25 @@ export default function ActiveDeliveryPage() {
     if (!otpModal) return;
     const action = otpModal.type === "pickup" ? "verify_pickup_otp" : "verify_delivery_otp";
     setOtpLoading(true);
+    // Capture GPS for delivery confirmation; skip silently if unavailable
+    let coords = null;
+    if (otpModal.type === "delivery") {
+      try {
+        coords = await new Promise(resolve => {
+          if (!navigator.geolocation) return resolve(null);
+          navigator.geolocation.getCurrentPosition(
+            p => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+            () => resolve(null),
+            { timeout: 5000, maximumAge: 60000 }
+          );
+        });
+      } catch (_) {}
+    }
     try {
-      await deliveryAction(otpModal.orderId, action, { otp });
+      await deliveryAction(otpModal.orderId, action, {
+        otp,
+        latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null,
+      });
       setOtpModal(null);
     } finally {
       setOtpLoading(false);

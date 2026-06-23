@@ -34,6 +34,8 @@ router.get("/all-orders", ...auth, async (req, res) => {
               uc.name  AS customer_name,  uc.phone AS customer_phone,
               uv.name  AS vendor_name,
               ua.name  AS agent_name,
+              da.pickup_latitude, da.pickup_longitude,
+              da.delivery_latitude, da.delivery_longitude,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name,
                             "quantity",     oi.quantity,
@@ -43,6 +45,7 @@ router.get("/all-orders", ...auth, async (req, res) => {
          JOIN users uc ON uc.id = o.customer_id
          LEFT JOIN users uv ON uv.id = o.vendor_id
          LEFT JOIN users ua ON ua.id = o.delivery_agent_id
+         LEFT JOIN delivery_assignments da ON da.order_id = o.id
          LEFT JOIN order_items oi ON oi.order_id = o.id
         GROUP BY o.id
         ORDER BY o.created_at DESC`

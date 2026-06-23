@@ -1,0 +1,57 @@
+pipeline {
+  agent any
+
+  environment {
+    ANDROID_HOME = '/home/ubuntu/android-sdk'
+    PATH         = "${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0"
+    APK_OUT_DIR  = '/var/www/ironman-downloads'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/cherubimin082-art/ironman-admin.git'
+      }
+    }
+
+    stage('Install dependencies') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+
+    stage('Build web (Android mode)') {
+      steps {
+        sh 'npm run build:android'
+      }
+    }
+
+    stage('Sync Capacitor') {
+      steps {
+        sh 'npx cap sync android'
+      }
+    }
+
+    stage('Build APK') {
+      steps {
+        dir('android') {
+          sh 'chmod +x gradlew'
+          sh './gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"'
+        }
+      }
+    }
+
+    stage('Publish APK') {
+      steps {
+        sh "mkdir -p ${APK_OUT_DIR}"
+        sh "cp android/app/build/outputs/apk/debug/app-debug.apk ${APK_OUT_DIR}/ironman-staff.apk"
+        echo "APK available at: https://admin.ironman.today/downloads/ironman-staff.apk"
+      }
+    }
+  }
+
+  post {
+    success { echo 'Staff APK built and published successfully.' }
+    failure { echo 'Build failed. Check logs above.' }
+  }
+}

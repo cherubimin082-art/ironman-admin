@@ -43,6 +43,24 @@ const STATUS_CONFIG = {
   cancelled:          { accent: "#ef4444", avatarBg: "#fef2f2" },
 };
 
+function MapsLink({ lat, lng, label, color = "#1d4ed8" }) {
+  if (!lat || !lng) return null;
+  const url = `https://www.google.com/maps?q=${lat},${lng}`;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 10.5, fontWeight: 700, color, textDecoration: "none",
+      background: color + "12", border: `1px solid ${color}40`,
+      borderRadius: 6, padding: "2px 8px",
+    }}>
+      <svg viewBox="0 0 24 24" style={{ width: 10, height: 10 }}>
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="currentColor"/>
+      </svg>
+      {label}
+    </a>
+  );
+}
+
 function LocationIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 12, height: 12 }}>
@@ -447,6 +465,12 @@ export default function OrderCard({ order, onStatusChange }) {
               ₹{order.amount}
             </span>
           </div>
+          {(order.pickup_latitude || order.delivery_latitude) && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+              <MapsLink lat={order.pickup_latitude} lng={order.pickup_longitude} label="Pickup" color="#10b981" />
+              <MapsLink lat={order.delivery_latitude} lng={order.delivery_longitude} label="Delivery" color="#DC2626" />
+            </div>
+          )}
           <ActionArea order={order} onStatusChange={onStatusChange} />
         </div>
       </div>

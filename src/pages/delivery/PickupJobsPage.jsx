@@ -598,12 +598,27 @@ export default function PickupJobsPage() {
     setPickupModal({ order });
   }
 
-  // Confirm pickup (OTP + bag_ids[])
+  // Confirm pickup (OTP + bag_ids[] + GPS)
   async function handleConfirmPickup(otp, bagIds) {
     if (!pickupModal) return;
     setConfirming(true);
+    // Capture GPS silently — proceed without it if denied/unavailable
+    let coords = null;
     try {
-      await deliveryAction(pickupModal.order.id, "confirm_pickup", { otp, bag_ids: bagIds });
+      coords = await new Promise(resolve => {
+        if (!navigator.geolocation) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          p => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+          () => resolve(null),
+          { timeout: 5000, maximumAge: 60000 }
+        );
+      });
+    } catch (_) {}
+    try {
+      await deliveryAction(pickupModal.order.id, "confirm_pickup", {
+        otp, bag_ids: bagIds,
+        latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null,
+      });
       setPickupModal(null);
     } catch (err) {
       // Refresh bag list — another agent may have taken a selected bag

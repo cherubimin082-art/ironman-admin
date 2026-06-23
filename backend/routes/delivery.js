@@ -97,6 +97,8 @@ router.get("/delivery/completed-orders", ...auth, async (req, res) => {
       `SELECT o.id, o.order_code, o.total, o.created_at,
               u.name AS customer_name, u.address AS customer_address, u.apartment AS customer_apartment,
               da.delivered_at,
+              da.pickup_latitude, da.pickup_longitude,
+              da.delivery_latitude, da.delivery_longitude,
               JSON_ARRAYAGG(
                 JSON_OBJECT('garment_name', oi.garment_name, 'quantity', oi.quantity)
               ) AS items
@@ -514,7 +516,7 @@ router.get("/delivery/available-bags/:vendorId", ...auth, async (req, res) => {
 router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
   const orderId = req.params.orderId;
   const agentId = req.user.id;
-  const { otp, bag_ids } = req.body;
+  const { otp, bag_ids, latitude, longitude } = req.body;
 
   const ids = Array.isArray(bag_ids) ? bag_ids.map(Number).filter(Boolean) : [];
   if (!ids.length) return res.status(400).json({ message: "Please select at least one bag" });
@@ -569,8 +571,9 @@ router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
         ids.flatMap(bid => [orderId, bid])
       );
       await bagConn.query(
-        `UPDATE delivery_assignments SET status = 'picked_up', pickup_otp_verified = 1, pickup_at = NOW() WHERE order_id = ?`,
-        [orderId]
+        `UPDATE delivery_assignments SET status = 'picked_up', pickup_otp_verified = 1, pickup_at = NOW(),
+          pickup_latitude = ?, pickup_longitude = ? WHERE order_id = ?`,
+        [latitude ?? null, longitude ?? null, orderId]
       );
       await bagConn.query(
         `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, 'picked_up', ?)`,
@@ -606,7 +609,7 @@ router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
 router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) => {
   const orderId = req.params.orderId;
   const agentId = req.user.id;
-  const { otp }  = req.body;
+  const { otp, latitude, longitude } = req.body;
 
   try {
     const [rows] = await pool.query(
@@ -629,9 +632,10 @@ router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) =
     await pool.query(`UPDATE orders SET status = "delivered" WHERE id = ?`, [orderId]);
     await pool.query(
       `UPDATE delivery_assignments
-          SET status = "delivered", delivery_otp_verified = 1, delivered_at = NOW()
+          SET status = "delivered", delivery_otp_verified = 1, delivered_at = NOW(),
+              delivery_latitude = ?, delivery_longitude = ?
         WHERE order_id = ?`,
-      [orderId]
+      [latitude ?? null, longitude ?? null, orderId]
     );
     await pool.query(
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "delivered", ?)`,

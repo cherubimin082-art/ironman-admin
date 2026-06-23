@@ -53,6 +53,24 @@ function StatusBadge({ status }) {
   );
 }
 
+function MapsLink({ lat, lng, label, color = "#1d4ed8" }) {
+  if (!lat || !lng) return null;
+  const url = `https://www.google.com/maps?q=${lat},${lng}`;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 10.5, fontWeight: 700, color, textDecoration: "none",
+      background: color + "12", border: `1px solid ${color}40`,
+      borderRadius: 6, padding: "2px 7px",
+    }}>
+      <svg viewBox="0 0 24 24" style={{ width: 10, height: 10 }}>
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="currentColor"/>
+      </svg>
+      {label}
+    </a>
+  );
+}
+
 function initials(name) {
   if (!name) return "?";
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -335,8 +353,8 @@ export default function OrderManagementPage() {
 
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <div style={{ minWidth: 520 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px", padding: "12px 20px", background: "#0F172A" }}>
-                {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS"].map(h => (
+              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px 160px", padding: "12px 20px", background: "#0F172A" }}>
+                {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS", "LOCATION"].map(h => (
                   <span key={h} style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>{h}</span>
                 ))}
               </div>
@@ -356,7 +374,7 @@ export default function OrderManagementPage() {
                   <div
                     key={order.id}
                     style={{
-                      display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px",
+                      display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px 160px",
                       padding: "16px 20px", alignItems: "center",
                       borderBottom: idx < paginated.length - 1 ? "1px solid #F8F9FB" : "none",
                       transition: "background 0.1s",
@@ -384,6 +402,11 @@ export default function OrderManagementPage() {
                     </div>
 
                     <StatusBadge status={order.status} />
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <MapsLink lat={order.pickup_latitude} lng={order.pickup_longitude} label="Pickup" color="#10b981" />
+                      <MapsLink lat={order.delivery_latitude} lng={order.delivery_longitude} label="Delivery" color="#DC2626" />
+                    </div>
                   </div>
                 );
               })}

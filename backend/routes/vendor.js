@@ -107,6 +107,8 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
     const [orders] = await pool.query(
       `SELECT o.*, u.name AS customer_name, u.phone AS customer_phone, u.address AS customer_address,
               b.bag_number,
+              da.pickup_latitude, da.pickup_longitude,
+              da.delivery_latitude, da.delivery_longitude,
               JSON_ARRAYAGG(
                 JSON_OBJECT("garment_name", oi.garment_name, "quantity", oi.quantity,
                             "unit_price", oi.unit_price, "subtotal", oi.subtotal)
@@ -115,6 +117,7 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
          JOIN users u ON u.id = o.customer_id
          JOIN order_items oi ON oi.order_id = o.id
          LEFT JOIN bags b ON b.id = o.bag_id
+         LEFT JOIN delivery_assignments da ON da.order_id = o.id
         WHERE o.status IN ("pending", "cancelled")
            OR o.vendor_id = ?
         GROUP BY o.id

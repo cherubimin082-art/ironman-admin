@@ -11,6 +11,24 @@ function formatDt(ts) {
   });
 }
 
+function MapsLink({ lat, lng, label, color = "#1d4ed8" }) {
+  if (!lat || !lng) return null;
+  const url = `https://www.google.com/maps?q=${lat},${lng}`;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 11, fontWeight: 700, color, textDecoration: "none",
+      background: color + "12", border: `1px solid ${color}40`,
+      borderRadius: 7, padding: "3px 9px",
+    }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 11, height: 11 }}>
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="currentColor" stroke="none"/>
+      </svg>
+      {label}
+    </a>
+  );
+}
+
 export default function CompletedOrdersPage() {
   const [orders, setOrders]   = useState([]);
   const [total, setTotal]     = useState(0);
@@ -138,6 +156,12 @@ export default function CompletedOrdersPage() {
                 <p style={{ fontSize: 11.5, color: "#9ca3af", margin: 0, fontWeight: 500 }}>
                   {formatDt(o.delivered_at)}
                 </p>
+                {(o.pickup_latitude || o.delivery_latitude) && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                    <MapsLink lat={o.pickup_latitude} lng={o.pickup_longitude} label="Pickup Location" color="#10b981" />
+                    <MapsLink lat={o.delivery_latitude} lng={o.delivery_longitude} label="Delivery Location" color="#DC2626" />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -156,7 +180,7 @@ export default function CompletedOrdersPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
                 <thead>
                   <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                    {["Order ID", "Customer", "Apartment / Address", "Amount", "Delivered On"].map((h, i) => (
+                    {["Order ID", "Customer", "Apartment / Address", "Amount", "Delivered On", "Location"].map((h, i) => (
                       <th key={h} style={{
                         padding: "11px 20px", fontSize: 11, fontWeight: 700, color: "#9ca3af",
                         textTransform: "uppercase", letterSpacing: "0.07em",
@@ -201,6 +225,12 @@ export default function CompletedOrdersPage() {
                       </td>
                       <td style={{ padding: "14px 20px", fontSize: 12.5, color: "#9ca3af", fontWeight: 500, whiteSpace: "nowrap" }}>
                         {formatDt(o.delivered_at)}
+                      </td>
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <MapsLink lat={o.pickup_latitude} lng={o.pickup_longitude} label="Pickup" color="#10b981" />
+                          <MapsLink lat={o.delivery_latitude} lng={o.delivery_longitude} label="Delivery" color="#DC2626" />
+                        </div>
                       </td>
                     </tr>
                   ))}
