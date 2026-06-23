@@ -127,4 +127,35 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// ── POST /api/tablet-login (email + password for iron shop tablet) ───────────
+router.post("/tablet-login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ message: "email and password are required" });
+
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, name, phone, role, vendor_id, password_hash FROM users WHERE email = ? AND role = 'tablet' AND status = 'active'",
+      [email.trim().toLowerCase()]
+    );
+    if (!rows.length)
+      return res.status(404).json({ message: "Tablet account not found" });
+
+    const user = rows[0];
+    if (!user.password_hash)
+      return res.status(400).json({ message: "Password not set" });
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match)
+      return res.status(401).json({ message: "Incorrect password" });
+
+    const payload = { id: user.id, name: user.name, role: user.role, vendor_id: user.vendor_id };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "30d" });
+    res.json({ message: "Login successful", token, user: payload });
+  } catch (err) {
+    console.error("tablet-login error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

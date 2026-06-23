@@ -23,8 +23,9 @@ function emitToCustomer(customerId, event, payload) {
   req.end();
 }
 
-const router = express.Router();
-const auth   = [verifyToken, requireRole("vendor")];
+const router     = express.Router();
+const auth       = [verifyToken, requireRole("vendor")];
+const tabletAuth = [verifyToken, requireRole("vendor", "tablet")];
 
 // GET /api/vendor/completed-orders — all delivered orders for this vendor
 router.get("/vendor/completed-orders", ...auth, async (req, res) => {
@@ -730,8 +731,8 @@ router.get("/vendor/bag-stats", ...auth, async (req, res) => {
 // ── Iron Shop Tablet ───────────────────────────────────────────────────────
 
 // GET /api/vendor/tablet-bags — all pending/ironing bags for this vendor's orders
-router.get("/vendor/tablet-bags", ...auth, async (req, res) => {
-  const vendorId = req.user.id;
+router.get("/vendor/tablet-bags", ...tabletAuth, async (req, res) => {
+  const vendorId = req.user.vendor_id || req.user.id;
   try {
     const [bags] = await pool.query(
       `SELECT
@@ -752,11 +753,11 @@ router.get("/vendor/tablet-bags", ...auth, async (req, res) => {
        JOIN users u       ON u.id  = o.customer_id
        JOIN order_items oi ON oi.order_id = o.id
        WHERE o.vendor_id = ?
-         AND o.status IN ('at_vendor', 'ironing_in_progress')
+         AND o.status IN ('picked_up', 'at_vendor', 'ironing_in_progress')
          AND ob.ironing_status != 'completed'
        GROUP BY ob.id, b.bag_number, ob.ironing_status,
                 o.id, o.order_code, o.status, o.delivery_agent_id, u.name
-       ORDER BY ob.id`,
+       ORDER BY o.status = 'at_vendor' DESC, o.status = 'ironing_in_progress' DESC, ob.id`,
       [vendorId]
     );
     res.json({ bags });
@@ -767,8 +768,8 @@ router.get("/vendor/tablet-bags", ...auth, async (req, res) => {
 });
 
 // PUT /api/vendor/tablet-bags/:bagId/start-iron
-router.put("/vendor/tablet-bags/:bagId/start-iron", ...auth, async (req, res) => {
-  const vendorId = req.user.id;
+router.put("/vendor/tablet-bags/:bagId/start-iron", ...tabletAuth, async (req, res) => {
+  const vendorId = req.user.vendor_id || req.user.id;
   const bagId    = req.params.bagId;
   try {
     // Only one bag can be ironed at a time
@@ -811,8 +812,8 @@ router.put("/vendor/tablet-bags/:bagId/start-iron", ...auth, async (req, res) =>
 });
 
 // PUT /api/vendor/tablet-bags/:bagId/complete-iron
-router.put("/vendor/tablet-bags/:bagId/complete-iron", ...auth, async (req, res) => {
-  const vendorId = req.user.id;
+router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req, res) => {
+  const vendorId = req.user.vendor_id || req.user.id;
   const bagId    = req.params.bagId;
   try {
     await pool.query(

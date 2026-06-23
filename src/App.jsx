@@ -8,7 +8,7 @@ import LoginPage from "./pages/auth/LoginPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 
 import VendorDashboard from "./pages/vendor/VendorDashboard";
-import TabletPage from "./pages/vendor/TabletPage";
+import TabletApp from "./pages/tablet/TabletApp";
 import OrderQueuePage from "./pages/vendor/OrderQueuePage";
 import CapacityPage from "./pages/vendor/CapacityPage";
 import StaffPage from "./pages/vendor/StaffPage";
@@ -47,7 +47,7 @@ export default function App() {
             <Route path="/vendor/staff"     element={<RoleRoute allowedRole="vendor"><StaffPage /></RoleRoute>} />
             <Route path="/vendor/reports"     element={<RoleRoute allowedRole="vendor"><ReportsPage /></RoleRoute>} />
             <Route path="/vendor/apartments" element={<RoleRoute allowedRole="vendor"><ApartmentManagementPage /></RoleRoute>} />
-            <Route path="/vendor/tablet"    element={<RoleRoute allowedRole="vendor"><TabletPage /></RoleRoute>} />
+            <Route path="/tablet"           element={<TabletApp />} />
 
             {/* Delivery routes */}
             <Route path="/delivery/dashboard" element={<RoleRoute allowedRole="delivery"><DeliveryDashboard /></RoleRoute>} />

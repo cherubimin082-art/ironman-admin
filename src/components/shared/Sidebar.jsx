@@ -125,7 +125,7 @@ const TabletIcon = () => (
 
 const VENDOR_LINKS = [
   { to: "/vendor/dashboard",  label: "Dashboard",   Icon: DashboardIcon  },
-  { to: "/vendor/tablet",     label: "Iron Tablet",  Icon: TabletIcon     },
+  { to: "/tablet",            label: "Iron Tablet",  Icon: TabletIcon,    external: true },
   { to: "/vendor/orders",     label: "Orders",       Icon: OrdersIcon     },
   { to: "/vendor/staff",      label: "Delivery Boy", Icon: DeliveryBoyIcon },
   { to: "/vendor/capacity",   label: "Capacity",     Icon: CapacityIcon   },
@@ -167,6 +167,29 @@ function NavItem({ to, label, Icon, onClose }) {
         </div>
       )}
     </NavLink>
+  );
+}
+
+function ExternalNavItem({ to, label, Icon, onClose }) {
+  return (
+    <a href={to} target="_blank" rel="noopener noreferrer" onClick={onClose} style={{ textDecoration: "none" }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "10px 14px", borderRadius: 10, marginBottom: 2,
+        background: "transparent", cursor: "pointer", transition: "background 0.15s",
+      }}>
+        <span style={{ color: "rgba(255,255,255,0.45)", display: "flex", flexShrink: 0 }}>
+          <Icon />
+        </span>
+        <span style={{ fontSize: 13.5, fontWeight: 500, color: "rgba(255,255,255,0.55)", flex: 1 }}>
+          {label}
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+          <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+      </div>
+    </a>
   );
 }
 
@@ -237,7 +260,9 @@ export default function Sidebar({ open, onClose, isMobile }) {
         {/* ── Nav ── */}
         <nav style={{ flex: 1, padding: "14px 10px", overflowY: "auto" }}>
           {links.map(link => (
-            <NavItem key={link.to} {...link} onClose={onClose} />
+            link.external
+              ? <ExternalNavItem key={link.to} {...link} onClose={onClose} />
+              : <NavItem key={link.to} {...link} onClose={onClose} />
           ))}
         </nav>
 
