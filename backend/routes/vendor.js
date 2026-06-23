@@ -727,6 +727,137 @@ router.get("/vendor/bag-stats", ...auth, async (req, res) => {
   }
 });
 
+// ── Iron Shop Tablet ───────────────────────────────────────────────────────
+
+// GET /api/vendor/tablet-bags — all pending/ironing bags for this vendor's orders
+router.get("/vendor/tablet-bags", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const [bags] = await pool.query(
+      `SELECT
+         ob.id          AS bag_id,
+         b.bag_number,
+         ob.ironing_status,
+         o.id           AS order_id,
+         o.order_code,
+         o.status       AS order_status,
+         o.delivery_agent_id,
+         u.name         AS customer_name,
+         JSON_ARRAYAGG(
+           JSON_OBJECT('garment_name', oi.garment_name, 'quantity', oi.quantity)
+         ) AS items
+       FROM order_bags ob
+       JOIN bags b        ON b.id  = ob.bag_id
+       JOIN orders o      ON o.id  = ob.order_id
+       JOIN users u       ON u.id  = o.customer_id
+       JOIN order_items oi ON oi.order_id = o.id
+       WHERE o.vendor_id = ?
+         AND o.status IN ('at_vendor', 'ironing_in_progress')
+         AND ob.ironing_status != 'completed'
+       GROUP BY ob.id, b.bag_number, ob.ironing_status,
+                o.id, o.order_code, o.status, o.delivery_agent_id, u.name
+       ORDER BY ob.id`,
+      [vendorId]
+    );
+    res.json({ bags });
+  } catch (err) {
+    console.error("tablet-bags GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/vendor/tablet-bags/:bagId/start-iron
+router.put("/vendor/tablet-bags/:bagId/start-iron", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const bagId    = req.params.bagId;
+  try {
+    // Only one bag can be ironed at a time
+    const [active] = await pool.query(
+      `SELECT ob.id FROM order_bags ob
+       JOIN orders o ON o.id = ob.order_id
+       WHERE o.vendor_id = ? AND ob.ironing_status = 'ironing' LIMIT 1`,
+      [vendorId]
+    );
+    if (active.length > 0)
+      return res.status(400).json({ message: "Another bag is already being ironed" });
+
+    await pool.query(
+      `UPDATE order_bags SET ironing_status = 'ironing' WHERE id = ?`, [bagId]
+    );
+    const [[bag]] = await pool.query(
+      `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
+       FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]
+    );
+    await pool.query(
+      `UPDATE orders SET status = 'ironing_in_progress' WHERE id = ? AND status = 'at_vendor'`,
+      [bag.order_id]
+    );
+
+    try {
+      const io = getIO();
+      emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
+      io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
+      io.to("admin_room").emit("order_ironing", { orderId: bag.order_id });
+      io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "ironing" });
+      if (bag.delivery_agent_id)
+        io.to(`delivery_${bag.delivery_agent_id}`).emit("order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
+    } catch (_) {}
+
+    res.json({ message: "Ironing started", bagId, status: "ironing" });
+  } catch (err) {
+    console.error("start-iron error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/vendor/tablet-bags/:bagId/complete-iron
+router.put("/vendor/tablet-bags/:bagId/complete-iron", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const bagId    = req.params.bagId;
+  try {
+    await pool.query(
+      `UPDATE order_bags SET ironing_status = 'completed' WHERE id = ?`, [bagId]
+    );
+    const [[bag]] = await pool.query(
+      `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
+       FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]
+    );
+    const [[remaining]] = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM order_bags WHERE order_id = ? AND ironing_status != 'completed'`,
+      [bag.order_id]
+    );
+
+    if (remaining.cnt === 0) {
+      await pool.query(
+        `UPDATE orders SET status = 'ready_for_delivery' WHERE id = ?`, [bag.order_id]
+      );
+      try {
+        const io = getIO();
+        emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+        io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+        io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: true });
+        if (bag.delivery_agent_id) {
+          io.to(`delivery_${bag.delivery_agent_id}`).emit("order_ready_for_delivery", {
+            orderId: bag.order_id, message: "Ironing complete — pick up from shop"
+          });
+        }
+      } catch (_) {}
+      return res.json({ message: "All bags done — order ready for delivery", bagId, orderReady: true });
+    }
+
+    try {
+      const io = getIO();
+      io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: false });
+      io.to("admin_room").emit("order_status_update", { orderId: bag.order_id });
+    } catch (_) {}
+
+    res.json({ message: "Bag ironing completed", bagId, orderReady: false });
+  } catch (err) {
+    console.error("complete-iron error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // PUT /api/vendor/bags-available — vendor toggles their bag availability status
 router.put("/vendor/bags-available", ...auth, async (req, res) => {
   const vendorId = req.user.id;

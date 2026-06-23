@@ -116,13 +116,21 @@ const ADMIN_LINKS = [
   { to: "/admin/analytics",  label: "Settings",     Icon: SettingsIcon   },
 ];
 
+const TabletIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <line x1="12" y1="18" x2="12" y2="18.01" />
+  </svg>
+);
+
 const VENDOR_LINKS = [
-  { to: "/vendor/dashboard",  label: "Dashboard", Icon: DashboardIcon },
-  { to: "/vendor/orders",     label: "Orders",    Icon: OrdersIcon    },
+  { to: "/vendor/dashboard",  label: "Dashboard",   Icon: DashboardIcon  },
+  { to: "/vendor/tablet",     label: "Iron Tablet",  Icon: TabletIcon     },
+  { to: "/vendor/orders",     label: "Orders",       Icon: OrdersIcon     },
   { to: "/vendor/staff",      label: "Delivery Boy", Icon: DeliveryBoyIcon },
-  { to: "/vendor/capacity",   label: "Capacity",  Icon: CapacityIcon  },
-  { to: "/vendor/reports",    label: "Reports",   Icon: AnalyticsIcon },
-  { to: "/vendor/apartments", label: "Locations", Icon: LocationIcon  },
+  { to: "/vendor/capacity",   label: "Capacity",     Icon: CapacityIcon   },
+  { to: "/vendor/reports",    label: "Reports",      Icon: AnalyticsIcon  },
+  { to: "/vendor/apartments", label: "Locations",    Icon: LocationIcon   },
 ];
 
 const DELIVERY_LINKS = [
