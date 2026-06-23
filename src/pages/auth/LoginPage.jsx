@@ -55,8 +55,13 @@ export default function LoginPage() {
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const timerRef  = useRef(null);
 
-  const { signIn }  = useAuth();
+  const { user, signIn } = useAuth();
   const navigate    = useNavigate();
+
+  // If already logged in (e.g. APK reopened), go straight to dashboard
+  useEffect(() => {
+    if (user) navigate(ROLE_REDIRECT[user.role] || "/", { replace: true });
+  }, [user]);
   const { isMobile, isTablet } = useWindowSize();
   const isCompact   = isMobile || isTablet;
 
