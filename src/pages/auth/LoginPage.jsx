@@ -405,17 +405,10 @@ export default function LoginPage() {
       <div style={{ ...styles.rightPanel, padding: isCompact ? "28px 20px 40px" : "48px 24px", alignItems: isCompact ? "flex-start" : "center", overflowY: "auto" }}>
         <div style={{ ...styles.formContainer, maxWidth: isCompact ? "100%" : 420, gap: isCompact ? 18 : 24 }}>
 
-          {/* Mobile compact logo */}
-          {isCompact && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 80, height: 80, borderRadius: 20, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", border: "1px solid #e5e7eb" }}>
-                <img src="/logo.png" alt="Iron Man" style={{ height: 60, width: "auto", objectFit: "contain" }} />
-              </div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", margin: 0 }}>
-                Operations Portal
-              </p>
-            </div>
-          )}
+          {/* Logo — always visible on form side */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: isCompact ? "center" : "flex-start", gap: 6, marginBottom: 4 }}>
+            <img src="/logo.png" alt="Iron Man" style={{ height: isCompact ? 64 : 72, width: "auto", objectFit: "contain" }} />
+          </div>
 
           {/* Header */}
           <div style={styles.formHeader}>
