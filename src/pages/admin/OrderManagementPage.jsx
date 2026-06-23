@@ -122,6 +122,139 @@ function exportCSV(rows) {
   URL.revokeObjectURL(url);
 }
 
+function OrderDetailDrawer({ order, onClose }) {
+  if (!order) return null;
+  const name      = order.customerName || order.customer_name || "Customer";
+  const phone     = order.customerPhone || order.phone || "";
+  const items     = order.rawItems || [];
+  const displayId = order.order_code || `#${order.id}`;
+  const hasPickupLoc   = order.pickup_latitude && order.pickup_longitude;
+  const hasDeliveryLoc = order.delivery_latitude && order.delivery_longitude;
+
+  const InfoRow = ({ label, value }) => value ? (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "9px 0", borderBottom: "1px solid #F1F5F9" }}>
+      <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600, minWidth: 110 }}>{label}</span>
+      <span style={{ fontSize: 13, color: "#0F172A", fontWeight: 700, textAlign: "right", maxWidth: 200 }}>{value}</span>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 200 }}
+      />
+      {/* Drawer */}
+      <div style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 201,
+        width: "min(420px, 95vw)", background: "#fff",
+        boxShadow: "-8px 0 40px rgba(0,0,0,0.18)",
+        display: "flex", flexDirection: "column",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        animation: "slideIn 0.22s ease",
+      }}>
+        <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+
+        {/* Header */}
+        <div style={{ padding: "18px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0F172A" }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 3px" }}>Order Details</p>
+            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>{displayId}</p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <StatusBadge status={order.status} />
+            <button onClick={onClose} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
+
+          {/* Delivery Boy Location — most prominent */}
+          {(hasPickupLoc || hasDeliveryLoc) && (
+            <div style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#15803D", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="currentColor"/></svg>
+                Delivery Boy Locations
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {hasPickupLoc && (
+                  <a href={`https://www.google.com/maps?q=${order.pickup_latitude},${order.pickup_longitude}`} target="_blank" rel="noreferrer" style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+                    background: "#fff", borderRadius: 10, border: "1px solid #BBF7D0",
+                    textDecoration: "none", color: "#111827",
+                  }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "#DCFCE7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="#16A34A"/></svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 700, color: "#15803D", margin: "0 0 1px" }}>Pickup Location</p>
+                      <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>{parseFloat(order.pickup_latitude).toFixed(5)}, {parseFloat(order.pickup_longitude).toFixed(5)}</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
+                )}
+                {hasDeliveryLoc && (
+                  <a href={`https://www.google.com/maps?q=${order.delivery_latitude},${order.delivery_longitude}`} target="_blank" rel="noreferrer" style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+                    background: "#fff", borderRadius: 10, border: "1px solid #FECACA",
+                    textDecoration: "none", color: "#111827",
+                  }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 16, height: 16 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" fill="#DC2626"/></svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 700, color: "#B91C1C", margin: "0 0 1px" }}>Delivery Location</p>
+                      <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>{parseFloat(order.delivery_latitude).toFixed(5)}, {parseFloat(order.delivery_longitude).toFixed(5)}</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Order info */}
+          <div style={{ marginBottom: 18 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Order Info</p>
+            <InfoRow label="Customer"   value={name} />
+            <InfoRow label="Phone"      value={phone} />
+            <InfoRow label="Apartment"  value={order.apartment || order.address} />
+            <InfoRow label="Time Slot"  value={order.time_slot} />
+            <InfoRow label="Pickup Date" value={order.pickup_date ? formatDate(order.pickup_date) : null} />
+            <InfoRow label="Iron's Head" value={order.vendor_name} />
+            <InfoRow label="Delivery Boy" value={order.agent_name} />
+            <InfoRow label="Bags" value={order.bag_numbers ? order.bag_numbers.split(",").map(n => `#${n.trim()}`).join(", ") : null} />
+            <InfoRow label="Placed on"  value={order.created_at ? formatDate(order.created_at) : null} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0" }}>
+              <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 600 }}>Total</span>
+              <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 800, color: "#0F172A" }}>₹{parseFloat(order.total || order.total_amount || 0).toFixed(0)}</span>
+            </div>
+          </div>
+
+          {/* Items */}
+          {items.length > 0 && (
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Items</p>
+              <div style={{ background: "#F8FAFC", borderRadius: 10, overflow: "hidden" }}>
+                {items.filter(i => i?.garment_name).map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 14px", borderBottom: i < items.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                    <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{item.garment_name}</span>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: "#94A3B8" }}>×{item.quantity || 1}</span>
+                      {item.subtotal && <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>₹{parseFloat(item.subtotal).toFixed(0)}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function OrderManagementPage() {
   const { orders } = useOrders();
   const navigate   = useNavigate();
@@ -130,6 +263,7 @@ export default function OrderManagementPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [page, setPage]                 = useState(1);
   const [search, setSearch]             = useState("");
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Advanced filter state
   const [showAdv, setShowAdv] = useState(false);
@@ -353,8 +487,8 @@ export default function OrderManagementPage() {
 
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <div style={{ minWidth: 520 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px 160px", padding: "12px 20px", background: "#0F172A" }}>
-                {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS", "LOCATION"].map(h => (
+              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 120px 36px", padding: "12px 20px", background: "#0F172A" }}>
+                {["ORDER ID", "CUSTOMER", "DETAILS", "STATUS", ""].map(h => (
                   <span key={h} style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>{h}</span>
                 ))}
               </div>
@@ -369,20 +503,27 @@ export default function OrderManagementPage() {
                 const phone     = order.customerPhone || order.phone || "";
                 const itemCount = (order.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
                 const address   = order.address || order.apartment || "—";
+                const hasLoc    = order.pickup_latitude || order.delivery_latitude;
 
                 return (
                   <div
                     key={order.id}
+                    onClick={() => setSelectedOrder(order)}
                     style={{
-                      display: "grid", gridTemplateColumns: "120px 1fr 1fr 100px 160px",
+                      display: "grid", gridTemplateColumns: "120px 1fr 1fr 120px 36px",
                       padding: "16px 20px", alignItems: "center",
                       borderBottom: idx < paginated.length - 1 ? "1px solid #F8F9FB" : "none",
-                      transition: "background 0.1s",
+                      transition: "background 0.1s", cursor: "pointer",
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F8FAFF"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <span style={{ fontSize: 13.5, fontWeight: 800, color: "#B91C1C" }}>{displayId}</span>
+                    <div>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: "#B91C1C" }}>{displayId}</span>
+                      {hasLoc && (
+                        <span style={{ display: "block", fontSize: 9.5, fontWeight: 700, color: "#10b981", letterSpacing: "0.04em", marginTop: 2 }}>📍 LOCATION SAVED</span>
+                      )}
+                    </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 34, height: 34, borderRadius: 99, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -403,10 +544,10 @@ export default function OrderManagementPage() {
 
                     <StatusBadge status={order.status} />
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <MapsLink lat={order.pickup_latitude} lng={order.pickup_longitude} label="Pickup" color="#10b981" />
-                      <MapsLink lat={order.delivery_latitude} lng={order.delivery_longitude} label="Delivery" color="#DC2626" />
-                    </div>
+                    {/* Chevron */}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2" style={{ width: 16, height: 16, justifySelf: "center" }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 );
               })}
@@ -459,6 +600,8 @@ export default function OrderManagementPage() {
         </div>
 
       </div>
+
+      <OrderDetailDrawer order={selectedOrder} onClose={() => setSelectedOrder(null)} />
     </Layout>
   );
 }
