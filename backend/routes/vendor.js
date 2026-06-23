@@ -799,6 +799,7 @@ router.put("/vendor/tablet-bags/:bagId/start-iron", ...tabletAuth, async (req, r
       emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
       io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
       io.to("admin_room").emit("order_ironing", { orderId: bag.order_id });
+      io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
       io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "ironing" });
       if (bag.delivery_agent_id)
         io.to(`delivery_${bag.delivery_agent_id}`).emit("order_status_update", { orderId: bag.order_id, status: "ironing_in_progress" });
@@ -836,6 +837,7 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
         const io = getIO();
         emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
         io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+        io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
         io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: true });
         if (bag.delivery_agent_id) {
           io.to(`delivery_${bag.delivery_agent_id}`).emit("order_ready_for_delivery", {
@@ -849,6 +851,7 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     try {
       const io = getIO();
       io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: false });
+      io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id });
       io.to("admin_room").emit("order_status_update", { orderId: bag.order_id });
     } catch (_) {}
 
