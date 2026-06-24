@@ -294,13 +294,15 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
           </div>
         </div>
 
-        {/* Bag number */}
-        {order.bag_number && (
+        {/* Bag number(s) */}
+        {(order.bag_numbers || order.bag_number) && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "8px 13px" }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
             </svg>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#15803d" }}>Bag #{order.bag_number}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#15803d" }}>
+              {String(order.bag_numbers || order.bag_number).split(",").map(n => `#${n.trim()}`).join(", ")}
+            </span>
           </div>
         )}
 
