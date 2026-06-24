@@ -338,6 +338,18 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
     if (!result.affectedRows)
       return res.status(404).json({ message: "Order not found or not at vendor stage" });
 
+    // Release bags — ironing done, bag is free for the next order
+    const [bagResult] = await pool.query(
+      `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
+      [orderId]
+    );
+    if (bagResult.affectedRows === 0) {
+      await pool.query(
+        `UPDATE bags b JOIN orders o ON o.bag_id = b.id SET b.status = 'available' WHERE o.id = ?`,
+        [orderId]
+      );
+    }
+
     try {
       await pool.query(
         `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ready_for_delivery", ?)`,
@@ -882,6 +894,11 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     if (remaining.cnt === 0) {
       await pool.query(
         `UPDATE orders SET status = 'ready_for_delivery' WHERE id = ?`, [bag.order_id]
+      );
+      // Release bags — ironing done, bag is free for the next order
+      await pool.query(
+        `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
+        [bag.order_id]
       );
       try {
         const io = getIO();
