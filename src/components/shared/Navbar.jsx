@@ -128,7 +128,7 @@ export default function Navbar({ onMenuClick }) {
                 {user?.name}
               </p>
               <p style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", margin: 0, textTransform: "capitalize" }}>
-                {user?.role}
+                {cfg.label}
               </p>
             </div>
           </div>
