@@ -153,7 +153,7 @@ export default function DeliveryManagementPage() {
   async function handleAdd(e) {
     e.preventDefault();
     if (!form.name.trim() || !form.phone.trim() || !form.password || !form.vendor_id)
-      return setFormErr("Name, phone, password and Iron's Head are required");
+      return setFormErr("Name, phone, password and Center Head are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/admin/delivery-boys", form);
@@ -168,7 +168,7 @@ export default function DeliveryManagementPage() {
   async function handleEdit(e) {
     e.preventDefault();
     if (!form.name.trim() || !form.phone.trim() || !form.vendor_id)
-      return setFormErr("Name, phone and Iron's Head are required");
+      return setFormErr("Name, phone and Center Head are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.put(`/admin/delivery-boys/${selected.id}`, {
@@ -260,7 +260,7 @@ export default function DeliveryManagementPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
                 <thead>
                   <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                    {(isMobile ? ["Name", "Status", "Actions"] : ["#", "Name", "Phone", "Iron's Head", "Deliveries", "Status", "Actions"]).map(h => (
+                    {(isMobile ? ["Name", "Status", "Actions"] : ["#", "Name", "Phone", "Center Head", "Deliveries", "Status", "Actions"]).map(h => (
                       <th key={h} style={{
                         padding: "12px 16px", fontSize: 11, fontWeight: 700,
                         color: "#9ca3af", textTransform: "uppercase",

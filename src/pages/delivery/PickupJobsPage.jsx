@@ -406,7 +406,7 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
           {job.vendor_name && (
             <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p style={S.label}>Iron's Head Shop</p>
+                <p style={S.label}>Center Head Shop</p>
                 <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{job.vendor_name}</p>
               </div>
               <span style={{
@@ -499,7 +499,7 @@ function TransitCard({ job, onDrop, transitBusy }) {
           color: busy ? "#9ca3af" : "#fff", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
         }}
       >
-        {busy ? "Updating…" : "Submit to Iron's Head Shop"}
+        {busy ? "Updating…" : "Submit to Center Head Shop"}
       </button>
     </div>
   );
@@ -725,7 +725,7 @@ export default function PickupJobsPage() {
         {inTransit.length > 0 && (
           <section>
             <div style={S.sectionHead}>
-              <h2 style={S.sectionTitle}>In Transit to Iron's Head</h2>
+              <h2 style={S.sectionTitle}>In Transit to Center Head</h2>
               <CountBadge count={inTransit.length} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -740,7 +740,7 @@ export default function PickupJobsPage() {
         {atVendor.length > 0 && (
           <section>
             <div style={S.sectionHead}>
-              <h2 style={S.sectionTitle}>Submitted to Iron's Head</h2>
+              <h2 style={S.sectionTitle}>Submitted to Center Head</h2>
               <CountBadge count={atVendor.length} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

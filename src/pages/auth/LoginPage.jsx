@@ -18,7 +18,7 @@ const features = [
       </svg>
     ),
     title: "Real-time Operations",
-    desc: "Live order tracking across all Iron's Heads and delivery agents.",
+    desc: "Live order tracking across all Center Heads and delivery agents.",
   },
   {
     icon: (
@@ -27,7 +27,7 @@ const features = [
       </svg>
     ),
     title: "Role-Based Access",
-    desc: "Secure, scoped dashboards for Admin, Iron's Head & Delivery staff.",
+    desc: "Secure, scoped dashboards for Admin, Center Head & Delivery staff.",
   },
   {
     icon: (
@@ -377,7 +377,7 @@ export default function LoginPage() {
           <div style={styles.heroBlock}>
             <div style={styles.tagPill}><span style={styles.tagDot} />Operations Platform</div>
             <h1 style={styles.heroHeading}>Manage your<br /><span style={styles.heroAccent}>laundry empire</span><br />with precision.</h1>
-            <p style={styles.heroSub}>One unified dashboard for Iron's Heads, delivery teams, and administrators — built for speed and scale.</p>
+            <p style={styles.heroSub}>One unified dashboard for Center Heads, delivery teams, and administrators — built for speed and scale.</p>
           </div>
           <div style={styles.featureList}>
             {features.map((f, i) => (

@@ -79,7 +79,7 @@ function exportCSV(rows) {
     delivered: "Delivered", cancelled: "Cancelled",
   };
   const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const headers = ["Order ID", "Customer", "Phone", "Apartment", "Status", "Items", "Amount (₹)", "Date", "Iron's Head"];
+  const headers = ["Order ID", "Customer", "Phone", "Apartment", "Status", "Items", "Amount (₹)", "Date", "Center Head"];
   const lines = rows.map(o => {
     const itemCount = (o.rawItems || []).reduce((s, i) => s + (i.quantity || 1), 0);
     return [
@@ -222,7 +222,7 @@ function OrderDetailDrawer({ order, onClose }) {
             <InfoRow label="Apartment"  value={order.apartment || order.address} />
             <InfoRow label="Time Slot"  value={order.time_slot} />
             <InfoRow label="Pickup Date" value={order.pickup_date ? formatDate(order.pickup_date) : null} />
-            <InfoRow label="Iron's Head" value={order.vendor_name} />
+            <InfoRow label="Center Head" value={order.vendor_name} />
             <InfoRow label="Delivery Boy" value={order.agent_name} />
             <InfoRow label="Bags" value={order.bag_numbers ? order.bag_numbers.split(",").map(n => `#${n.trim()}`).join(", ") : null} />
             <InfoRow label="Placed on"  value={order.created_at ? formatDate(order.created_at) : null} />
@@ -280,7 +280,7 @@ export default function OrderManagementPage() {
   const [advDateTo,   setAdvDateTo]   = useState("");
   const [advSort,     setAdvSort]     = useState("newest");
 
-  // Unique Iron's Head list
+  // Unique Center Head list
   const vendorOptions = useMemo(() => {
     const names = [...new Set(orders.map(o => o.vendor_name || o.vendorName).filter(Boolean))].sort();
     return names;
@@ -422,7 +422,7 @@ export default function OrderManagementPage() {
                   </select>
                 </div>
 
-                {/* Iron's Head */}
+                {/* Center Head */}
                 <div>
                   <label style={labelStyle}>Iron&apos;s Head</label>
                   <select value={advVendor} onChange={e => { setAdvVendor(e.target.value); setPage(1); }} style={selectStyle}>
