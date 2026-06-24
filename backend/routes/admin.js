@@ -406,7 +406,7 @@ router.get("/admin/delivery-boys", ...auth, async (req, res) => {
 router.post("/admin/delivery-boys", ...auth, async (req, res) => {
   const { name, phone, password, vendor_id } = req.body;
   if (!name || !phone || !password || !vendor_id)
-    return res.status(400).json({ message: "name, phone, password and Iron's Head are required" });
+    return res.status(400).json({ message: "name, phone, password and Center Head are required" });
 
   try {
     const [[existing]] = await pool.query(
@@ -419,7 +419,7 @@ router.post("/admin/delivery-boys", ...auth, async (req, res) => {
       "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]
     );
     if (!vendor)
-      return res.status(400).json({ message: "Invalid Iron's Head selected" });
+      return res.status(400).json({ message: "Invalid Center Head selected" });
 
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
@@ -439,7 +439,7 @@ router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   const { id } = req.params;
   const { name, phone, status, vendor_id, password } = req.body;
   if (!name || !phone || !vendor_id)
-    return res.status(400).json({ message: "name, phone and Iron's Head are required" });
+    return res.status(400).json({ message: "name, phone and Center Head are required" });
 
   if (password && password.length < 6)
     return res.status(400).json({ message: "Password must be at least 6 characters" });
@@ -459,7 +459,7 @@ router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
       "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]
     );
     if (!vendor)
-      return res.status(400).json({ message: "Invalid Iron's Head selected" });
+      return res.status(400).json({ message: "Invalid Center Head selected" });
 
     const allowed = ["active", "inactive", "on_leave"];
     const newStatus = allowed.includes(status) ? status : undefined;

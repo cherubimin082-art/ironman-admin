@@ -72,7 +72,7 @@ async function getOrderForAgent(orderId, agentId) {
   return rows[0] || null;
 }
 
-// GET /api/delivery/my-vendor — returns the Iron's Head this delivery boy belongs to
+// GET /api/delivery/my-vendor — returns the Center Head this delivery boy belongs to
 router.get("/delivery/my-vendor", ...auth, async (req, res) => {
   try {
     const [[row]] = await pool.query(
