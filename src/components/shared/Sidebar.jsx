@@ -103,17 +103,24 @@ const EarningsIcon = () => (
     <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
   </svg>
 );
+const ActivityLogIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M12 8v4l3 3" />
+    <circle cx="12" cy="12" r="9" />
+  </svg>
+);
 
 // ── Nav configs per role ──────────────────────────────────────
 const ADMIN_LINKS = [
-  { to: "/admin/dashboard",  label: "Dashboard",    Icon: DashboardIcon  },
-  { to: "/admin/orders",     label: "Orders",       Icon: OrdersIcon     },
-  { to: "/admin/customers",  label: "Customers",    Icon: CustomersIcon  },
-  { to: "/admin/vendors",    label: "Iron's Heads", Icon: IronsHeadIcon  },
-  { to: "/admin/delivery",   label: "Delivery Boys",Icon: DeliveryBoyIcon},
-  { to: "/admin/apartments", label: "Apartments",   Icon: ApartmentIcon  },
-  { to: "/admin/pricing",    label: "Payments",     Icon: PaymentsIcon   },
-  { to: "/admin/analytics",  label: "Settings",     Icon: SettingsIcon   },
+  { to: "/admin/dashboard",     label: "Dashboard",    Icon: DashboardIcon    },
+  { to: "/admin/orders",        label: "Orders",       Icon: OrdersIcon       },
+  { to: "/admin/customers",     label: "Customers",    Icon: CustomersIcon    },
+  { to: "/admin/vendors",       label: "Iron's Heads", Icon: IronsHeadIcon    },
+  { to: "/admin/delivery",      label: "Delivery Boys",Icon: DeliveryBoyIcon  },
+  { to: "/admin/apartments",    label: "Apartments",   Icon: ApartmentIcon    },
+  { to: "/admin/pricing",       label: "Payments",     Icon: PaymentsIcon     },
+  { to: "/admin/activity-log",  label: "Iron Log",     Icon: ActivityLogIcon  },
+  { to: "/admin/analytics",     label: "Settings",     Icon: SettingsIcon     },
 ];
 
 const TabletIcon = () => (

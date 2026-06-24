@@ -818,12 +818,22 @@ router.put("/vendor/tablet-bags/:bagId/start-iron", ...tabletAuth, async (req, r
       `UPDATE order_bags SET ironing_status = 'ironing' WHERE id = ?`, [bagId]
     );
     const [[bag]] = await pool.query(
-      `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
-       FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]
+      `SELECT ob.order_id, o.customer_id, o.delivery_agent_id, b.bag_number, o.vendor_id AS vid
+       FROM order_bags ob
+       JOIN orders o ON o.id = ob.order_id
+       JOIN bags b   ON b.id = ob.bag_id
+       WHERE ob.id = ?`, [bagId]
     );
     await pool.query(
       `UPDATE orders SET status = 'ironing_in_progress' WHERE id = ? AND status = 'at_vendor'`,
       [bag.order_id]
+    );
+
+    // Log iron start time
+    await pool.query(
+      `INSERT INTO order_activity_log (order_id, ob_id, bag_number, vendor_id, iron_start_time)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [bag.order_id, bagId, bag.bag_number, bag.vid || vendorId]
     );
 
     try {
@@ -852,6 +862,14 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     await pool.query(
       `UPDATE order_bags SET ironing_status = 'completed' WHERE id = ?`, [bagId]
     );
+
+    // Log iron complete time
+    await pool.query(
+      `UPDATE order_activity_log SET iron_complete_time = NOW()
+       WHERE ob_id = ? AND iron_complete_time IS NULL`,
+      [bagId]
+    );
+
     const [[bag]] = await pool.query(
       `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
        FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]

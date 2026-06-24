@@ -1025,4 +1025,33 @@ router.get("/app-version", (_req, res) => {
   });
 });
 
+// GET /api/admin/activity-log
+router.get("/admin/activity-log", ...auth, async (req, res) => {
+  try {
+    const [logs] = await pool.query(
+      `SELECT
+         al.id,
+         al.order_id,
+         o.order_code,
+         al.bag_number,
+         uc.name                                                              AS customer_name,
+         uv.name                                                              AS vendor_name,
+         al.iron_start_time,
+         al.iron_complete_time,
+         TIMESTAMPDIFF(MINUTE, al.iron_start_time, al.iron_complete_time)    AS duration_minutes,
+         al.created_at
+       FROM order_activity_log al
+       JOIN orders o ON o.id  = al.order_id
+       JOIN users uc ON uc.id = o.customer_id
+       JOIN users uv ON uv.id = al.vendor_id
+       ORDER BY al.created_at DESC
+       LIMIT 500`
+    );
+    res.json({ logs });
+  } catch (err) {
+    console.error("activity-log GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

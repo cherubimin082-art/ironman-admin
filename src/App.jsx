@@ -29,6 +29,7 @@ import ApartmentsPage from "./pages/admin/ApartmentsPage";
 import DeliveryManagementPage from "./pages/admin/DeliveryManagementPage";
 import PricingPage from "./pages/admin/PricingPage";
 import AnalyticsPage from "./pages/admin/AnalyticsPage";
+import ActivityLogPage from "./pages/admin/ActivityLogPage";
 
 export default function App() {
   return (
@@ -64,7 +65,8 @@ export default function App() {
             <Route path="/admin/apartments" element={<RoleRoute allowedRole="admin"><ApartmentsPage /></RoleRoute>} />
             <Route path="/admin/delivery"  element={<RoleRoute allowedRole="admin"><DeliveryManagementPage /></RoleRoute>} />
             <Route path="/admin/pricing"   element={<RoleRoute allowedRole="admin"><PricingPage /></RoleRoute>} />
-            <Route path="/admin/analytics" element={<RoleRoute allowedRole="admin"><AnalyticsPage /></RoleRoute>} />
+            <Route path="/admin/analytics"     element={<RoleRoute allowedRole="admin"><AnalyticsPage /></RoleRoute>} />
+            <Route path="/admin/activity-log" element={<RoleRoute allowedRole="admin"><ActivityLogPage /></RoleRoute>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
