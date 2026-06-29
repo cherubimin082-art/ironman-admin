@@ -31,6 +31,7 @@ router.get("/all-orders", ...auth, async (req, res) => {
   try {
     const [orders] = await pool.query(
       `SELECT o.*,
+              DATE_FORMAT(o.delivery_date, '%Y-%m-%d') AS delivery_date,
               uc.name  AS customer_name,  uc.phone AS customer_phone,
               uv.name  AS vendor_name,
               ua.name  AS agent_name,
