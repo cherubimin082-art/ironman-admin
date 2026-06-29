@@ -115,33 +115,37 @@ router.put("/assign-delivery/:orderId", ...auth, async (req, res) => {
   if (!delivery_agent_id)
     return res.status(400).json({ message: "delivery_agent_id is required" });
 
+  const conn = await pool.getConnection();
   try {
-    // Update order
-    await pool.query(
+    await conn.beginTransaction();
+
+    await conn.query(
       "UPDATE orders SET delivery_agent_id = ? WHERE id = ?",
       [delivery_agent_id, orderId]
     );
-
-    // Upsert delivery_assignments
-    await pool.query(
+    await conn.query(
       `INSERT INTO delivery_assignments (order_id, delivery_agent_id, assigned_by)
        VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE delivery_agent_id = VALUES(delivery_agent_id), assigned_by = VALUES(assigned_by)`,
       [orderId, delivery_agent_id, adminId]
     );
 
-    // Emit to the assigned delivery agent
-    try {
-      const io = getIO();
-      io.to("delivery_" + delivery_agent_id).emit("new_assignment", { orderId });
-      io.to("admin_room").emit("assignment_updated", { orderId, delivery_agent_id });
-    } catch (_) {}
-
-    res.json({ message: "Delivery agent assigned", orderId, delivery_agent_id });
+    await conn.commit();
   } catch (err) {
+    await conn.rollback().catch(() => {});
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
+
+  try {
+    const io = getIO();
+    io.to("delivery_" + delivery_agent_id).emit("new_assignment", { orderId });
+    io.to("admin_room").emit("assignment_updated", { orderId, delivery_agent_id });
+  } catch (_) {}
+
+  res.json({ message: "Delivery agent assigned", orderId, delivery_agent_id });
 });
 
 // GET /api/vendors
@@ -280,31 +284,38 @@ router.put("/admin/vendors/:id", ...auth, async (req, res) => {
 // DELETE /api/admin/vendors/:id
 router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
   const { id } = req.params;
+
+  const [[vendor]] = await pool.query(
+    "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [id]
+  );
+  if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+  const [[{ activeCount }]] = await pool.query(
+    `SELECT COUNT(*) AS activeCount FROM orders
+     WHERE vendor_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
+  );
+  if (activeCount > 0)
+    return res.status(409).json({
+      message: `Cannot delete: vendor has ${activeCount} active order(s). Resolve or cancel them first.`,
+      activeCount,
+    });
+
+  const conn = await pool.getConnection();
   try {
-    const [[vendor]] = await pool.query(
-      "SELECT id, name FROM users WHERE id = ? AND role = 'vendor'", [id]
-    );
-    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
-
-    const [[{ activeCount }]] = await pool.query(
-      `SELECT COUNT(*) AS activeCount FROM orders
-       WHERE vendor_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
-    );
-    if (activeCount > 0)
-      return res.status(409).json({
-        message: `Cannot delete: vendor has ${activeCount} active order(s). Resolve or cancel them first.`,
-        activeCount,
-      });
-
-    await pool.query("DELETE FROM bags WHERE vendor_id = ?", [id]);
-    await pool.query("DELETE FROM apartment_slots WHERE vendor_id = ?", [id]);
-    await pool.query("DELETE FROM users WHERE id = ? AND role = 'vendor'", [id]);
-
-    res.json({ message: "Vendor deleted successfully" });
+    await conn.beginTransaction();
+    await conn.query("DELETE FROM bags WHERE vendor_id = ?", [id]);
+    await conn.query("DELETE FROM apartment_slots WHERE vendor_id = ?", [id]);
+    await conn.query("DELETE FROM users WHERE id = ? AND role = 'vendor'", [id]);
+    await conn.commit();
   } catch (err) {
+    await conn.rollback().catch(() => {});
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
+
+  res.json({ message: "Vendor deleted successfully" });
 });
 
 // ── BAG MANAGEMENT ─────────────────────────────────────────────
@@ -485,30 +496,37 @@ router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
 // DELETE /api/admin/delivery-boys/:id
 router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   const { id } = req.params;
+
+  const [[person]] = await pool.query(
+    "SELECT id FROM users WHERE id = ? AND role = 'delivery'", [id]
+  );
+  if (!person) return res.status(404).json({ message: "Delivery boy not found" });
+
+  const [[{ activeCount }]] = await pool.query(
+    `SELECT COUNT(*) AS activeCount FROM orders
+     WHERE delivery_agent_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
+  );
+  if (activeCount > 0)
+    return res.status(409).json({
+      message: `Cannot delete: delivery boy has ${activeCount} active order(s). Resolve them first.`,
+      activeCount,
+    });
+
+  const conn = await pool.getConnection();
   try {
-    const [[person]] = await pool.query(
-      "SELECT id, name FROM users WHERE id = ? AND role = 'delivery'", [id]
-    );
-    if (!person) return res.status(404).json({ message: "Delivery boy not found" });
-
-    const [[{ activeCount }]] = await pool.query(
-      `SELECT COUNT(*) AS activeCount FROM orders
-       WHERE delivery_agent_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
-    );
-    if (activeCount > 0)
-      return res.status(409).json({
-        message: `Cannot delete: delivery boy has ${activeCount} active order(s). Resolve them first.`,
-        activeCount,
-      });
-
-    await pool.query("DELETE FROM delivery_assignments WHERE delivery_agent_id = ?", [id]);
-    await pool.query("DELETE FROM users WHERE id = ? AND role = 'delivery'", [id]);
-
-    res.json({ message: "Delivery boy deleted successfully" });
+    await conn.beginTransaction();
+    await conn.query("DELETE FROM delivery_assignments WHERE delivery_agent_id = ?", [id]);
+    await conn.query("DELETE FROM users WHERE id = ? AND role = 'delivery'", [id]);
+    await conn.commit();
   } catch (err) {
+    await conn.rollback().catch(() => {});
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
+
+  res.json({ message: "Delivery boy deleted successfully" });
 });
 
 // ── CUSTOMER CRUD ──────────────────────────────────────────────

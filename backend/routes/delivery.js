@@ -297,76 +297,70 @@ router.put("/delivery/verify-pickup-otp/:orderId", ...auth, async (req, res) => 
   const agentId = req.user.id;
   const { otp }  = req.body;
 
+  // Validate OTP before opening a connection
+  const [rows] = await pool.query(
+    `SELECT o.pickup_otp, o.customer_id, o.vendor_id
+       FROM orders o
+       JOIN delivery_assignments da ON da.order_id = o.id
+      WHERE o.id = ? AND da.delivery_agent_id = ?`,
+    [orderId, agentId]
+  );
+  if (!rows.length) return res.status(404).json({ message: "Order not found" });
+
+  const { pickup_otp, customer_id, vendor_id } = rows[0];
+  if (!pickup_otp)
+    return res.status(400).json({ message: "OTP not generated yet. Click 'Reached for Pickup' first." });
+  if (String(otp).trim() !== String(pickup_otp).trim())
+    return res.status(400).json({ message: "Incorrect OTP. Ask the customer for the correct code." });
+
+  // OTP correct — write all DB changes atomically
+  const conn = await pool.getConnection();
   try {
-    // Fetch stored OTP + order details from DB in one query
-    const [rows] = await pool.query(
-      `SELECT o.pickup_otp, o.customer_id, o.vendor_id
-         FROM orders o
-         JOIN delivery_assignments da ON da.order_id = o.id
-        WHERE o.id = ? AND da.delivery_agent_id = ?`,
-      [orderId, agentId]
-    );
-    if (!rows.length)
-      return res.status(404).json({ message: "Order not found" });
+    await conn.beginTransaction();
 
-    const { pickup_otp, customer_id, vendor_id } = rows[0];
-
-    if (!pickup_otp)
-      return res.status(400).json({ message: "OTP not generated yet. Click 'Reached for Pickup' first." });
-
-    if (String(otp).trim() !== String(pickup_otp).trim())
-      return res.status(400).json({ message: "Incorrect OTP. Ask the customer for the correct code." });
-
-    // OTP correct — update DB
-    await pool.query(
-      `UPDATE orders SET status = "picked_up" WHERE id = ?`, [orderId]
-    );
-    await pool.query(
+    await conn.query(`UPDATE orders SET status = "picked_up" WHERE id = ?`, [orderId]);
+    await conn.query(
       `UPDATE delivery_assignments
           SET status = "picked_up", pickup_otp_verified = 1, pickup_at = NOW()
-        WHERE order_id = ?`,
-      [orderId]
+        WHERE order_id = ?`, [orderId]
     );
-    await pool.query(
+    await conn.query(
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "picked_up", ?)`,
       [orderId, agentId]
     );
 
     // Auto-assign an available bag so tablet can show it as "on the way" immediately
-    const [[existingBag]] = await pool.query(
+    const [[existingBag]] = await conn.query(
       `SELECT COUNT(*) AS cnt FROM order_bags WHERE order_id = ?`, [orderId]
     );
     if (existingBag.cnt === 0) {
-      const [[availBag]] = await pool.query(
-        `SELECT id FROM bags WHERE vendor_id = ? AND status = 'available' ORDER BY id LIMIT 1`,
+      const [[availBag]] = await conn.query(
+        `SELECT id FROM bags WHERE vendor_id = ? AND status = 'available' ORDER BY id LIMIT 1 FOR UPDATE`,
         [vendor_id]
       );
       if (availBag) {
-        await pool.query(
-          `INSERT IGNORE INTO order_bags (order_id, bag_id) VALUES (?, ?)`, [orderId, availBag.id]
-        );
-        await pool.query(`UPDATE bags SET status = 'in_use' WHERE id = ?`, [availBag.id]);
-        await pool.query(
-          `UPDATE orders SET bag_id = ? WHERE id = ? AND bag_id IS NULL`, [availBag.id, orderId]
-        );
+        await conn.query(`INSERT IGNORE INTO order_bags (order_id, bag_id) VALUES (?, ?)`, [orderId, availBag.id]);
+        await conn.query(`UPDATE bags SET status = 'in_use' WHERE id = ?`, [availBag.id]);
+        await conn.query(`UPDATE orders SET bag_id = ? WHERE id = ? AND bag_id IS NULL`, [availBag.id, orderId]);
       }
     }
 
-    try {
-      const io = getIO();
-      broadcast(io, { customerId: customer_id, vendorId: vendor_id }, "order_status_update", {
-        orderId, status: "picked_up"
-      });
-      emitToCustomer(customer_id, "order_picked_up", {
-        orderId, message: "Delivery agent picked up your clothes"
-      });
-    } catch (_) {}
-
-    res.json({ message: "Pickup OTP verified, order picked up", orderId, status: "picked_up" });
+    await conn.commit();
   } catch (err) {
+    await conn.rollback().catch(() => {});
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
+
+  try {
+    const io = getIO();
+    broadcast(io, { customerId: customer_id, vendorId: vendor_id }, "order_status_update", { orderId, status: "picked_up" });
+    emitToCustomer(customer_id, "order_picked_up", { orderId, message: "Delivery agent picked up your clothes" });
+  } catch (_) {}
+
+  res.json({ message: "Pickup OTP verified, order picked up", orderId, status: "picked_up" });
 });
 
 // PUT /api/delivery/dropped-at-vendor/:orderId
@@ -651,64 +645,68 @@ router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) =
   const agentId = req.user.id;
   const { otp, latitude, longitude } = req.body;
 
+  // Validate OTP before opening a connection
+  const [rows] = await pool.query(
+    `SELECT o.delivery_otp, o.customer_id, o.vendor_id
+       FROM orders o
+       JOIN delivery_assignments da ON da.order_id = o.id
+      WHERE o.id = ? AND da.delivery_agent_id = ?`,
+    [orderId, agentId]
+  );
+  if (!rows.length) return res.status(404).json({ message: "Order not found" });
+
+  const { delivery_otp, customer_id, vendor_id } = rows[0];
+  if (!delivery_otp)
+    return res.status(400).json({ message: "OTP not generated yet. Tap 'End Ride' first." });
+  if (String(otp).trim() !== String(delivery_otp).trim())
+    return res.status(400).json({ message: "Incorrect OTP. Ask the customer for the correct code." });
+
+  // OTP correct — write all DB changes atomically
+  const conn = await pool.getConnection();
   try {
-    const [rows] = await pool.query(
-      `SELECT o.delivery_otp, o.customer_id, o.vendor_id
-         FROM orders o
-         JOIN delivery_assignments da ON da.order_id = o.id
-        WHERE o.id = ? AND da.delivery_agent_id = ?`,
-      [orderId, agentId]
-    );
-    if (!rows.length) return res.status(404).json({ message: "Order not found" });
+    await conn.beginTransaction();
 
-    const { delivery_otp, customer_id, vendor_id } = rows[0];
-
-    if (!delivery_otp)
-      return res.status(400).json({ message: "OTP not generated yet. Tap 'End Ride' first." });
-
-    if (String(otp).trim() !== String(delivery_otp).trim())
-      return res.status(400).json({ message: "Incorrect OTP. Ask the customer for the correct code." });
-
-    await pool.query(`UPDATE orders SET status = "delivered" WHERE id = ?`, [orderId]);
-    await pool.query(
+    await conn.query(`UPDATE orders SET status = "delivered" WHERE id = ?`, [orderId]);
+    await conn.query(
       `UPDATE delivery_assignments
           SET status = "delivered", delivery_otp_verified = 1, delivered_at = NOW(),
               delivery_latitude = ?, delivery_longitude = ?
         WHERE order_id = ?`,
       [latitude ?? null, longitude ?? null, orderId]
     );
-    await pool.query(
+    await conn.query(
       `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "delivered", ?)`,
       [orderId, agentId]
     );
-    // Release all bags assigned to this order (multi-bag support)
-    const [bagResult] = await pool.query(
+
+    // Release bags — try order_bags JOIN first, fallback to orders.bag_id
+    const [bagResult] = await conn.query(
       `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
       [orderId]
     );
-    // Fallback for orders placed before multi-bag migration (only orders.bag_id set)
     if (bagResult.affectedRows === 0) {
-      await pool.query(
+      await conn.query(
         `UPDATE bags b JOIN orders o ON o.bag_id = b.id SET b.status = 'available' WHERE o.id = ?`,
         [orderId]
       );
     }
 
-    try {
-      const io = getIO();
-      broadcast(io, { customerId: customer_id, vendorId: vendor_id }, "order_status_update", {
-        orderId, status: "delivered"
-      });
-      broadcast(io, { customerId: customer_id, vendorId: vendor_id }, "order_delivered", {
-        orderId, message: "Order delivered successfully!"
-      });
-    } catch (_) {}
-
-    res.json({ message: "Delivery OTP verified, order delivered", orderId, status: "delivered" });
+    await conn.commit();
   } catch (err) {
+    await conn.rollback().catch(() => {});
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
+
+  try {
+    const io = getIO();
+    broadcast(io, { customerId: customer_id, vendorId: vendor_id }, "order_status_update", { orderId, status: "delivered" });
+    broadcast(io, { customerId: customer_id, vendorId: vendor_id }, "order_delivered", { orderId, message: "Order delivered successfully!" });
+  } catch (_) {}
+
+  res.json({ message: "Delivery OTP verified, order delivered", orderId, status: "delivered" });
 });
 
 // GET /api/delivery/my-rating

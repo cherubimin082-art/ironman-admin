@@ -47,50 +47,58 @@ async function createOrder(req, res) {
     const orderNumber = generateOrderNumber();
     const otp         = generateOTP(4);
 
-    // Insert order
-    const [orderResult] = await db.query(
-      `INSERT INTO orders
-         (order_number, user_id, vendor_id, status, total_garments, total_amount,
-          pickup_address_id, pickup_date, pickup_slot, delivery_date, delivery_slot,
-          payment_method, payment_status, special_instructions, otp)
-       VALUES (?, ?, ?, 'Order Placed', ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)`,
-      [
-        orderNumber, userId, vendorId, totalGarments, totalAmount,
-        pickup_address_id || null, pickup_date || null, pickup_slot || null,
-        delivery_date || null, delivery_slot || null,
-        payment_method, special_instructions || null, otp,
-      ]
-    );
+    // All writes in one transaction so capacity never desyncs from the order
+    const conn = await db.getConnection();
+    let orderId;
+    try {
+      await conn.beginTransaction();
 
-    const orderId = orderResult.insertId;
+      const [orderResult] = await conn.query(
+        `INSERT INTO orders
+           (order_number, user_id, vendor_id, status, total_garments, total_amount,
+            pickup_address_id, pickup_date, pickup_slot, delivery_date, delivery_slot,
+            payment_method, payment_status, special_instructions, otp)
+         VALUES (?, ?, ?, 'Order Placed', ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)`,
+        [
+          orderNumber, userId, vendorId, totalGarments, totalAmount,
+          pickup_address_id || null, pickup_date || null, pickup_slot || null,
+          delivery_date || null, delivery_slot || null,
+          payment_method, special_instructions || null, otp,
+        ]
+      );
+      orderId = orderResult.insertId;
 
-    // Insert order items
-    const itemValues = garments.map((item) => [
-      orderId,
-      item.garment_type_id,
-      item.quantity,
-      priceMap[item.garment_type_id],
-      priceMap[item.garment_type_id] * item.quantity,
-    ]);
-    await db.query(
-      'INSERT INTO order_items (order_id, garment_type_id, quantity, price_per_unit, total_price) VALUES ?',
-      [itemValues]
-    );
+      const itemValues = garments.map((item) => [
+        orderId,
+        item.garment_type_id,
+        item.quantity,
+        priceMap[item.garment_type_id],
+        priceMap[item.garment_type_id] * item.quantity,
+      ]);
+      await conn.query(
+        'INSERT INTO order_items (order_id, garment_type_id, quantity, price_per_unit, total_price) VALUES ?',
+        [itemValues]
+      );
+      await conn.query(
+        `INSERT INTO order_status_history (order_id, status, updated_by_role, updated_by_id, notes)
+         VALUES (?, 'Order Placed', 'customer', ?, 'Order created via app')`,
+        [orderId, userId]
+      );
+      await conn.query(
+        'UPDATE vendors SET current_capacity = current_capacity + ? WHERE id = ?',
+        [totalGarments, vendorId]
+      );
 
-    // Insert initial status history
-    await db.query(
-      `INSERT INTO order_status_history (order_id, status, updated_by_role, updated_by_id, notes)
-       VALUES (?, 'Order Placed', 'customer', ?, 'Order created via app')`,
-      [orderId, userId]
-    );
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback().catch(() => {});
+      console.error('createOrder error:', err);
+      return res.status(500).json({ success: false, message: 'Server error.' });
+    } finally {
+      conn.release();
+    }
 
-    // Update vendor current capacity
-    await db.query(
-      'UPDATE vendors SET current_capacity = current_capacity + ? WHERE id = ?',
-      [totalGarments, vendorId]
-    );
-
-    // Fetch full order to return
+    // Fetch full order to return (outside transaction — read-only)
     const [newOrder] = await db.query('SELECT * FROM orders WHERE id = ?', [orderId]);
 
     return res.status(201).json({ success: true, order: newOrder[0] });
