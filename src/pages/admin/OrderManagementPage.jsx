@@ -12,6 +12,7 @@ const STATUS_FILTERS = [
   { key: "ironing",         label: "Ironing"          },
   { key: "out_for_delivery",label: "Out for Delivery"  },
   { key: "delivered",       label: "Delivered"         },
+  { key: "cancelled",       label: "Cancelled"         },
 ];
 
 const ALL_STATUSES = [
@@ -39,9 +40,10 @@ const STATUS_STYLES = {
   in_progress:         { label: "IN PROGRESS",  bg: "#FEF3C7", color: "#92400E" },
   ready_for_delivery:  { label: "READY",        bg: "#D1FAE5", color: "#065F46" },
   picked_from_vendor:  { label: "TRANSIT",      bg: "#EDE9FE", color: "#5B21B6" },
-  out_for_delivery:    { label: "OUT DELIVERY", bg: "#FEE2E2", color: "#991B1B" },
-  delivered:           { label: "DELIVERED",    bg: "#D1FAE5", color: "#065F46" },
-  cancelled:           { label: "CANCELLED",    bg: "#F1F5F9", color: "#64748B" },
+  out_for_delivery:        { label: "OUT DELIVERY",  bg: "#FEE2E2", color: "#991B1B" },
+  delivery_rescheduled:    { label: "RESCHEDULED",   bg: "#FEF3C7", color: "#92400E" },
+  delivered:               { label: "DELIVERED",     bg: "#D1FAE5", color: "#065F46" },
+  cancelled:               { label: "CANCELLED",     bg: "#F1F5F9", color: "#64748B" },
 };
 
 function StatusBadge({ status }) {

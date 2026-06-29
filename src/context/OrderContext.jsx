@@ -98,6 +98,7 @@ export function OrderProvider({ children }) {
       socket.on('order_at_vendor',          reload);
       socket.on('order_ironing',            reload);
       socket.on('order_delivered',          reload);
+      socket.on('order_cancelled',          reload);
     }
 
     // When APK comes back to foreground, refresh data (socket may have missed events)
