@@ -680,7 +680,15 @@ async function ensureApartmentsTable() {
 router.get("/admin/apartments-list", ...auth, async (req, res) => {
   try {
     await ensureApartmentsTable();
-    const [rows] = await pool.query("SELECT * FROM apartments ORDER BY name ASC");
+    const [rows] = await pool.query(
+      `SELECT a.*,
+              s.vendor_id,
+              u.name AS vendor_name
+         FROM apartments a
+         LEFT JOIN apartment_slots s ON s.apartment = a.name
+         LEFT JOIN users u ON u.id = s.vendor_id AND u.role = 'vendor'
+        ORDER BY a.name ASC`
+    );
     res.json({ apartments: rows });
   } catch (err) {
     console.error(err);
@@ -690,7 +698,7 @@ router.get("/admin/apartments-list", ...auth, async (req, res) => {
 
 // POST /api/admin/apartments-list
 router.post("/admin/apartments-list", ...auth, async (req, res) => {
-  const { name, pickup_time, delivery_time } = req.body;
+  const { name, pickup_time, delivery_time, vendor_id } = req.body;
   if (!name?.trim() || !pickup_time?.trim())
     return res.status(400).json({ message: "Apartment name and pickup time are required" });
   try {
@@ -699,6 +707,16 @@ router.post("/admin/apartments-list", ...auth, async (req, res) => {
       "INSERT INTO apartments (name, pickup_time, delivery_time) VALUES (?, ?, ?)",
       [name.trim(), pickup_time.trim(), delivery_time?.trim() || null]
     );
+
+    if (vendor_id) {
+      // Remove this apartment from any other vendor's slots, then assign to the chosen one
+      await pool.query("DELETE FROM apartment_slots WHERE apartment = ?", [name.trim()]);
+      await pool.query(
+        "INSERT INTO apartment_slots (vendor_id, apartment, pickup_time, delivery_time) VALUES (?, ?, ?, ?)",
+        [vendor_id, name.trim(), pickup_time.trim(), delivery_time?.trim() || ""]
+      );
+    }
+
     res.status(201).json({ message: "Apartment added", id: result.insertId });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY")
@@ -710,7 +728,7 @@ router.post("/admin/apartments-list", ...auth, async (req, res) => {
 // PUT /api/admin/apartments-list/:id
 router.put("/admin/apartments-list/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { name, pickup_time, delivery_time } = req.body;
+  const { name, pickup_time, delivery_time, vendor_id } = req.body;
   if (!name?.trim() || !pickup_time?.trim())
     return res.status(400).json({ message: "Apartment name and pickup time are required" });
   try {
@@ -722,12 +740,20 @@ router.put("/admin/apartments-list/:id", ...auth, async (req, res) => {
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Apartment not found" });
 
+    // Update apartment_slots — remove old assignment, add new one if vendor chosen
+    await pool.query("DELETE FROM apartment_slots WHERE apartment = ?", [name.trim()]);
+    if (vendor_id) {
+      await pool.query(
+        "INSERT INTO apartment_slots (vendor_id, apartment, pickup_time, delivery_time) VALUES (?, ?, ?, ?)",
+        [vendor_id, name.trim(), pickup_time.trim(), delivery_time?.trim() || ""]
+      );
+    }
+
     // Notify vendor and delivery agents so their pages reload without refresh
     try {
       const io = getIO();
       io.to('vendor_room').emit('order_status_update', { apartment: name.trim(), pickup_time: pickup_time.trim(), delivery_time: delivery_time?.trim() });
 
-      // Sync time_slot on pending orders for this apartment
       await pool.query(
         `UPDATE orders SET time_slot = ? WHERE apartment = ? AND status NOT IN ('delivered','cancelled')`,
         [pickup_time.trim(), name.trim()]

@@ -71,12 +71,19 @@ function Alert({ type, msg }) {
   );
 }
 
-function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit }) {
+function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit, vendors }) {
   return (
     <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div>
         <label style={labelSt}>Apartment Name *</label>
         <input value={form.name} onChange={set("name")} placeholder="e.g. Green Valley Apartments" style={inputSt} onFocus={fo} onBlur={fb} required />
+      </div>
+      <div>
+        <label style={labelSt}>Center Head</label>
+        <select value={form.vendor_id} onChange={set("vendor_id")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb}>
+          <option value="">— None —</option>
+          {vendors.map(v => <option key={v.id} value={String(v.id)}>{v.name}</option>)}
+        </select>
       </div>
       <div>
         <label style={labelSt}>Pickup Time Slot *</label>
@@ -103,13 +110,14 @@ function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit }) {
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState([]);
+  const [vendors, setVendors]       = useState([]);
   const [loading, setLoading]       = useState(true);
   const [modal, setModal]           = useState(null);
   const [selected, setSelected]     = useState(null);
   const [saving, setSaving]         = useState(false);
   const [formErr, setFormErr]       = useState("");
   const [formOk, setFormOk]         = useState("");
-  const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "" });
+  const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "", vendor_id: "" });
 
   const [loadErr, setLoadErr] = useState("");
 
@@ -117,10 +125,14 @@ export default function ApartmentsPage() {
     setLoading(true);
     setLoadErr("");
     try {
-      const { data } = await api.get("/admin/apartments-list");
-      setApartments(data.apartments || []);
+      const [aRes, vRes] = await Promise.all([
+        api.get("/admin/apartments-list"),
+        api.get("/admin/vendors"),
+      ]);
+      setApartments(aRes.data.apartments || []);
+      setVendors(vRes.data.vendors || []);
     } catch {
-      setLoadErr("Failed to load apartments. Please refresh.");
+      setLoadErr("Failed to load data. Please refresh.");
     } finally { setLoading(false); }
   }, []);
 
@@ -129,8 +141,15 @@ export default function ApartmentsPage() {
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
   const closeModal = () => { setModal(null); setSelected(null); setFormErr(""); setFormOk(""); };
 
-  function openAdd() { setForm({ name: "", pickup_time: "", delivery_time: "" }); setFormErr(""); setFormOk(""); setModal("add"); }
-  function openEdit(a) { setSelected(a); setForm({ name: a.name, pickup_time: a.pickup_time, delivery_time: a.delivery_time || "" }); setFormErr(""); setFormOk(""); setModal("edit"); }
+  function openAdd() {
+    setForm({ name: "", pickup_time: "", delivery_time: "", vendor_id: "" });
+    setFormErr(""); setFormOk(""); setModal("add");
+  }
+  function openEdit(a) {
+    setSelected(a);
+    setForm({ name: a.name, pickup_time: a.pickup_time, delivery_time: a.delivery_time || "", vendor_id: a.vendor_id ? String(a.vendor_id) : "" });
+    setFormErr(""); setFormOk(""); setModal("edit");
+  }
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -227,6 +246,16 @@ export default function ApartmentsPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {a.vendor_name ? (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#FEF2F2", border: "1px solid #fecaca", borderRadius: 99, padding: "3px 10px", width: "fit-content" }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#B91C1C" }}>{a.vendor_name}</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 99, padding: "3px 10px", width: "fit-content" }}>
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: "#9ca3af" }}>No Center Head</span>
+                        </div>
+                      )}
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "3px 10px", width: "fit-content" }}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         <span style={{ fontSize: 11.5, fontWeight: 700, color: "#16a34a" }}>Pickup: {a.pickup_time}</span>
@@ -251,8 +280,8 @@ export default function ApartmentsPage() {
 
         {loading && <p style={{ color: "#9ca3af", fontSize: 14 }}>Loading…</p>}
 
-        {modal === "add"  && <Modal title="Add Apartment" onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleAdd} /></Modal>}
-        {modal === "edit" && selected && <Modal title={`Edit — ${selected.name}`} onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleEdit} /></Modal>}
+        {modal === "add"  && <Modal title="Add Apartment" onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleAdd} vendors={vendors} /></Modal>}
+        {modal === "edit" && selected && <Modal title={`Edit — ${selected.name}`} onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleEdit} vendors={vendors} /></Modal>}
         {modal === "delete" && selected && (
           <Modal title="Delete Apartment?" onClose={closeModal} maxWidth={380}>
             <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 18 }}>
