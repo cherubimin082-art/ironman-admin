@@ -8,19 +8,27 @@ const { getIO } = require("../socket");
 // Bridge — customer frontend listens on port 5001; this backend is on 5002.
 function emitToCustomer(customerId, event, payload) {
   const body = JSON.stringify({ room: `customer_${customerId}`, event, payload });
-  const req = http.request(
-    {
-      hostname: "localhost", port: 5001, path: "/api/internal/notify",
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body), "x-internal-secret": process.env.INTERNAL_SECRET },
-    },
-    (res) => res.resume()
-  );
-  req.on("error", (err) => {
-    console.error(`[vendor emitToCustomer] failed for customer_${customerId}:`, err.message);
-  });
-  req.write(body);
-  req.end();
+  try {
+    const req = http.request(
+      {
+        hostname: "localhost", port: 5001, path: "/api/internal/notify",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          "x-internal-secret": process.env.INTERNAL_SECRET || "",
+        },
+      },
+      (res) => res.resume()
+    );
+    req.on("error", (err) => {
+      console.error(`[vendor emitToCustomer] failed for customer_${customerId}:`, err.message);
+    });
+    req.write(body);
+    req.end();
+  } catch (err) {
+    console.error(`[vendor emitToCustomer] setup error for customer_${customerId}:`, err.message);
+  }
 }
 
 const router     = express.Router();

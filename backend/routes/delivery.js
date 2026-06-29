@@ -30,19 +30,27 @@ function sendWhatsAppOtp(phone10digit, otp) {
 // Instead, POST to the customer backend's internal notify endpoint.
 function emitToCustomer(customerId, event, payload) {
   const body = JSON.stringify({ room: `customer_${customerId}`, event, payload });
-  const req = http.request(
-    {
-      hostname: "localhost", port: 5001, path: "/api/internal/notify",
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body), "x-internal-secret": process.env.INTERNAL_SECRET },
-    },
-    (res) => res.resume() // consume response body to free the socket
-  );
-  req.on("error", (err) => {
-    console.error(`[emitToCustomer] failed to reach customer_${customerId}:`, err.message);
-  });
-  req.write(body);
-  req.end();
+  try {
+    const req = http.request(
+      {
+        hostname: "localhost", port: 5001, path: "/api/internal/notify",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          "x-internal-secret": process.env.INTERNAL_SECRET || "",
+        },
+      },
+      (res) => res.resume()
+    );
+    req.on("error", (err) => {
+      console.error(`[emitToCustomer] failed to reach customer_${customerId}:`, err.message);
+    });
+    req.write(body);
+    req.end();
+  } catch (err) {
+    console.error(`[emitToCustomer] setup error for customer_${customerId}:`, err.message);
+  }
 }
 
 // Helper — emit to customer + admin + optional extra rooms
