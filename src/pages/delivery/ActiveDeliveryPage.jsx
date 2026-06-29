@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -199,6 +199,14 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
   const { sharing, start, stop } = useLocationShare(order.id);
 
   const needOtp = order.status === "out_for_delivery";
+  const autoStartedRef = useRef(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (needOtp && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      start();
+    }
+  }, [needOtp]);
 
   function handleAction(id, action) {
     if (action === "end_ride") {
