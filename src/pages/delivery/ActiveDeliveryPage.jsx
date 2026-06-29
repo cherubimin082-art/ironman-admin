@@ -5,7 +5,7 @@ import { useOrders } from "../../context/OrderContext";
 import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
 
-const ACTIVE_STATUSES = ["ready_for_delivery", "picked_from_vendor", "out_for_delivery"];
+const ACTIVE_STATUSES = ["ready_for_delivery", "picked_from_vendor", "out_for_delivery", "delivery_rescheduled"];
 
 // ── OTP Modal ─────────────────────────────────────────────────
 function OtpModal({ title, hint, onVerify, onClose, loading }) {
@@ -158,6 +158,24 @@ function OrderActions({ order, onAction, busyId }) {
         <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
           Tap when you arrive at customer — sends them a delivery OTP
         </p>
+      </div>
+    );
+  }
+
+  if (status === "delivery_rescheduled") {
+    return (
+      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }}>
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "#92400e", margin: "0 0 2px" }}>Delivery Rescheduled</p>
+          <p style={{ fontSize: 11.5, color: "#b45309", margin: 0 }}>
+            {order.delivery_date
+              ? `Customer rescheduled for ${new Date(order.delivery_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+              : "Customer rescheduled delivery to a new date"}
+          </p>
+        </div>
       </div>
     );
   }

@@ -8,8 +8,9 @@
   ironing_in_progress:  { color: "#92400e", bg: "#fffbeb", border: "#fde68a", dot: "#f59e0b", label: "Ironing in Progress" },
   ready_for_delivery:   { color: "#047857", bg: "#ecfdf5", border: "#a7f3d0", dot: "#10b981", label: "Ready for Delivery"  },
   picked_from_vendor:   { color: "#7F1D1D", bg: "#FEF2F2", border: "#FECACA", dot: "#DC2626", label: "Picked from Vendor"  },
-  out_for_delivery:     { color: "#0e7490", bg: "#ecfeff", border: "#a5f3fc", dot: "#06b6d4", label: "Out for Delivery"    },
-  delivered:            { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e", label: "Delivered"          },
+  out_for_delivery:        { color: "#0e7490", bg: "#ecfeff", border: "#a5f3fc", dot: "#06b6d4", label: "Out for Delivery"    },
+  delivery_rescheduled:    { color: "#92400e", bg: "#fffbeb", border: "#fde68a", dot: "#f59e0b", label: "Rescheduled"          },
+  delivered:               { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e", label: "Delivered"          },
   cancelled:            { color: "#b91c1c", bg: "#fef2f2", border: "#fecaca", dot: null,      label: "Cancelled"          },
   // non-order statuses
   "in-progress":        { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe", dot: "#3b82f6", label: "In Progress"       },
