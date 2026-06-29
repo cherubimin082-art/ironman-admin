@@ -34,7 +34,7 @@ function emitToCustomer(customerId, event, payload) {
     {
       hostname: "localhost", port: 5001, path: "/api/internal/notify",
       method: "POST",
-      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body), "x-internal-secret": process.env.INTERNAL_SECRET },
     },
     (res) => res.resume() // consume response body to free the socket
   );

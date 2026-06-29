@@ -12,7 +12,7 @@ function emitToCustomer(customerId, event, payload) {
     {
       hostname: "localhost", port: 5001, path: "/api/internal/notify",
       method: "POST",
-      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body), "x-internal-secret": process.env.INTERNAL_SECRET },
     },
     (res) => res.resume()
   );
@@ -122,8 +122,8 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
          JOIN users u ON u.id = o.customer_id
          JOIN order_items oi ON oi.order_id = o.id
          LEFT JOIN delivery_assignments da ON da.order_id = o.id
-        WHERE o.status IN ("pending", "cancelled")
-           OR o.vendor_id = ?
+        WHERE o.vendor_id = ?
+           OR (o.status = 'pending' AND o.vendor_id IS NULL)
         GROUP BY o.id
         ORDER BY o.created_at DESC`,
       [vendorId]

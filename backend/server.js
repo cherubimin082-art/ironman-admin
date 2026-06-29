@@ -33,6 +33,9 @@ app.use("/api", adminRoutes);
 
 // Internal bridge — customer backend (port 5001) POSTs here to reach vendor/admin via THIS socket.io instance
 app.post("/api/internal/notify", (req, res) => {
+  const secret = req.headers["x-internal-secret"];
+  if (!secret || secret !== process.env.INTERNAL_SECRET)
+    return res.status(403).json({ ok: false });
   const { room, event, payload } = req.body || {};
   if (!room || !event) return res.status(400).json({ ok: false });
   try {
