@@ -8,11 +8,12 @@ const BG = "#F5F5F8";
 const PAGE_SIZE = 10;
 
 const STATUS_FILTERS = [
-  { key: "all",              label: "All Orders"      },
-  { key: "ironing",         label: "Ironing"          },
-  { key: "out_for_delivery",label: "Out for Delivery"  },
-  { key: "delivered",       label: "Delivered"         },
-  { key: "cancelled",       label: "Cancelled"         },
+  { key: "all",                 label: "All Orders"      },
+  { key: "ironing",             label: "Ironing"          },
+  { key: "out_for_delivery",    label: "Out for Delivery"  },
+  { key: "delivery_rescheduled",label: "Rescheduled"       },
+  { key: "delivered",           label: "Delivered"         },
+  { key: "cancelled",           label: "Cancelled"         },
 ];
 
 const ALL_STATUSES = [
@@ -62,6 +63,11 @@ function initials(name) {
 
 function formatDate(ts) {
   if (!ts) return "—";
+  // For bare DATE strings (YYYY-MM-DD), parse in local time to avoid UTC offset shifting the day
+  if (typeof ts === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ts)) {
+    const [y, m, d] = ts.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  }
   return new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
@@ -302,6 +308,7 @@ export default function OrderManagementPage() {
     if (activeFilter === "all") return true;
     if (activeFilter === "ironing") return ["ironing_in_progress", "in_progress", "at_vendor"].includes(o.status);
     if (activeFilter === "out_for_delivery") return ["out_for_delivery", "picked_from_vendor"].includes(o.status);
+    if (activeFilter === "delivery_rescheduled") return o.status === "delivery_rescheduled";
     return o.status === activeFilter;
   };
 
@@ -551,7 +558,13 @@ export default function OrderManagementPage() {
                       <p style={{ fontSize: 13, color: "#374151", margin: "0 0 2px" }}>
                         {itemCount > 0 ? `${itemCount} Items` : "—"}{order.created_at ? ` · ${formatDate(order.created_at)}` : ""}
                       </p>
-                      <p style={{ fontSize: 11.5, color: "#94A3B8", margin: 0 }}>{address}</p>
+                      {order.status === "delivery_rescheduled" && order.delivery_date ? (
+                        <p style={{ fontSize: 11.5, fontWeight: 700, color: "#b45309", margin: "2px 0 0", background: "#fef3c7", display: "inline-block", padding: "1px 7px", borderRadius: 6 }}>
+                          Reschedule: {formatDate(typeof order.delivery_date === "string" ? order.delivery_date.slice(0, 10) : order.delivery_date)}
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: 11.5, color: "#94A3B8", margin: 0 }}>{address}</p>
+                      )}
                     </div>
 
                     <StatusBadge status={order.status} />
