@@ -222,6 +222,9 @@ function OrderDetailDrawer({ order, onClose }) {
             <InfoRow label="Apartment"  value={order.apartment || order.address} />
             <InfoRow label="Time Slot"  value={order.time_slot} />
             <InfoRow label="Pickup Date" value={order.pickup_date ? formatDate(order.pickup_date) : null} />
+            {order.status === 'delivery_rescheduled' && (
+              <InfoRow label="Rescheduled Date" value={order.delivery_date ? formatDate(order.delivery_date) : '—'} />
+            )}
             <InfoRow label="Center Head" value={order.vendor_name} />
             <InfoRow label="Delivery Boy" value={order.agent_name} />
             <InfoRow label="Bags" value={order.bag_numbers ? order.bag_numbers.split(",").map(n => `#${n.trim()}`).join(", ") : null} />
