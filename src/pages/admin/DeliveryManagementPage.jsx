@@ -152,8 +152,8 @@ export default function DeliveryManagementPage() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !form.password || !form.vendor_id)
-      return setFormErr("Name, phone, password and Center Head are required");
+    if (!form.name.trim() || !form.phone.trim() || !form.vendor_id)
+      return setFormErr("Name, phone and Center Head are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
       await api.post("/admin/delivery-boys", form);
@@ -361,8 +361,8 @@ export default function DeliveryManagementPage() {
                 onChange={set("phone")} onFocus={fo} onBlur={fb} />
             </div>
             <div>
-              <label style={labelSt}>Password *</label>
-              <input type="password" style={inputSt} placeholder="Min 6 characters" value={form.password}
+              <label style={labelSt}>Password <span style={{ fontWeight: 400, color: "#9ca3af", fontSize: 11 }}>(optional)</span></label>
+              <input type="password" style={inputSt} placeholder="Min 6 characters (can be set later)" value={form.password}
                 onChange={set("password")} onFocus={fo} onBlur={fb} />
             </div>
             <Alert type="err" msg={formErr} />

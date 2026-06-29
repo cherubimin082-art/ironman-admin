@@ -293,7 +293,7 @@ function VendorFields({ form, onChange, isEdit, isMobile }) {
           onChange={onChange("phone")} onFocus={fo} onBlur={fb} />
       </div>
       <div>
-        <label style={labelSt}>{isEdit ? "New Password" : "Password *"}</label>
+        <label style={labelSt}>{isEdit ? "New Password" : "Password"} <span style={{ fontWeight: 400, color: "#9ca3af", fontSize: 11 }}>(optional)</span></label>
         <div style={{ position: "relative" }}>
           <input
             type={showPass ? "text" : "password"}
@@ -339,9 +339,10 @@ function VendorFields({ form, onChange, isEdit, isMobile }) {
 export default function VendorManagementPage() {
   const { isMobile } = useWindowSize();
 
-  const [vendors, setVendors]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error,   setError]     = useState("");
+  const [vendors,    setVendors]    = useState([]);
+  const [apartments, setApartments] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState("");
 
   // modal state
   const [modal,    setModal]    = useState(null); // null | 'add' | 'edit' | 'delete'
@@ -353,15 +354,20 @@ export default function VendorManagementPage() {
 
   const [form, setForm] = useState({
     name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20,
+    selectedApartments: [],
   });
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const { data } = await api.get("/admin/vendors");
-      setVendors(data.vendors || []);
+      const [vRes, aRes] = await Promise.all([
+        api.get("/admin/vendors"),
+        api.get("/admin/apartments-list"),
+      ]);
+      setVendors(vRes.data.vendors || []);
+      setApartments(aRes.data.apartments || []);
     } catch {
-      setError("Failed to load vendors. Is the server running?");
+      setError("Failed to load data. Is the server running?");
     } finally {
       setLoading(false);
     }
@@ -370,14 +376,15 @@ export default function VendorManagementPage() {
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
-    setForm({ name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20 });
+    setForm({ name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20, selectedApartments: [] });
     setFormErr(""); setFormOk("");
     setModal("add");
   }
 
   function openEdit(v) {
     setSelected(v);
-    setForm({ name: v.name || "", phone: v.phone || "", password: "", zone: v.zone || "", address: v.address || "", status: v.status || "active" });
+    const currentApts = v.apartments ? v.apartments.split(", ").map(s => s.trim()).filter(Boolean) : [];
+    setForm({ name: v.name || "", phone: v.phone || "", password: "", zone: v.zone || "", address: v.address || "", status: v.status || "active", selectedApartments: currentApts });
     setFormErr(""); setFormOk("");
     setModal("edit");
   }
@@ -392,13 +399,25 @@ export default function VendorManagementPage() {
 
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
 
+  function toggleApartment(name) {
+    setForm(f => {
+      const has = f.selectedApartments.includes(name);
+      return {
+        ...f,
+        selectedApartments: has
+          ? f.selectedApartments.filter(a => a !== name)
+          : [...f.selectedApartments, name],
+      };
+    });
+  }
+
   async function handleAdd(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !form.password)
-      return setFormErr("Name, phone and password are required");
+    if (!form.name.trim() || !form.phone.trim())
+      return setFormErr("Name and phone are required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.post("/admin/vendors", form);
+      await api.post("/admin/vendors", { ...form, apartment_names: form.selectedApartments });
       setFormOk(`Center Head created! ${form.bagCount} bags assigned.`);
       await load();
       setTimeout(closeModal, 1200);
@@ -418,6 +437,7 @@ export default function VendorManagementPage() {
         zone: form.zone, address: form.address, status: form.status,
         ...(form.password.trim() && { password: form.password.trim() }),
       });
+      await api.put(`/admin/vendors/${selected.id}/apartments`, { apartment_names: form.selectedApartments });
       setFormOk("Center Head updated successfully");
       await load();
       setTimeout(closeModal, 900);
@@ -581,6 +601,29 @@ export default function VendorManagementPage() {
           <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <VendorFields form={form} onChange={set} isEdit={false} isMobile={isMobile} />
 
+            {/* Apartment assignment */}
+            {apartments.length > 0 && (
+              <div>
+                <label style={labelSt}>Assign Apartments</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {apartments.map(apt => {
+                    const checked = form.selectedApartments.includes(apt.name);
+                    return (
+                      <button
+                        key={apt.id} type="button"
+                        onClick={() => toggleApartment(apt.name)}
+                        style={{
+                          padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                          cursor: "pointer", border: checked ? "1.5px solid #DC2626" : "1.5px solid #e5e7eb",
+                          background: checked ? "#FEF2F2" : "#f9fafb", color: checked ? "#DC2626" : "#6b7280",
+                        }}
+                      >{apt.name}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Bag count */}
             <div>
               <label style={labelSt}>Number of Bags to Create</label>
@@ -620,6 +663,30 @@ export default function VendorManagementPage() {
         <Modal title={`Edit — ${selected.name}`} onClose={closeModal}>
           <form onSubmit={handleEdit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <VendorFields form={form} onChange={set} isEdit={true} isMobile={isMobile} />
+
+            {/* Apartment assignment */}
+            {apartments.length > 0 && (
+              <div>
+                <label style={labelSt}>Assign Apartments</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {apartments.map(apt => {
+                    const checked = form.selectedApartments.includes(apt.name);
+                    return (
+                      <button
+                        key={apt.id} type="button"
+                        onClick={() => toggleApartment(apt.name)}
+                        style={{
+                          padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                          cursor: "pointer", border: checked ? "1.5px solid #DC2626" : "1.5px solid #e5e7eb",
+                          background: checked ? "#FEF2F2" : "#f9fafb", color: checked ? "#DC2626" : "#6b7280",
+                        }}
+                      >{apt.name}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <Alert type="err" msg={formErr} />
             <Alert type="ok"  msg={formOk}  />
             <div style={{ display: "flex", gap: 10 }}>

@@ -209,9 +209,11 @@ router.get("/admin/vendors", ...auth, async (req, res) => {
 
 // POST /api/admin/vendors
 router.post("/admin/vendors", ...auth, async (req, res) => {
-  const { name, phone, password, zone, address, bagCount } = req.body;
-  if (!name || !phone || !password)
-    return res.status(400).json({ message: "name, phone and password are required" });
+  const { name, phone, password, zone, address, bagCount, apartment_names } = req.body;
+  if (!name || !phone)
+    return res.status(400).json({ message: "name and phone are required" });
+  if (password && password.length < 6)
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
 
   const numBags = Math.max(1, Math.min(200, parseInt(bagCount) || 20));
 
@@ -222,7 +224,7 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = password ? await bcrypt.hash(password, 10) : null;
     const [result] = await pool.query(
       `INSERT INTO users (name, phone, password_hash, role, zone, address, status)
        VALUES (?, ?, ?, 'vendor', ?, ?, 'active')`,
@@ -232,6 +234,21 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
 
     const bagValues = Array.from({ length: numBags }, (_, i) => [vendorId, i + 1, "available"]);
     await pool.query("INSERT INTO bags (vendor_id, bag_number, status) VALUES ?", [bagValues]);
+
+    // Assign apartments if provided
+    const apts = Array.isArray(apartment_names) ? apartment_names.filter(Boolean) : [];
+    if (apts.length > 0) {
+      const ph = apts.map(() => "?").join(",");
+      const [aptRows] = await pool.query(
+        `SELECT name, pickup_time, delivery_time FROM apartments WHERE name IN (${ph})`, apts
+      );
+      if (aptRows.length > 0) {
+        await pool.query(
+          "INSERT INTO apartment_slots (vendor_id, apartment, pickup_time, delivery_time) VALUES ?",
+          [aptRows.map(a => [vendorId, a.name, a.pickup_time, a.delivery_time || ""])]
+        );
+      }
+    }
 
     res.status(201).json({ message: "Vendor created successfully", vendorId, bagsCreated: numBags });
   } catch (err) {
@@ -275,6 +292,42 @@ router.put("/admin/vendors/:id", ...auth, async (req, res) => {
       values
     );
     res.json({ message: "Vendor updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/vendors/:id/apartments — replace all apartment assignments for a vendor
+router.put("/admin/vendors/:id/apartments", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { apartment_names } = req.body;
+  if (!Array.isArray(apartment_names))
+    return res.status(400).json({ message: "apartment_names must be an array" });
+
+  try {
+    const [[vendor]] = await pool.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [id]
+    );
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+    await pool.query("DELETE FROM apartment_slots WHERE vendor_id = ?", [id]);
+
+    const apts = apartment_names.filter(Boolean);
+    if (apts.length > 0) {
+      const ph = apts.map(() => "?").join(",");
+      const [aptRows] = await pool.query(
+        `SELECT name, pickup_time, delivery_time FROM apartments WHERE name IN (${ph})`, apts
+      );
+      if (aptRows.length > 0) {
+        await pool.query(
+          "INSERT INTO apartment_slots (vendor_id, apartment, pickup_time, delivery_time) VALUES ?",
+          [aptRows.map(a => [id, a.name, a.pickup_time, a.delivery_time || ""])]
+        );
+      }
+    }
+
+    res.json({ message: "Apartment assignments updated" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -416,8 +469,10 @@ router.get("/admin/delivery-boys", ...auth, async (req, res) => {
 // POST /api/admin/delivery-boys
 router.post("/admin/delivery-boys", ...auth, async (req, res) => {
   const { name, phone, password, vendor_id } = req.body;
-  if (!name || !phone || !password || !vendor_id)
-    return res.status(400).json({ message: "name, phone, password and Center Head are required" });
+  if (!name || !phone || !vendor_id)
+    return res.status(400).json({ message: "name, phone and Center Head are required" });
+  if (password && password.length < 6)
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
 
   try {
     const [[existing]] = await pool.query(
@@ -432,7 +487,7 @@ router.post("/admin/delivery-boys", ...auth, async (req, res) => {
     if (!vendor)
       return res.status(400).json({ message: "Invalid Center Head selected" });
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = password ? await bcrypt.hash(password, 10) : null;
     const [result] = await pool.query(
       `INSERT INTO users (name, phone, password_hash, role, status, vendor_id)
        VALUES (?, ?, ?, 'delivery', 'active', ?)`,
