@@ -870,63 +870,76 @@ router.put("/vendor/tablet-bags/:bagId/start-iron", ...tabletAuth, async (req, r
 router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req, res) => {
   const vendorId = req.user.vendor_id || req.user.id;
   const bagId    = req.params.bagId;
+  const conn = await pool.getConnection();
+  let bag, orderReady = false;
   try {
-    await pool.query(
+    await conn.beginTransaction();
+
+    await conn.query(
       `UPDATE order_bags SET ironing_status = 'completed' WHERE id = ?`, [bagId]
     );
-
-    // Log iron complete time
-    await pool.query(
+    await conn.query(
       `UPDATE order_activity_log SET iron_complete_time = NOW()
-       WHERE ob_id = ? AND iron_complete_time IS NULL`,
-      [bagId]
+       WHERE ob_id = ? AND iron_complete_time IS NULL`, [bagId]
     );
 
-    const [[bag]] = await pool.query(
+    const [[bagRow]] = await conn.query(
       `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
        FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]
     );
-    const [[remaining]] = await pool.query(
-      `SELECT COUNT(*) AS cnt FROM order_bags WHERE order_id = ? AND ironing_status != 'completed'`,
+    bag = bagRow;
+
+    // FOR UPDATE locks the rows so concurrent completions can't both see cnt=0
+    const [[remaining]] = await conn.query(
+      `SELECT COUNT(*) AS cnt FROM order_bags
+       WHERE order_id = ? AND ironing_status != 'completed' FOR UPDATE`,
       [bag.order_id]
     );
 
     if (remaining.cnt === 0) {
-      await pool.query(
-        `UPDATE orders SET status = 'ready_for_delivery' WHERE id = ?`, [bag.order_id]
+      await conn.query(
+        `UPDATE orders SET status = 'ready_for_delivery'
+         WHERE id = ? AND status != 'ready_for_delivery'`, [bag.order_id]
       );
-      // Release bags — ironing done, bag is free for the next order
-      await pool.query(
+      await conn.query(
         `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
         [bag.order_id]
       );
-      try {
-        const io = getIO();
-        emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
-        io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
-        io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
-        io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: true });
-        if (bag.delivery_agent_id) {
-          io.to(`delivery_${bag.delivery_agent_id}`).emit("order_ready_for_delivery", {
-            orderId: bag.order_id, message: "Ironing complete — pick up from shop"
-          });
-        }
-      } catch (_) {}
-      return res.json({ message: "All bags done — order ready for delivery", bagId, orderReady: true });
+      orderReady = true;
     }
 
-    try {
-      const io = getIO();
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    console.error("complete-iron error:", err);
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
+  }
+
+  try {
+    const io = getIO();
+    if (orderReady) {
+      emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+      io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+      io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+      io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: true });
+      if (bag.delivery_agent_id) {
+        io.to(`delivery_${bag.delivery_agent_id}`).emit("order_ready_for_delivery", {
+          orderId: bag.order_id, message: "Ironing complete — pick up from shop"
+        });
+      }
+    } else {
       io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: false });
       io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id });
       io.to("admin_room").emit("order_status_update", { orderId: bag.order_id });
-    } catch (_) {}
+    }
+  } catch (_) {}
 
-    res.json({ message: "Bag ironing completed", bagId, orderReady: false });
-  } catch (err) {
-    console.error("complete-iron error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
+  return res.json(orderReady
+    ? { message: "All bags done — order ready for delivery", bagId, orderReady: true }
+    : { message: "Bag ironing completed", bagId, orderReady: false }
+  );
 });
 
 // PUT /api/vendor/bags-available — vendor toggles their bag availability status

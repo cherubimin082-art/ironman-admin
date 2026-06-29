@@ -163,6 +163,7 @@ router.put("/delivery/accept-order/:id", ...auth, async (req, res) => {
   const orderId = req.params.id;
   const agentId = req.user.id;
   const conn = await pool.getConnection();
+  let orderRow;
   try {
     await conn.beginTransaction();
 
@@ -182,38 +183,39 @@ router.put("/delivery/accept-order/:id", ...auth, async (req, res) => {
       [orderId, agentId]
     );
 
-    const [[orderRow]] = await conn.query(
+    const [[row]] = await conn.query(
       `SELECT customer_id, vendor_id FROM orders WHERE id = ?`, [orderId]
     );
+    orderRow = row;
     await conn.commit();
-    conn.release();
-
-    // Fetch agent name + phone to send to customer
-    const [agentRows] = await pool.query(
-      `SELECT name, phone FROM users WHERE id = ?`, [agentId]
-    );
-    const agent = agentRows[0] || {};
-
-    try {
-      const io = getIO();
-      broadcast(io, { customerId: orderRow.customer_id, vendorId: orderRow.vendor_id }, "order_status_update", {
-        orderId, status: "delivery_assigned", agentId
-      });
-      emitToCustomer(orderRow.customer_id, "delivery_accepted", {
-        orderId,
-        agentName:  agent.name  || "Delivery Agent",
-        agentPhone: agent.phone || "",
-        status: "delivery_assigned",
-      });
-    } catch (_) {}
-
-    res.json({ message: "Order accepted", orderId, status: "delivery_assigned" });
   } catch (err) {
     await conn.rollback().catch(() => {});
-    conn.release();
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
+
+  // Post-commit: fetch agent info and emit socket events
+  const [agentRows] = await pool.query(
+    `SELECT name, phone FROM users WHERE id = ?`, [agentId]
+  );
+  const agent = agentRows[0] || {};
+
+  try {
+    const io = getIO();
+    broadcast(io, { customerId: orderRow.customer_id, vendorId: orderRow.vendor_id }, "order_status_update", {
+      orderId, status: "delivery_assigned", agentId
+    });
+    emitToCustomer(orderRow.customer_id, "delivery_accepted", {
+      orderId,
+      agentName:  agent.name  || "Delivery Agent",
+      agentPhone: agent.phone || "",
+      status: "delivery_assigned",
+    });
+  } catch (_) {}
+
+  res.json({ message: "Order accepted", orderId, status: "delivery_assigned" });
 });
 
 // POST /api/delivery/update-location/:orderId
