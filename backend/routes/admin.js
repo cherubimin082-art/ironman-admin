@@ -576,7 +576,8 @@ router.put("/admin/customers/:id", ...auth, async (req, res) => {
 router.delete("/admin/customers/:id", ...auth, async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query("DELETE FROM users WHERE id = ? AND role = 'customer'", [id]);
+    const [result] = await pool.query("DELETE FROM users WHERE id = ? AND role = 'customer'", [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Customer not found" });
     res.json({ message: "Customer deleted" });
   } catch (err) {
     console.error(err);
@@ -681,7 +682,8 @@ router.delete("/admin/apartments-list/:id", ...auth, async (req, res) => {
   const { id } = req.params;
   try {
     await ensureApartmentsTable();
-    await pool.query("DELETE FROM apartments WHERE id = ?", [id]);
+    const [result] = await pool.query("DELETE FROM apartments WHERE id = ?", [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Apartment not found" });
     res.json({ message: "Apartment deleted" });
   } catch (err) {
     console.error(err);

@@ -139,7 +139,7 @@ function BagCard({ bag, activeObId, actionObId, onStart, onComplete }) {
   const isEmpty    = bag.order_status === "available";
   const isAtShop   = bag.order_status === "at_vendor" || bag.order_status === "ironing_in_progress";
   const isIroning  = bag.ironing_status === "ironing";
-  const isDisabled = !isEmpty && activeObId && !isIroning;
+  const isDisabled = !isEmpty && activeObId && bag.ob_id !== activeObId;
   const isLoading  = actionObId === bag.ob_id;
 
   if (isEmpty) {
