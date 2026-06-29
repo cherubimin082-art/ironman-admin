@@ -163,19 +163,36 @@ function OrderActions({ order, onAction, busyId }) {
   }
 
   if (status === "delivery_rescheduled") {
+    const delivDateStr = order.delivery_date ? String(order.delivery_date).slice(0, 10) : null;
+    const todayStr = new Date().toLocaleDateString("en-CA");
+    const canDeliver = delivDateStr ? delivDateStr <= todayStr : false;
+    const dateLabel = delivDateStr
+      ? new Date(delivDateStr + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+      : "a new date";
+
     return (
-      <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }}>
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        <div>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#92400e", margin: "0 0 2px" }}>Delivery Rescheduled</p>
-          <p style={{ fontSize: 11.5, color: "#b45309", margin: 0 }}>
-            {order.delivery_date
-              ? `Customer rescheduled for ${new Date(order.delivery_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
-              : "Customer rescheduled delivery to a new date"}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 13px", display: "flex", alignItems: "flex-start", gap: 9 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0, marginTop: 2 }}>
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <p style={{ fontSize: 11.5, color: "#92400e", margin: 0, fontWeight: 600 }}>
+            {canDeliver
+              ? `Rescheduled date is today — you can deliver now`
+              : `Customer rescheduled for ${dateLabel}`}
           </p>
         </div>
+        <ActionBtn
+          label={busy ? "Starting..." : "Start Delivery Again"}
+          disabled={!canDeliver || busy}
+          color="#DC2626"
+          onClick={() => onAction(id, "restart_delivery")}
+        />
+        {!canDeliver && (
+          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
+            Available on {dateLabel}
+          </p>
+        )}
       </div>
     );
   }
@@ -224,6 +241,7 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
       autoStartedRef.current = true;
       start();
     }
+    if (!needOtp) autoStartedRef.current = false;
   }, [needOtp]);
 
   function handleAction(id, action) {

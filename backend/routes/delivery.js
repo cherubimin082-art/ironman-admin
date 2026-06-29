@@ -748,4 +748,40 @@ router.get("/delivery/my-rating", ...auth, async (req, res) => {
   }
 });
 
+// PUT /api/delivery/restart-delivery/:orderId
+// Agent restarts delivery after customer rescheduled — delivery_rescheduled → out_for_delivery
+router.put("/delivery/restart-delivery/:orderId", ...auth, async (req, res) => {
+  const orderId = req.params.orderId;
+  const agentId = req.user.id;
+  try {
+    const order = await getOrderForAgent(orderId, agentId);
+    if (!order || order.status !== "delivery_rescheduled")
+      return res.status(400).json({ message: "Order is not in delivery_rescheduled stage" });
+
+    const [[row]] = await pool.query(`SELECT delivery_date FROM orders WHERE id = ?`, [orderId]);
+    if (row?.delivery_date) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const sched = new Date(row.delivery_date); sched.setHours(0, 0, 0, 0);
+      if (sched > today)
+        return res.status(400).json({ message: "Cannot deliver before the rescheduled date" });
+    }
+
+    await pool.query(`UPDATE orders SET status = "out_for_delivery" WHERE id = ?`, [orderId]);
+    await pool.query(`UPDATE delivery_assignments SET status = "out_for_delivery" WHERE order_id = ?`, [orderId]);
+    await pool.query(
+      `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "out_for_delivery", ?)`,
+      [orderId, agentId]
+    );
+
+    broadcast(getIO(), { customerId: order.customer_id, vendorId: order.vendor_id }, "order_status_update", {
+      orderId, status: "out_for_delivery"
+    });
+
+    res.json({ message: "Delivery restarted", orderId, status: "out_for_delivery" });
+  } catch (err) {
+    console.error("restart-delivery error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

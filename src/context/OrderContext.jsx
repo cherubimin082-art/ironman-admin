@@ -141,6 +141,7 @@ export function OrderProvider({ children }) {
       drop_at_vendor:      `/delivery/dropped-at-vendor/${orderId}`,
       pick_from_vendor:    `/delivery/picked-from-vendor/${orderId}`,
       start_ride:          `/delivery/start-ride/${orderId}`,
+      restart_delivery:    `/delivery/restart-delivery/${orderId}`,
       end_ride:            `/delivery/end-ride/${orderId}`,
       verify_delivery_otp: `/delivery/verify-delivery-otp/${orderId}`,
     };
