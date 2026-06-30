@@ -132,11 +132,9 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
          LEFT JOIN delivery_assignments da ON da.order_id = o.id
         WHERE o.vendor_id = ?
            OR (o.vendor_id IS NULL AND o.status = 'pending')
-           OR (o.vendor_id IS NULL AND o.status = 'cancelled'
-               AND EXISTS (SELECT 1 FROM apartment_slots ap WHERE ap.vendor_id = ? AND ap.apartment = o.apartment))
         GROUP BY o.id
         ORDER BY o.created_at DESC`,
-      [vendorId, vendorId]
+      [vendorId]
     );
     res.json({ orders });
   } catch (err) {
