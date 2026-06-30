@@ -321,9 +321,7 @@ export default function LoginPage() {
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 44, maxWidth: 460, width: "100%" }}>
 
             {/* Brand */}
-            <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: 16, padding: "10px 18px", display: "inline-flex" }}>
-              <img src="/logo1.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain" }} />
-            </div>
+            <img src="/logo1.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain" }} />
 
             {/* Hero text */}
             <div>
@@ -378,9 +376,7 @@ export default function LoginPage() {
           {/* Mobile brand header */}
           {isCompact && (
             <div style={{ marginBottom: 28 }}>
-              <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: 12, padding: "6px 12px", display: "inline-flex" }}>
-                <img src="/logo1.png" alt="Iron Man" style={{ height: 40, width: "auto", objectFit: "contain" }} />
-              </div>
+              <img src="/logo1.png" alt="Iron Man" style={{ height: 40, width: "auto", objectFit: "contain" }} />
             </div>
           )}
 
