@@ -19,7 +19,6 @@ pipeline {
                     mkdir -p /var/www/ironman-admin
                     cp -r dist /var/www/ironman-admin/
                     cp -r backend /var/www/ironman-admin/
-                    cp -f .env.production /var/www/ironman-admin/backend/.env 2>/dev/null || true
                     pm2 restart smart-iron-admin || pm2 start /var/www/ironman-admin/backend/server.js --name smart-iron-admin
                 '''
             }
@@ -27,7 +26,7 @@ pipeline {
     }
 
     post {
-        success { echo 'Admin deployed to admin.ironman.today!' }
+        success { echo 'Admin deployed to devadmin.ironman.today!' }
         failure { echo 'Deployment failed — check logs above.' }
     }
 }

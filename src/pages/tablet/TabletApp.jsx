@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const API_BASE  = import.meta.env.VITE_API_URL || "https://admin.ironman.today/api";
+const API_BASE  = import.meta.env.VITE_API_URL || "https://devadmin.ironman.today/api";
 const TOKEN_KEY = "tablet_token";
 const USER_KEY  = "tablet_user";
 

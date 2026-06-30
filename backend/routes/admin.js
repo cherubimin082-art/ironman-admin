@@ -1113,7 +1113,7 @@ router.delete("/admin/garments/:id", ...auth, async (req, res) => {
 // POST /api/admin/upload-image
 router.post("/admin/upload-image", ...auth, upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-  const url = `https://admin.ironman.today/api/uploads/${req.file.filename}`;
+  const url = `https://devadmin.ironman.today/api/uploads/${req.file.filename}`;
   res.json({ url });
 });
 
@@ -1122,7 +1122,7 @@ const DELIVERY_APK_VERSION = "1.2.0";
 router.get("/app-version", (_req, res) => {
   res.json({
     version: DELIVERY_APK_VERSION,
-    download_url: "https://admin.ironman.today/downloads/ironman-delivery.apk",
+    download_url: "https://devadmin.ironman.today/downloads/ironman-delivery.apk",
     force_update: false,
   });
 });
