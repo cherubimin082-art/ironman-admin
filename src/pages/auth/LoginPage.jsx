@@ -202,7 +202,7 @@ export default function LoginPage() {
   /* ── OTP flow ── */
   const OtpContent = () => step === "phone" ? (
     <form onSubmit={handleRequestOtp} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <PhoneInput />
+      {PhoneInput()}
       {error && <ErrorBanner msg={error} />}
       <SubmitBtn loading={loading} loadingLabel="Sending OTP…">
         <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -276,7 +276,7 @@ export default function LoginPage() {
   /* ── Password flow ── */
   const PasswordContent = () => (
     <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <PhoneInput />
+      {PhoneInput()}
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</label>
         <div style={{ position: "relative", display: "flex", alignItems: "center", background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 14, transition: "border-color 0.2s, box-shadow 0.2s" }}
@@ -393,10 +393,10 @@ export default function LoginPage() {
           </div>
 
           {/* Tab bar */}
-          {(method === "otp" && step === "phone") || method === "password" ? <div style={{ marginBottom: 24 }}><TabBar /></div> : null}
+          {(method === "otp" && step === "phone") || method === "password" ? <div style={{ marginBottom: 24 }}>{TabBar()}</div> : null}
 
           {/* Form */}
-          {method === "otp" ? <OtpContent /> : <PasswordContent />}
+          {method === "otp" ? OtpContent() : PasswordContent()}
 
           <p style={{ textAlign: "center", fontSize: 11.5, color: "#CBD5E1", fontWeight: 500, margin: "28px 0 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
