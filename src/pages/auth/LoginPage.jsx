@@ -227,13 +227,13 @@ export default function LoginPage() {
       {/* OTP boxes */}
       <div>
         <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 10 }}>Enter 4-digit OTP</label>
-        <div style={{ display: "flex", gap: 10 }} onPaste={handlePaste}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }} onPaste={handlePaste}>
           {digits.map((d, i) => (
             <input key={i} ref={inputRefs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
               onChange={e => handleDigit(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
               style={{
-                flex: 1, height: 58, textAlign: "center", fontSize: 22, fontWeight: 800,
+                width: "100%", height: 60, textAlign: "center", fontSize: 24, fontWeight: 800,
                 border: `2.5px solid ${d ? "#B91C1C" : "#E2E8F0"}`,
                 borderRadius: 14, outline: "none",
                 background: d ? "#FEF2F2" : "#F8FAFC", color: d ? "#B91C1C" : "#0F172A",
