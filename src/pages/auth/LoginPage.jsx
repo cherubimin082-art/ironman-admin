@@ -10,56 +10,54 @@ const ROLE_REDIRECT = {
   admin:    "/admin/dashboard",
 };
 
-const features = [
+const FEATURES = [
   {
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
       </svg>
     ),
-    title: "Real-time Operations",
-    desc: "Live order tracking across all Center Heads and delivery agents.",
+    label: "Real-time Operations",
+    desc: "Live order tracking across all branches",
   },
   {
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
     ),
-    title: "Role-Based Access",
-    desc: "Secure, scoped dashboards for Admin, Center Head & Delivery staff.",
+    label: "Role-Based Access",
+    desc: "Admin, Center Head & Delivery dashboards",
   },
   {
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 20, height: 20 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
       </svg>
     ),
-    title: "Advanced Analytics",
-    desc: "Revenue trends, capacity metrics, and performance reports.",
+    label: "Advanced Analytics",
+    desc: "Revenue trends & performance reports",
   },
 ];
 
 export default function LoginPage() {
-  // "otp-phone" | "otp-verify" | "password"
-  const [method, setMethod]     = useState("otp");   // "otp" | "password"
-  const [step, setStep]         = useState("phone"); // otp flow: "phone" | "verify"
-  const [phone, setPhone]       = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [digits, setDigits]     = useState(["", "", "", ""]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [method, setMethod]       = useState("otp");
+  const [step, setStep]           = useState("phone");
+  const [phone, setPhone]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [showPass, setShowPass]   = useState(false);
+  const [digits, setDigits]       = useState(["", "", "", ""]);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
   const [countdown, setCountdown] = useState(0);
 
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
   const timerRef  = useRef(null);
 
   const { user, signIn } = useAuth();
-  const navigate    = useNavigate();
-
+  const navigate = useNavigate();
   const { isMobile, isTablet } = useWindowSize();
-  const isCompact   = isMobile || isTablet;
+  const isCompact = isMobile || isTablet;
 
   useEffect(() => {
     if (step === "verify") {
@@ -73,11 +71,8 @@ export default function LoginPage() {
   if (user) return <Navigate to={ROLE_REDIRECT[user.role] || "/"} replace />;
 
   function switchMethod(m) {
-    setMethod(m);
-    setStep("phone");
-    setError("");
-    setDigits(["", "", "", ""]);
-    setPassword("");
+    setMethod(m); setStep("phone"); setError("");
+    setDigits(["", "", "", ""]); setPassword("");
     clearInterval(timerRef.current);
   }
 
@@ -94,26 +89,20 @@ export default function LoginPage() {
     navigate(ROLE_REDIRECT[result.user.role], { replace: true });
   }
 
-  // ── OTP Step 1 ──
   async function handleRequestOtp(e) {
     e.preventDefault();
     const clean = phone.replace(/\D/g, "");
     if (clean.length < 10) { setError("Enter a valid 10-digit mobile number"); return; }
     setLoading(true); setError("");
-    try {
-      await requestOtp(clean);
-      setStep("verify");
-    } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong. Try again.");
-    } finally { setLoading(false); }
+    try { await requestOtp(clean); setStep("verify"); }
+    catch (err) { setError(err.response?.data?.message || "Something went wrong. Try again."); }
+    finally { setLoading(false); }
   }
 
-  // ── OTP Step 2 ──
   async function handleVerifyOtp(otp) {
     setLoading(true); setError("");
-    try {
-      finish(await verifyOtp(phone.replace(/\D/g, ""), otp));
-    } catch (err) {
+    try { finish(await verifyOtp(phone.replace(/\D/g, ""), otp)); }
+    catch (err) {
       setError(err.response?.data?.message || "Incorrect OTP. Try again.");
       setDigits(["", "", "", ""]);
       setTimeout(() => inputRefs[0].current?.focus(), 50);
@@ -144,341 +133,319 @@ export default function LoginPage() {
       setDigits(["", "", "", ""]);
       setTimeout(() => inputRefs[0].current?.focus(), 50);
       startCountdown();
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to resend OTP.");
-    } finally { setLoading(false); }
+    } catch (err) { setError(err.response?.data?.message || "Failed to resend OTP."); }
+    finally { setLoading(false); }
   }
 
-  // ── Password login ──
   async function handlePasswordLogin(e) {
     e.preventDefault();
     const clean = phone.replace(/\D/g, "");
     if (clean.length < 10) { setError("Enter a valid 10-digit mobile number"); return; }
     if (!password) { setError("Enter your password"); return; }
     setLoading(true); setError("");
-    try {
-      finish(await loginWithPassword(clean, password));
-    } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Try again.");
-    } finally { setLoading(false); }
+    try { finish(await loginWithPassword(clean, password)); }
+    catch (err) { setError(err.response?.data?.message || "Login failed. Try again."); }
+    finally { setLoading(false); }
   }
 
   const maskedPhone = phone ? `+91 ${phone.slice(0, 2)}XXXXXXX${phone.slice(-1)}` : "";
 
-  // ── Tab bar ──
-  const tabBar = (
-    <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 14, padding: 4, gap: 4 }}>
+  const inputBase = {
+    width: "100%", border: "none", outline: "none", background: "transparent",
+    paddingLeft: 44, paddingRight: 14, paddingTop: 14, paddingBottom: 14,
+    fontSize: 14, color: "#0F172A", fontFamily: "inherit", boxSizing: "border-box",
+  };
+
+  const PhoneInput = () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        Mobile Number
+      </label>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 14, transition: "border-color 0.2s, box-shadow 0.2s" }}
+        onFocusCapture={e => { e.currentTarget.style.borderColor = "#B91C1C"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,28,28,0.08)"; }}
+        onBlurCapture={e => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+      >
+        <span style={{ position: "absolute", left: 14, color: "#94A3B8", display: "flex", pointerEvents: "none" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+            <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+          </svg>
+        </span>
+        <input type="tel" value={phone}
+          onChange={e => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }}
+          placeholder="10-digit mobile number" maxLength={10} autoFocus required style={inputBase}
+        />
+      </div>
+    </div>
+  );
+
+  /* ── Tab switcher ── */
+  const TabBar = () => (
+    <div style={{ display: "flex", background: "#F1F5F9", borderRadius: 14, padding: 4, gap: 4 }}>
       {[
-        { key: "otp", label: "OTP Login", icon: (
-          <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 15, height: 15 }}>
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-        )},
-        { key: "password", label: "Password", icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-          </svg>
-        )},
+        { key: "otp", label: "OTP Login", icon: <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> },
+        { key: "password", label: "Password", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
       ].map(t => (
-        <button
-          key={t.key}
-          onClick={() => switchMethod(t.key)}
-          style={{
-            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            padding: "9px 12px", borderRadius: 10, border: "none", cursor: "pointer",
-            fontSize: 13, fontWeight: 700, transition: "all 0.2s",
-            background: method === t.key ? "#fff" : "transparent",
-            color: method === t.key ? "#B91C1C" : "#94a3b8",
-            boxShadow: method === t.key ? "0 1px 6px rgba(0,0,0,0.10)" : "none",
-          }}
-        >
+        <button key={t.key} onClick={() => switchMethod(t.key)} style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "9px 12px", borderRadius: 10, border: "none", cursor: "pointer",
+          fontSize: 13, fontWeight: 700, transition: "all 0.2s",
+          background: method === t.key ? "#fff" : "transparent",
+          color: method === t.key ? "#B91C1C" : "#94A3B8",
+          boxShadow: method === t.key ? "0 1px 6px rgba(0,0,0,0.08)" : "none",
+        }}>
           {t.icon} {t.label}
         </button>
       ))}
     </div>
   );
 
-  // ── Phone field (shared) ──
-  const phoneField = (
-    <div style={styles.fieldGroup}>
-      <label style={styles.label}>Mobile Number</label>
-      <div style={styles.inputWrap}>
-        <span style={styles.inputIcon}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-          </svg>
+  /* ── OTP flow ── */
+  const OtpContent = () => step === "phone" ? (
+    <form onSubmit={handleRequestOtp} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PhoneInput />
+      {error && <ErrorBanner msg={error} />}
+      <SubmitBtn loading={loading} loadingLabel="Sending OTP…">
+        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          Send OTP via WhatsApp
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         </span>
-        <input
-          type="tel"
-          value={phone}
-          onChange={e => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }}
-          placeholder="Enter your 10-digit number"
-          maxLength={10}
-          autoFocus
-          required
-          style={styles.input}
-          onFocus={e => { e.target.parentNode.style.borderColor = "#DC2626"; e.target.parentNode.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.08)"; }}
-          onBlur={e => { e.target.parentNode.style.borderColor = "#e2e8f0"; e.target.parentNode.style.boxShadow = "none"; }}
-        />
-      </div>
-    </div>
-  );
-
-  const spinner = (
-    <svg style={{ animation: "spin 0.8s linear infinite", width: 18, height: 18 }} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
-      <path d="M22 12a10 10 0 00-10-10" stroke="white" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
-
-  // ── OTP flow ──
-  const otpContent = step === "phone" ? (
-    <form onSubmit={handleRequestOtp} style={styles.form}>
-      {phoneField}
-      {error && <div style={styles.errorBanner}>{error}</div>}
-      <button type="submit" disabled={loading} style={{ ...styles.submitBtn, opacity: loading ? 0.75 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
-        {loading
-          ? <span style={styles.btnInner}>{spinner} Sending OTP…</span>
-          : <span style={styles.btnInner}>
-              Send OTP via WhatsApp
-              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 17, height: 17 }}>
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
-            </span>
-        }
-      </button>
+      </SubmitBtn>
     </form>
   ) : (
-    <div style={styles.form}>
-      {/* WhatsApp banner */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "12px 16px" }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg style={{ width: 18, height: 18 }} fill="#16a34a" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* WhatsApp sent banner */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F0FDF4", border: "1.5px solid #BBF7D0", borderRadius: 14, padding: "14px 16px" }}>
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: "#22C55E", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg fill="white" viewBox="0 0 24 24" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         </div>
         <div>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#16a34a", margin: 0 }}>OTP sent to WhatsApp</p>
-          <p style={{ fontSize: 12, color: "#4ade80", margin: "2px 0 0", fontWeight: 500 }}>{maskedPhone}</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#15803D", margin: 0 }}>OTP sent to WhatsApp</p>
+          <p style={{ fontSize: 12, color: "#16A34A", margin: "2px 0 0", fontWeight: 500 }}>{maskedPhone}</p>
         </div>
       </div>
 
-      {/* 4-digit OTP boxes */}
+      {/* OTP boxes */}
       <div>
-        <label style={styles.label}>Enter 4-digit OTP</label>
-        <div style={{ display: "flex", gap: isMobile ? 6 : 8, marginTop: 8 }} onPaste={handlePaste}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 10 }}>Enter 4-digit OTP</label>
+        <div style={{ display: "flex", gap: 10 }} onPaste={handlePaste}>
           {digits.map((d, i) => (
-            <input
-              key={i} ref={inputRefs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
+            <input key={i} ref={inputRefs[i]} type="tel" inputMode="numeric" maxLength={1} value={d}
               onChange={e => handleDigit(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
               style={{
-                flex: 1, minWidth: 0, height: isMobile ? 46 : 52, textAlign: "center",
-                fontSize: isMobile ? 18 : 20, fontWeight: 700,
-                border: `2px solid ${d ? "#DC2626" : "#e2e8f0"}`,
-                borderRadius: isMobile ? 10 : 12, outline: "none",
-                background: d ? "#fef2f2" : "#fff", color: d ? "#DC2626" : "#111827",
+                flex: 1, height: 58, textAlign: "center", fontSize: 22, fontWeight: 800,
+                border: `2.5px solid ${d ? "#B91C1C" : "#E2E8F0"}`,
+                borderRadius: 14, outline: "none",
+                background: d ? "#FEF2F2" : "#F8FAFC", color: d ? "#B91C1C" : "#0F172A",
                 transition: "all 0.15s", boxSizing: "border-box",
               }}
-              onFocus={e => { e.target.style.borderColor = "#DC2626"; e.target.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.08)"; }}
-              onBlur={e => { if (!d) { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; } }}
+              onFocus={e => { e.target.style.borderColor = "#B91C1C"; e.target.style.boxShadow = "0 0 0 3px rgba(185,28,28,0.1)"; }}
+              onBlur={e => { if (!d) { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; } }}
             />
           ))}
         </div>
       </div>
 
-      {error && <div style={styles.errorBanner}>{error}</div>}
+      {error && <ErrorBanner msg={error} />}
 
-      <button
-        onClick={() => handleVerifyOtp(digits.join(""))}
+      <SubmitBtn
+        loading={loading} loadingLabel="Verifying…"
         disabled={loading || digits.some(d => !d)}
-        style={{ ...styles.submitBtn, opacity: (loading || digits.some(d => !d)) ? 0.6 : 1, cursor: (loading || digits.some(d => !d)) ? "not-allowed" : "pointer" }}
+        onClick={() => handleVerifyOtp(digits.join(""))}
+        type="button"
       >
-        {loading ? <span style={styles.btnInner}>{spinner} Verifying…</span> : "Verify & Sign In"}
-      </button>
+        Verify & Sign In
+      </SubmitBtn>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button
-          onClick={() => { setStep("phone"); setDigits(["","","",""]); setError(""); clearInterval(timerRef.current); }}
-          style={{ fontSize: 12, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-        >
+        <button onClick={() => { setStep("phone"); setDigits(["","","",""]); setError(""); clearInterval(timerRef.current); }}
+          style={{ fontSize: 12, color: "#94A3B8", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
           ← Change number
         </button>
         {countdown > 0
-          ? <span style={{ fontSize: 12, color: "#94a3b8" }}>Resend in {countdown}s</span>
-          : <button onClick={handleResend} disabled={loading} style={{ fontSize: 12, fontWeight: 700, color: "#DC2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              {loading ? "Sending…" : "Resend OTP"}
+          ? <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>Resend in {countdown}s</span>
+          : <button onClick={handleResend} disabled={loading}
+              style={{ fontSize: 12, fontWeight: 700, color: "#B91C1C", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              Resend OTP
             </button>
         }
       </div>
     </div>
   );
 
-  // ── Password flow ──
-  const passwordContent = (
-    <form onSubmit={handlePasswordLogin} style={styles.form}>
-      {phoneField}
-
-      <div style={styles.fieldGroup}>
-        <label style={styles.label}>Password</label>
-        <div style={styles.inputWrap}>
-          <span style={styles.inputIcon}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+  /* ── Password flow ── */
+  const PasswordContent = () => (
+    <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PhoneInput />
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</label>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 14, transition: "border-color 0.2s, box-shadow 0.2s" }}
+          onFocusCapture={e => { e.currentTarget.style.borderColor = "#B91C1C"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,28,28,0.08)"; }}
+          onBlurCapture={e => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+        >
+          <span style={{ position: "absolute", left: 14, color: "#94A3B8", display: "flex", pointerEvents: "none" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
             </svg>
           </span>
-          <input
-            type={showPass ? "text" : "password"}
-            value={password}
+          <input type={showPass ? "text" : "password"} value={password}
             onChange={e => { setPassword(e.target.value); setError(""); }}
-            placeholder="Enter your password"
-            required
-            style={{ ...styles.input, paddingRight: 44 }}
-            onFocus={e => { e.target.parentNode.style.borderColor = "#DC2626"; e.target.parentNode.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.08)"; }}
-            onBlur={e => { e.target.parentNode.style.borderColor = "#e2e8f0"; e.target.parentNode.style.boxShadow = "none"; }}
+            placeholder="Enter your password" required
+            style={{ ...inputBase, paddingRight: 46 }}
           />
-          <button
-            type="button"
-            onClick={() => setShowPass(p => !p)}
-            style={{ position: "absolute", right: 12, background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", padding: 4 }}
-          >
+          <button type="button" onClick={() => setShowPass(p => !p)}
+            style={{ position: "absolute", right: 12, background: "none", border: "none", cursor: "pointer", color: "#94A3B8", display: "flex", alignItems: "center", padding: 4 }}>
             {showPass
-              ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 17, height: 17 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                </svg>
-              : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 17, height: 17 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+              ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+              : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             }
           </button>
         </div>
       </div>
-
-      {error && <div style={styles.errorBanner}>{error}</div>}
-
-      <button type="submit" disabled={loading} style={{ ...styles.submitBtn, opacity: loading ? 0.75 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
-        {loading ? <span style={styles.btnInner}>{spinner} Signing in…</span> : "Sign In"}
-      </button>
+      {error && <ErrorBanner msg={error} />}
+      <SubmitBtn loading={loading} loadingLabel="Signing in…">Sign In</SubmitBtn>
     </form>
   );
 
   return (
-    <div style={{ ...styles.root, flexDirection: isCompact ? "column" : "row" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F8FAFC", fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
 
       {/* ── Left branding panel — desktop only ── */}
-      <div style={{ ...styles.leftPanel, display: isCompact ? "none" : "flex" }}>
-        <div style={styles.blob1} /><div style={styles.blob2} /><div style={styles.blob3} />
-        <div style={styles.gridOverlay} />
-        <div style={styles.leftContent}>
-          <div style={styles.brandRow}>
-            <img src="/logo.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain" }} />
-          </div>
-          <div style={styles.heroBlock}>
-            <div style={styles.tagPill}><span style={styles.tagDot} />Operations Platform</div>
-            <h1 style={styles.heroHeading}>Manage your<br /><span style={styles.heroAccent}>laundry empire</span><br />with precision.</h1>
-            <p style={styles.heroSub}>One unified dashboard for Center Heads, delivery teams, and administrators — built for speed and scale.</p>
-          </div>
-          <div style={styles.featureList}>
-            {features.map((f, i) => (
-              <div key={i} style={styles.featureItem}>
-                <div style={styles.featureIcon}>{f.icon}</div>
-                <div>
-                  <p style={styles.featureTitle}>{f.title}</p>
-                  <p style={styles.featureDesc}>{f.desc}</p>
-                </div>
+      {!isCompact && (
+        <div style={{ width: "48%", flexShrink: 0, background: "#0F172A", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", padding: "52px 52px" }}>
+          {/* Background accents */}
+          <div style={{ position: "absolute", top: -100, right: -100, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(185,28,28,0.25) 0%, transparent 65%)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -80, left: -60, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(185,28,28,0.15) 0%, transparent 65%)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "44px 44px", pointerEvents: "none" }} />
+
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 44, maxWidth: 460, width: "100%" }}>
+
+            {/* Brand */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: "#B91C1C", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
               </div>
-            ))}
-          </div>
-          <div style={styles.trustedRow}>
-            <div style={styles.avatarStack}>
-              {["#f59e0b","#10b981","#3b82f6"].map((c, i) => (
-                <div key={i} style={{ ...styles.avatar, background: c, marginLeft: i === 0 ? 0 : -10, zIndex: 3 - i }} />
+              <span style={{ fontSize: 18, fontWeight: 900, color: "white", letterSpacing: "0.04em" }}>IRON MAN</span>
+            </div>
+
+            {/* Hero text */}
+            <div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(185,28,28,0.15)", border: "1px solid rgba(185,28,28,0.3)", borderRadius: 99, padding: "5px 14px", marginBottom: 20 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#F87171", boxShadow: "0 0 8px #F87171" }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#FCA5A5", letterSpacing: "0.08em", textTransform: "uppercase" }}>Operations Platform</span>
+              </div>
+              <h1 style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.15, color: "white", margin: "0 0 16px" }}>
+                Manage your<br />
+                <span style={{ background: "linear-gradient(90deg, #F87171, #FCA5A5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  ironing empire
+                </span><br />
+                with precision.
+              </h1>
+              <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.45)", margin: 0 }}>
+                One unified dashboard for Center Heads, delivery teams, and administrators — built for speed and scale.
+              </p>
+            </div>
+
+            {/* Features */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {FEATURES.map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 18px" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(185,28,28,0.2)", border: "1px solid rgba(185,28,28,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#FCA5A5" }}>
+                    {f.icon}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "white", margin: "0 0 2px" }}>{f.label}</p>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: 0 }}>{f.desc}</p>
+                  </div>
+                </div>
               ))}
             </div>
-            <span style={styles.trustedText}>Trusted by 200+ staff members daily</span>
+
+            {/* Social proof */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex" }}>
+                {["#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"].map((c, i) => (
+                  <div key={i} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: "2px solid #0F172A", marginLeft: i === 0 ? 0 : -8, zIndex: 4 - i, position: "relative" }} />
+                ))}
+              </div>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>Trusted by 200+ staff members daily</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Right form panel ── */}
-      <div style={{ ...styles.rightPanel, padding: isCompact ? "28px 20px 40px" : "48px 24px", alignItems: isCompact ? "flex-start" : "center", overflowY: "auto" }}>
-        <div style={{ ...styles.formContainer, maxWidth: isCompact ? "100%" : 420, gap: isCompact ? 18 : 24 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: isCompact ? "36px 20px 48px" : "48px 24px", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 420 }}>
 
-          {/* Header */}
-          <div style={styles.formHeader}>
-            <h2 style={{ ...styles.formTitle, fontSize: isCompact ? 24 : 28, textAlign: isCompact ? "center" : "left" }}>
-              Welcome back
+          {/* Mobile brand header */}
+          {isCompact && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: "#B91C1C", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+              </div>
+              <span style={{ fontSize: 17, fontWeight: 900, color: "#B91C1C", letterSpacing: "0.04em" }}>IRON MAN</span>
+            </div>
+          )}
+
+          {/* Heading */}
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: isCompact ? 26 : 30, fontWeight: 900, color: "#0F172A", margin: "0 0 6px" }}>
+              {method === "otp" && step === "verify" ? "Enter your OTP" : "Welcome back"}
             </h2>
-            <p style={{ ...styles.formSub, textAlign: isCompact ? "center" : "left" }}>
+            <p style={{ fontSize: 14, color: "#94A3B8", margin: 0, fontWeight: 500 }}>
               {method === "otp" && step === "verify"
-                ? "Enter the 4-digit code sent to your WhatsApp"
+                ? "Check your WhatsApp for the 4-digit code"
                 : "Sign in to your staff account"}
             </p>
           </div>
 
-          {/* Tab switcher */}
-          {(method === "otp" && step === "phone") || method === "password" ? tabBar : null}
+          {/* Tab bar */}
+          {(method === "otp" && step === "phone") || method === "password" ? <div style={{ marginBottom: 24 }}><TabBar /></div> : null}
 
           {/* Form */}
-          {method === "otp" ? otpContent : passwordContent}
+          {method === "otp" ? <OtpContent /> : <PasswordContent />}
 
-          <p style={styles.footerNote}>
-            🔒 &nbsp;Secure staff-only portal. Unauthorized access is prohibited.
+          <p style={{ textAlign: "center", fontSize: 11.5, color: "#CBD5E1", fontWeight: 500, margin: "28px 0 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Secure staff-only portal. Unauthorized access is prohibited.
           </p>
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes floatBlob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -20px) scale(1.05); }
-          66% { transform: translate(-20px, 30px) scale(0.97); }
-        }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-/* ─── Styles ─────────────────────────────────────────────── */
-const styles = {
-  root: { display: "flex", minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif", background: "#f8fafc", overflow: "hidden" },
-  leftPanel: { flex: "0 0 50%", background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%)", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", padding: "48px" },
-  blob1: { position: "absolute", top: "-80px", left: "-80px", width: 400, height: 400, background: "radial-gradient(circle, rgba(220,38,38,0.4) 0%, transparent 70%)", borderRadius: "50%", animation: "floatBlob 10s ease-in-out infinite", opacity: 0 },
-  blob2: { position: "absolute", bottom: "-60px", right: "-60px", width: 350, height: 350, background: "radial-gradient(circle, rgba(220,38,38,0.35) 0%, transparent 70%)", borderRadius: "50%", animation: "floatBlob 13s ease-in-out infinite reverse", opacity: 0 },
-  blob3: { position: "absolute", top: "50%", left: "40%", width: 250, height: 250, background: "radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)", borderRadius: "50%", animation: "floatBlob 8s ease-in-out infinite 2s", opacity: 0 },
-  gridOverlay: { position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" },
-  leftContent: { position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 40, maxWidth: 440 },
-  brandRow: { display: "flex", alignItems: "center", gap: 12 },
-  heroBlock: { display: "flex", flexDirection: "column", gap: 16 },
-  tagPill: { display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", padding: "4px 12px", borderRadius: 99, width: "fit-content" },
-  tagDot: { width: 7, height: 7, borderRadius: "50%", background: "#F87171", boxShadow: "0 0 8px #F87171" },
-  heroHeading: { fontFamily: "'Outfit', sans-serif", fontSize: 38, fontWeight: 800, lineHeight: 1.2, color: "white", margin: 0 },
-  heroAccent: { background: "linear-gradient(90deg, #F87171, #F87171)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
-  heroSub: { fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.55)", margin: 0 },
-  featureList: { display: "flex", flexDirection: "column", gap: 16 },
-  featureItem: { display: "flex", alignItems: "flex-start", gap: 14 },
-  featureIcon: { width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#FCA5A5" },
-  featureTitle: { fontSize: 13, fontWeight: 700, color: "white", margin: "0 0 2px" },
-  featureDesc: { fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.5 },
-  trustedRow: { display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, width: "fit-content" },
-  avatarStack: { display: "flex", alignItems: "center" },
-  avatar: { width: 28, height: 28, borderRadius: "50%", border: "2px solid rgba(30,27,75,0.8)" },
-  trustedText: { fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 },
-  rightPanel: { flex: 1, display: "flex", justifyContent: "center", background: "#f8fafc", minHeight: "100vh" },
-  formContainer: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column" },
-  formHeader: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 },
-  formTitle: { fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, color: "#0f172a", margin: 0 },
-  formSub: { fontSize: 13.5, color: "#94a3b8", margin: 0, fontWeight: 500 },
-  errorBanner: { display: "flex", alignItems: "center", gap: 10, background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", fontSize: 13, fontWeight: 600, color: "#dc2626" },
-  form: { display: "flex", flexDirection: "column", gap: 16, marginTop: 20 },
-  fieldGroup: { display: "flex", flexDirection: "column", gap: 7 },
-  label: { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" },
-  inputWrap: { position: "relative", display: "flex", alignItems: "center", background: "white", border: "1.5px solid #e2e8f0", borderRadius: 14, transition: "border-color 0.2s, box-shadow 0.2s", overflow: "hidden" },
-  inputIcon: { position: "absolute", left: 14, color: "#94a3b8", display: "flex", alignItems: "center", pointerEvents: "none" },
-  input: { width: "100%", border: "none", outline: "none", background: "transparent", paddingLeft: 42, paddingRight: 14, paddingTop: 13, paddingBottom: 13, fontSize: 14, color: "#1e293b", fontFamily: "'Plus Jakarta Sans', sans-serif" },
-  submitBtn: { width: "100%", padding: "14px 24px", background: "linear-gradient(135deg, #B91C1C 0%, #B91C1C 100%)", border: "none", borderRadius: 14, color: "white", fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: "0.02em", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 6px 24px rgba(185,28,28,0.3)", marginTop: 4 },
-  btnInner: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
-  footerNote: { textAlign: "center", fontSize: 11.5, color: "#94a3b8", fontWeight: 500, margin: "20px 0 0" },
-};
+function ErrorBanner({ msg }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FEF2F2", border: "1px solid #FECDD3", borderRadius: 12, padding: "12px 16px" }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style={{ fontSize: 13, fontWeight: 600, color: "#DC2626" }}>{msg}</span>
+    </div>
+  );
+}
+
+function SubmitBtn({ children, loading, loadingLabel, disabled, onClick, type = "submit" }) {
+  const isDisabled = disabled ?? loading;
+  return (
+    <button type={type} onClick={onClick} disabled={isDisabled} style={{
+      width: "100%", padding: "15px 24px", background: "linear-gradient(135deg, #B91C1C, #DC2626)",
+      border: "none", borderRadius: 14, color: "white", fontSize: 15, fontWeight: 800,
+      cursor: isDisabled ? "not-allowed" : "pointer", opacity: isDisabled ? 0.65 : 1,
+      boxShadow: isDisabled ? "none" : "0 6px 24px rgba(185,28,28,0.3)",
+      transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+    }}>
+      {loading ? (
+        <>
+          <svg style={{ animation: "spin 0.8s linear infinite", width: 18, height: 18 }} viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/>
+            <path d="M22 12a10 10 0 00-10-10" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
+          {loadingLabel}
+        </>
+      ) : children}
+    </button>
+  );
+}
