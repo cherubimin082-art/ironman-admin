@@ -131,7 +131,7 @@ router.get("/vendor-orders", ...auth, async (req, res) => {
          JOIN order_items oi ON oi.order_id = o.id
          LEFT JOIN delivery_assignments da ON da.order_id = o.id
         WHERE o.vendor_id = ?
-           OR (o.status = 'pending' AND o.vendor_id IS NULL)
+           OR (o.vendor_id IS NULL AND o.status IN ('pending', 'cancelled'))
         GROUP BY o.id
         ORDER BY o.created_at DESC`,
       [vendorId]

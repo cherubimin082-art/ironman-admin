@@ -388,11 +388,21 @@ function ActionArea({ order, onStatusChange }) {
 
   if (status === 'cancelled') {
     return (
-      <InfoBadge
-        bg="#fef2f2" border="#fecaca" color="#ef4444"
-        icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>}
-        text="Cancelled by Customer"
-      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 10, padding: "10px 14px" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15, flexShrink: 0 }}>
+            <path d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#b91c1c" }}>
+            Cancelled by {order.cancelled_by === 'vendor' ? 'Center Head' : order.cancelled_by === 'admin' ? 'Admin' : 'Customer'}
+          </span>
+        </div>
+        {order.cancellation_reason && (
+          <p style={{ fontSize: 12, color: "#6b7280", margin: 0, padding: "0 4px", fontWeight: 500 }}>
+            Reason: {order.cancellation_reason}
+          </p>
+        )}
+      </div>
     );
   }
 
