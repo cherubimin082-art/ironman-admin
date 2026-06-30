@@ -321,11 +321,8 @@ export default function LoginPage() {
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 44, maxWidth: 460, width: "100%" }}>
 
             {/* Brand */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: "#B91C1C", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
-              </div>
-              <span style={{ fontSize: 18, fontWeight: 900, color: "white", letterSpacing: "0.04em" }}>IRON MAN</span>
+            <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: 16, padding: "10px 18px", display: "inline-flex" }}>
+              <img src="/logo1.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain" }} />
             </div>
 
             {/* Hero text */}
@@ -380,11 +377,10 @@ export default function LoginPage() {
 
           {/* Mobile brand header */}
           {isCompact && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 11, background: "#B91C1C", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: 12, padding: "6px 12px", display: "inline-flex" }}>
+                <img src="/logo1.png" alt="Iron Man" style={{ height: 40, width: "auto", objectFit: "contain" }} />
               </div>
-              <span style={{ fontSize: 17, fontWeight: 900, color: "#B91C1C", letterSpacing: "0.04em" }}>IRON MAN</span>
             </div>
           )}
 
