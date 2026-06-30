@@ -19,7 +19,8 @@ pipeline {
                     mkdir -p /var/www/ironman-admin
                     cp -r dist /var/www/ironman-admin/
                     cp -r backend /var/www/ironman-admin/
-                    pm2 restart smart-iron-admin || pm2 start /var/www/ironman-admin/backend/server.js --name smart-iron-admin
+                    cp -r backend/* /home/ubuntu/ironman-admin/backend/
+                    pm2 restart admin-api || pm2 start /home/ubuntu/ironman-admin/backend/server.js --name admin-api
                 '''
             }
         }
