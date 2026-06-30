@@ -11,10 +11,13 @@ function fmt(dt) {
   });
 }
 
-function duration(mins) {
-  if (mins == null) return "—";
-  if (mins < 60) return `${mins}m`;
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+function duration(secs) {
+  if (secs == null || secs < 0) return "—";
+  if (secs < 60) return `${secs}s`;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  if (m < 60) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
 export default function ActivityLogPage() {
@@ -114,10 +117,10 @@ export default function ActivityLogPage() {
                           : <span style={{ color: "#F59E0B", fontWeight: 600, fontSize: 12 }}>In progress…</span>}
                       </td>
                       <td style={{ padding: "13px 16px" }}>
-                        {log.duration_minutes != null
+                        {log.duration_seconds != null
                           ? <span style={{ background: "#ECFDF5", color: "#065F46", fontWeight: 700,
                               padding: "3px 10px", borderRadius: 99, fontSize: 12 }}>
-                              {duration(log.duration_minutes)}
+                              {duration(log.duration_seconds)}
                             </span>
                           : <span style={{ color: "#94A3B8" }}>—</span>}
                       </td>

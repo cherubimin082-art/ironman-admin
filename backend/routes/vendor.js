@@ -314,6 +314,16 @@ router.put("/vendor/start-ironing/:orderId", ...auth, async (req, res) => {
       );
     } catch (_) {}
 
+    // Log iron start time
+    try {
+      await pool.query(
+        `INSERT INTO order_activity_log (order_id, bag_number, vendor_id, iron_start_time)
+         VALUES (?, NULL, ?, NOW())
+         ON DUPLICATE KEY UPDATE iron_start_time = IF(iron_start_time IS NULL, NOW(), iron_start_time)`,
+        [orderId, vendorId]
+      );
+    } catch (_) {}
+
     const [rows] = await pool.query(
       `SELECT customer_id, delivery_agent_id FROM orders WHERE id = ?`, [orderId]
     );
@@ -362,6 +372,15 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
       await pool.query(
         `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ready_for_delivery", ?)`,
         [orderId, vendorId]
+      );
+    } catch (_) {}
+
+    // Log iron complete time
+    try {
+      await pool.query(
+        `UPDATE order_activity_log SET iron_complete_time = NOW()
+         WHERE order_id = ? AND iron_complete_time IS NULL`,
+        [orderId]
       );
     } catch (_) {}
 

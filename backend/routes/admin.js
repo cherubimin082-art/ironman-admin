@@ -1140,7 +1140,7 @@ router.get("/admin/activity-log", ...auth, async (req, res) => {
          uv.name                                                              AS vendor_name,
          al.iron_start_time,
          al.iron_complete_time,
-         TIMESTAMPDIFF(MINUTE, al.iron_start_time, al.iron_complete_time)    AS duration_minutes,
+         TIMESTAMPDIFF(SECOND, al.iron_start_time, al.iron_complete_time)    AS duration_seconds,
          al.created_at
        FROM order_activity_log al
        JOIN orders o ON o.id  = al.order_id
