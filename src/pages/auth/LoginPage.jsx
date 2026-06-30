@@ -321,7 +321,7 @@ export default function LoginPage() {
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 44, maxWidth: 460, width: "100%" }}>
 
             {/* Brand */}
-            <img src="/logo1.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain" }} />
+            <img src="/logo1.png" alt="Iron Man" style={{ height: 72, width: "auto", objectFit: "contain", alignSelf: "flex-start" }} />
 
             {/* Hero text */}
             <div>
