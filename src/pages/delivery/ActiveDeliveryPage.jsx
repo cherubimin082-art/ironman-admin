@@ -382,7 +382,7 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function ActiveDeliveryPage() {
-  const { pickupJobs, deliveryAction } = useOrders();
+  const { pickupJobs, deliveryAction, deliveryAlert, clearDeliveryAlert } = useOrders();
   const [busyId, setBusyId]     = useState(null);
   const { isMobile } = useWindowSize();
   const [otpModal, setOtpModal] = useState(null); // { orderId, type: "pickup"|"delivery" }
@@ -444,6 +444,31 @@ export default function ActiveDeliveryPage() {
 
   return (
     <Layout>
+      {deliveryAlert && (
+        <div style={{
+          position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)",
+          zIndex: 1100, width: "calc(100% - 32px)", maxWidth: 480,
+          background: "#065f46", borderRadius: 16,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+          display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
+          animation: "slideDown 0.3s ease",
+        }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+              <path d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 800, color: "white", margin: "0 0 2px" }}>Ironing Complete!</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0, fontWeight: 500 }}>
+              Order #{deliveryAlert.orderId} — Pick up from vendor and deliver to customer
+            </p>
+          </div>
+          <button onClick={clearDeliveryAlert} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", padding: 4, flexShrink: 0, display: "flex" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      )}
       {otpModal && (
         <OtpModal
           title={otpModal.type === "pickup" ? "Verify Pickup OTP" : "Verify Delivery OTP"}
@@ -539,6 +564,7 @@ export default function ActiveDeliveryPage() {
         )}
 
       </div>
+      <style>{`@keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
     </Layout>
   );
 }

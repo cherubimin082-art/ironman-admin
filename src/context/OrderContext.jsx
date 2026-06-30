@@ -33,6 +33,7 @@ export function OrderProvider({ children }) {
   const [pickupJobs, setPickupJobs]         = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading]               = useState(false);
+  const [deliveryAlert, setDeliveryAlert]   = useState(null);
   const loadDataRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -94,7 +95,10 @@ export function OrderProvider({ children }) {
       socket.on('new_assignment',           reload);   // admin assigns delivery agent
       socket.on('assignment_updated',       reload);
       socket.on('order_ready_for_pickup',   reload);
-      socket.on('order_ready_for_delivery', reload);
+      socket.on('order_ready_for_delivery', (data) => {
+        reload();
+        if (user.role === 'delivery') setDeliveryAlert(data);
+      });
       socket.on('order_at_vendor',          reload);
       socket.on('order_ironing',            reload);
       socket.on('order_delivered',          reload);
@@ -164,6 +168,7 @@ export function OrderProvider({ children }) {
   return (
     <OrderContext.Provider value={{
       orders, pickupJobs, dashboardStats, loading,
+      deliveryAlert, clearDeliveryAlert: () => setDeliveryAlert(null),
       updateOrderStatus, acceptPickupJob, loadData, vendorAction, deliveryAction,
     }}>
       {children}
