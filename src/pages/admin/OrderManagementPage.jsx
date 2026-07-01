@@ -9,6 +9,7 @@ const PAGE_SIZE = 10;
 
 const STATUS_FILTERS = [
   { key: "all",                 label: "All Orders"      },
+  { key: "pending",             label: "Pending"          },
   { key: "ironing",             label: "Ironing"          },
   { key: "out_for_delivery",    label: "Out for Delivery"  },
   { key: "delivery_rescheduled",label: "Rescheduled"       },
@@ -325,12 +326,12 @@ export default function OrderManagementPage() {
     if (advVendor && (o.vendor_name || o.vendorName) !== advVendor) return false;
     if (advDateFrom) {
       const d = new Date(o.created_at);
-      if (isNaN(d) || d < new Date(advDateFrom)) return false;
+      const from = new Date(advDateFrom + "T00:00:00"); // local midnight, not UTC
+      if (isNaN(d) || d < from) return false;
     }
     if (advDateTo) {
       const d = new Date(o.created_at);
-      const to = new Date(advDateTo);
-      to.setHours(23, 59, 59, 999);
+      const to = new Date(advDateTo + "T23:59:59"); // local end-of-day
       if (isNaN(d) || d > to) return false;
     }
     return true;
@@ -345,7 +346,7 @@ export default function OrderManagementPage() {
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activeDeliveries = orders.filter(o => ["out_for_delivery", "picked_from_vendor", "delivery_assigned"].includes(o.status)).length;
 
-  const handleFilterChange = (key) => { setActiveFilter(key); setPage(1); };
+  const handleFilterChange = (key) => { setActiveFilter(key); setPage(1); setAdvStatus(""); };
 
   return (
     <Layout>
@@ -429,7 +430,7 @@ export default function OrderManagementPage() {
                 {/* Status */}
                 <div>
                   <label style={labelStyle}>Status</label>
-                  <select value={advStatus} onChange={e => { setAdvStatus(e.target.value); setPage(1); }} style={selectStyle}>
+                  <select value={advStatus} onChange={e => { setAdvStatus(e.target.value); setPage(1); if (e.target.value) setActiveFilter("all"); }} style={selectStyle}>
                     {ALL_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
