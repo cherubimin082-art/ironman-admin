@@ -138,7 +138,7 @@ export default function LoginPage() {
   }
 
   async function handlePasswordLogin(e) {
-    e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     const clean = phone.replace(/\D/g, "");
     if (clean.length < 10) { setError("Enter a valid 10-digit mobile number"); return; }
     if (!password) { setError("Enter your password"); return; }
@@ -275,7 +275,7 @@ export default function LoginPage() {
 
   /* ── Password flow ── */
   const PasswordContent = () => (
-    <form onSubmit={handlePasswordLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {PhoneInput()}
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em" }}>Password</label>
@@ -290,7 +290,8 @@ export default function LoginPage() {
           </span>
           <input type={showPass ? "text" : "password"} value={password}
             onChange={e => { setPassword(e.target.value); setError(""); }}
-            placeholder="Enter your password" required
+            onKeyDown={e => e.key === "Enter" && handlePasswordLogin(e)}
+            placeholder="Enter your password"
             style={{ ...inputBase, paddingRight: 46 }}
           />
           <button type="button" onClick={() => setShowPass(p => !p)}
@@ -303,8 +304,8 @@ export default function LoginPage() {
         </div>
       </div>
       {error && <ErrorBanner msg={error} />}
-      <SubmitBtn loading={loading} loadingLabel="Signing in…">Sign In</SubmitBtn>
-    </form>
+      <SubmitBtn type="button" onClick={handlePasswordLogin} loading={loading} loadingLabel="Signing in…">Sign In</SubmitBtn>
+    </div>
   );
 
   return (
