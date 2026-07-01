@@ -3,8 +3,12 @@ pipeline {
 
   environment {
     ANDROID_HOME = '/home/ubuntu/android-sdk'
-    PATH         = "${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0"
+    JAVA_HOME    = '/usr/lib/jvm/java-21-openjdk-amd64'
+    PATH         = "${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0:${JAVA_HOME}/bin"
     APK_OUT_DIR  = '/var/www/ironman-downloads'
+    KEYSTORE     = '/home/ubuntu/keystores/ironman-delivery.jks'
+    KEY_ALIAS    = 'ironman-delivery'
+    KEY_PASSWORD = 'IronMan@2024'
   }
 
   stages {
@@ -36,11 +40,44 @@ pipeline {
       }
     }
 
+    stage('Inject Signing Config') {
+      steps {
+        sh '''
+python3 - << 'PYEOF'
+with open("android/app/build.gradle", "r") as f:
+    content = f.read()
+
+if "signingConfigs" not in content:
+    signing = """
+    signingConfigs {
+        release {
+            storeFile file('/home/ubuntu/keystores/ironman-delivery.jks')
+            storePassword 'IronMan@2024'
+            keyAlias 'ironman-delivery'
+            keyPassword 'IronMan@2024'
+        }
+    }
+"""
+    content = content.replace("    buildTypes {", signing + "    buildTypes {")
+    content = content.replace(
+        "proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'",
+        "proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'\\n            signingConfig signingConfigs.release"
+    )
+    with open("android/app/build.gradle", "w") as f:
+        f.write(content)
+    print("Signing config injected")
+else:
+    print("Signing config already present")
+PYEOF
+        '''
+      }
+    }
+
     stage('Build APK') {
       steps {
         dir('android') {
           sh 'chmod +x gradlew'
-          sh './gradlew clean assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"'
+          sh './gradlew clean assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"'
         }
       }
     }
@@ -48,14 +85,14 @@ pipeline {
     stage('Publish APK') {
       steps {
         sh "mkdir -p ${APK_OUT_DIR}"
-        sh "cp android/app/build/outputs/apk/debug/app-debug.apk ${APK_OUT_DIR}/ironman-delivery.apk"
-        echo "APK available at: https://admin.ironman.today/downloads/ironman-delivery.apk"
+        sh "cp android/app/build/outputs/apk/release/app-release.apk ${APK_OUT_DIR}/ironman-delivery.apk"
+        echo "APK available at: https://devadmin.ironman.today/downloads/ironman-delivery.apk"
       }
     }
   }
 
   post {
-    success { echo 'Delivery APK built and published successfully.' }
+    success { echo 'Delivery APK (release) built and published successfully.' }
     failure { echo 'Build failed. Check logs above.' }
   }
 }
