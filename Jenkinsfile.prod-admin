@@ -106,7 +106,7 @@ PORT=5002
 DB_HOST=localhost
 DB_NAME=${IRONMAN_DB_NAME}
 DB_USER=${IRONMAN_DB_USER}
-DB_PASS=${IRONMAN_DB_PASS}
+DB_PASSWORD=${IRONMAN_DB_PASS}
 JWT_SECRET=${IRONMAN_JWT_SECRET}
 INTERNAL_SECRET=${IRONMAN_INTERNAL_SECRET}
 RAZORPAY_KEY_ID=${IRONMAN_RZP_KEY}
@@ -117,7 +117,7 @@ CUSTOMER_API_URL=http://localhost:5001
 ENV
 
               pm2 describe ironman-admin-api > /dev/null 2>&1 \
-                && pm2 restart ironman-admin-api \
+                && pm2 restart ironman-admin-api --update-env \
                 || pm2 start server.js --name ironman-admin-api
               pm2 save
             '
