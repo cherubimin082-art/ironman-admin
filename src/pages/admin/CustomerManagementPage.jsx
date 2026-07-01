@@ -2,6 +2,21 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import api from "../../services/api";
 
+const STATUS_STYLE = {
+  pending:              { label: "PENDING",      bg: "#FEF3C7", color: "#92400E" },
+  vendor_accepted:      { label: "CONFIRMED",    bg: "#DBEAFE", color: "#1E40AF" },
+  delivery_assigned:    { label: "ASSIGNED",     bg: "#EDE9FE", color: "#5B21B6" },
+  picked_up:            { label: "PICKUP",       bg: "#DBEAFE", color: "#1E40AF" },
+  at_vendor:            { label: "AT SHOP",      bg: "#FEF3C7", color: "#92400E" },
+  ironing_in_progress:  { label: "IRONING",      bg: "#FEF3C7", color: "#92400E" },
+  ready_for_delivery:   { label: "READY",        bg: "#D1FAE5", color: "#065F46" },
+  picked_from_vendor:   { label: "TRANSIT",      bg: "#EDE9FE", color: "#5B21B6" },
+  out_for_delivery:     { label: "OUT FOR DEL",  bg: "#FEE2E2", color: "#991B1B" },
+  delivery_rescheduled: { label: "RESCHEDULED",  bg: "#FEF3C7", color: "#92400E" },
+  delivered:            { label: "DELIVERED",    bg: "#D1FAE5", color: "#065F46" },
+  cancelled:            { label: "CANCELLED",    bg: "#F1F5F9", color: "#64748B" },
+};
+
 const labelSt = { fontSize: 12, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 };
 const inputSt = {
   width: "100%", padding: "10px 14px", borderRadius: 10,
@@ -71,6 +86,10 @@ export default function CustomerManagementPage() {
   const [formOk, setFormOk]       = useState("");
   const [form, setForm]           = useState({ name: "", phone: "", password: "", apartment: "", address: "" });
 
+  const [orderDrawer, setOrderDrawer] = useState(null); // customer object
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
   const loadCustomers = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -89,6 +108,17 @@ export default function CustomerManagementPage() {
 
   const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
   const closeModal = () => { setModal(null); setSelected(null); setFormErr(""); setFormOk(""); };
+
+  async function openOrders(c) {
+    setOrderDrawer(c);
+    setCustomerOrders([]);
+    setOrdersLoading(true);
+    try {
+      const { data } = await api.get(`/admin/customers/${c.id}/orders`);
+      setCustomerOrders(data.orders || []);
+    } catch { setCustomerOrders([]); }
+    finally { setOrdersLoading(false); }
+  }
 
   function openAdd() {
     setForm({ name: "", phone: "", password: "", apartment: "", address: "" });
@@ -253,6 +283,7 @@ export default function CustomerManagementPage() {
                   <td style={{ padding: "13px 18px", fontSize: 12, color: "#9ca3af" }}>{fmtDate(c.created_at)}</td>
                   <td style={{ padding: "13px 18px" }}>
                     <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => openOrders(c)} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #bfdbfe", background: "#eff6ff", fontSize: 12, fontWeight: 600, color: "#1d4ed8", cursor: "pointer" }}>Orders</button>
                       <button onClick={() => openEdit(c)} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer" }}>Edit</button>
                       <button onClick={() => { setSelected(c); setFormErr(""); setModal("delete"); }} style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", fontSize: 12, fontWeight: 600, color: "#dc2626", cursor: "pointer" }}>Delete</button>
                     </div>
@@ -289,6 +320,75 @@ export default function CustomerManagementPage() {
           </Modal>
         )}
       </div>
+
+      {/* ── Order History Drawer ── */}
+      {orderDrawer && (
+        <>
+          <div onClick={() => setOrderDrawer(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 200 }} />
+          <div style={{
+            position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 201,
+            width: "min(460px, 96vw)", background: "#fff",
+            boxShadow: "-8px 0 40px rgba(0,0,0,0.18)",
+            display: "flex", flexDirection: "column",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            animation: "slideIn 0.22s ease",
+          }}>
+            <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+
+            {/* Header */}
+            <div style={{ padding: "18px 20px", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 3px" }}>Order History</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: "#fff", margin: 0 }}>{orderDrawer.name}</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", margin: "2px 0 0" }}>{orderDrawer.phone} · {orderDrawer.apartment || "No apartment"}</p>
+              </div>
+              <button onClick={() => setOrderDrawer(null)} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "#fff", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+              {ordersLoading ? (
+                <p style={{ textAlign: "center", color: "#94A3B8", fontSize: 14, marginTop: 40 }}>Loading orders…</p>
+              ) : customerOrders.length === 0 ? (
+                <p style={{ textAlign: "center", color: "#94A3B8", fontSize: 14, marginTop: 40 }}>No orders placed yet.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {customerOrders.map(o => {
+                    const s = STATUS_STYLE[o.status] ?? { label: (o.status || "").toUpperCase(), bg: "#F1F5F9", color: "#64748B" };
+                    let items = [];
+                    try { items = typeof o.items === "string" ? JSON.parse(o.items) : (Array.isArray(o.items) ? o.items : []); } catch {}
+                    items = items.filter(i => i?.garment_name);
+                    const itemCount = items.reduce((sum, i) => sum + (i.quantity || 1), 0);
+                    return (
+                      <div key={o.id} style={{ background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #F1F5F9" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: "#B91C1C" }}>{o.order_code || `#${o.id}`}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, background: s.bg, color: s.color, padding: "3px 9px", borderRadius: 99, letterSpacing: "0.04em" }}>{s.label}</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {itemCount > 0 && (
+                            <p style={{ fontSize: 12.5, color: "#374151", margin: 0 }}>{itemCount} item{itemCount !== 1 ? "s" : ""} · ₹{parseFloat(o.total || 0).toFixed(0)}</p>
+                          )}
+                          {o.vendor_name && (
+                            <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>Center Head: {o.vendor_name}</p>
+                          )}
+                          <p style={{ fontSize: 11.5, color: "#94A3B8", margin: 0 }}>{fmtDate(o.created_at)}</p>
+                          {o.status === "cancelled" && o.cancellation_reason && (
+                            <p style={{ fontSize: 11.5, color: "#DC2626", margin: "2px 0 0" }}>Reason: {o.cancellation_reason}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: "14px 20px", borderTop: "1px solid #F1F5F9", background: "#F8FAFC" }}>
+              <p style={{ fontSize: 12, color: "#94A3B8", margin: 0, textAlign: "center" }}>{customerOrders.length} total order{customerOrders.length !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+        </>
+      )}
     </Layout>
   );
 }

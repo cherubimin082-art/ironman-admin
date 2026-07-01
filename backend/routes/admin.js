@@ -587,6 +587,34 @@ router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
 
 // ── CUSTOMER CRUD ──────────────────────────────────────────────
 
+// GET /api/admin/customers/:id/orders
+router.get("/admin/customers/:id/orders", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [orders] = await pool.query(
+      `SELECT o.id, o.order_code, o.status, o.total, o.created_at,
+              o.time_slot, o.apartment, o.pickup_date,
+              DATE_FORMAT(o.delivery_date, '%Y-%m-%d') AS delivery_date,
+              o.cancelled_by, o.cancellation_reason,
+              uv.name AS vendor_name,
+              JSON_ARRAYAGG(
+                JSON_OBJECT('garment_name', oi.garment_name, 'quantity', oi.quantity, 'subtotal', oi.subtotal)
+              ) AS items
+         FROM orders o
+         LEFT JOIN users uv ON uv.id = o.vendor_id
+         LEFT JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.customer_id = ?
+        GROUP BY o.id
+        ORDER BY o.created_at DESC`,
+      [id]
+    );
+    res.json({ orders });
+  } catch (err) {
+    console.error("customer orders error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /api/admin/customers
 router.get("/admin/customers", ...auth, async (req, res) => {
   try {
