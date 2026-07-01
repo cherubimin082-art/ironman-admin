@@ -822,8 +822,31 @@ router.delete("/admin/apartments-list/:id", ...auth, async (req, res) => {
 // ── ANALYTICS ──────────────────────────────────────────────────
 
 // GET /api/admin/analytics — summary counts
+// Optional ?from=YYYY-MM-DD&to=YYYY-MM-DD for custom date range
 router.get("/admin/analytics", ...auth, async (req, res) => {
+  const { from, to } = req.query;
   try {
+    if (from && to) {
+      const [[range]] = await pool.query(
+        `SELECT
+           COUNT(*) AS total_orders,
+           SUM(status = 'delivered') AS delivered_count,
+           COALESCE(SUM(CASE WHEN status = 'delivered' THEN total ELSE 0 END), 0) AS total_revenue,
+           SUM(status = 'cancelled') AS cancelled_count,
+           COALESCE(SUM(CASE WHEN status = 'cancelled' THEN total ELSE 0 END), 0) AS cancelled_amount
+         FROM orders
+        WHERE DATE(created_at) BETWEEN ? AND ?`, [from, to]
+      );
+      return res.json({
+        is_range: true, from, to,
+        total_orders:     range.total_orders,
+        delivered_count:  range.delivered_count,
+        total_revenue:    parseFloat(range.total_revenue || 0),
+        cancelled_count:  range.cancelled_count,
+        cancelled_amount: parseFloat(range.cancelled_amount || 0),
+      });
+    }
+
     const [[today]] = await pool.query(
       `SELECT COUNT(*) AS count FROM orders WHERE DATE(created_at) = CURDATE() AND status != 'cancelled'`
     );
@@ -846,11 +869,11 @@ router.get("/admin/analytics", ...auth, async (req, res) => {
           AND YEAR(created_at)  = YEAR(NOW())`
     );
     res.json({
-      today:                    today.count,
-      this_week:                week.count,
-      this_month:               month.count,
-      revenue_this_month:       parseFloat(revenue.total || 0),
-      cancelled_this_month:     cancelled.count,
+      today:                       today.count,
+      this_week:                   week.count,
+      this_month:                  month.count,
+      revenue_this_month:          parseFloat(revenue.total || 0),
+      cancelled_this_month:        cancelled.count,
       cancelled_amount_this_month: parseFloat(cancelled.amount || 0),
     });
   } catch (err) {
@@ -859,19 +882,29 @@ router.get("/admin/analytics", ...auth, async (req, res) => {
   }
 });
 
-// GET /api/admin/analytics/revenue?range=today|week|month
+// GET /api/admin/analytics/revenue?range=today|week|month  OR  ?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/admin/analytics/revenue", ...auth, async (req, res) => {
-  const { range = "month" } = req.query;
-  const now = new Date();
-  let fromDate;
-  if (range === "today") {
-    fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  } else if (range === "week") {
-    fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const { range = "month", from, to } = req.query;
+
+  let whereExtra = "";
+  let params;
+  if (from && to) {
+    whereExtra = "AND DATE(o.created_at) BETWEEN ? AND ?";
+    params = [from, to];
   } else {
-    fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    let fromDate;
+    if (range === "today") {
+      fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (range === "week") {
+      fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    } else {
+      fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+    const fromStr = fromDate.toISOString().slice(0, 19).replace("T", " ");
+    whereExtra = "AND o.created_at >= ?";
+    params = [fromStr];
   }
-  const fromStr = fromDate.toISOString().slice(0, 19).replace("T", " ");
 
   try {
     const [rows] = await pool.query(
@@ -880,10 +913,10 @@ router.get("/admin/analytics/revenue", ...auth, async (req, res) => {
               SUM(o.total) AS revenue
          FROM orders o
          JOIN users u ON o.vendor_id = u.id
-        WHERE o.status = 'delivered' AND o.created_at >= ?
+        WHERE o.status = 'delivered' ${whereExtra}
         GROUP BY u.id, DATE(o.created_at)
         ORDER BY date ASC`,
-      [fromStr]
+      params
     );
 
     const vendorMap = {};
@@ -913,8 +946,11 @@ router.get("/admin/analytics/revenue", ...auth, async (req, res) => {
   }
 });
 
-// GET /api/admin/analytics/top-vendors
+// GET /api/admin/analytics/top-vendors?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/admin/analytics/top-vendors", ...auth, async (req, res) => {
+  const { from, to } = req.query;
+  const dateWhere = from && to ? "AND DATE(o.created_at) BETWEEN ? AND ?" : "";
+  const params = from && to ? [from, to] : [];
   try {
     const [rows] = await pool.query(
       `SELECT u.name,
@@ -924,10 +960,11 @@ router.get("/admin/analytics/top-vendors", ...auth, async (req, res) => {
          FROM orders o
          JOIN users u ON o.vendor_id = u.id
          LEFT JOIN ratings r ON o.id = r.order_id
-        WHERE o.status = 'delivered'
+        WHERE o.status = 'delivered' ${dateWhere}
         GROUP BY o.vendor_id
         ORDER BY total_orders DESC
-        LIMIT 5`
+        LIMIT 5`,
+      params
     );
     res.json({ vendors: rows.map(v => ({ ...v, avg_rating: parseFloat(v.avg_rating || 0).toFixed(1) })) });
   } catch (err) {
@@ -936,17 +973,21 @@ router.get("/admin/analytics/top-vendors", ...auth, async (req, res) => {
   }
 });
 
-// GET /api/admin/analytics/apartments
+// GET /api/admin/analytics/apartments?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/admin/analytics/apartments", ...auth, async (req, res) => {
+  const { from, to } = req.query;
+  const dateWhere = from && to ? "AND DATE(created_at) BETWEEN ? AND ?" : "";
+  const params = from && to ? [from, to] : [];
   try {
     const [rows] = await pool.query(
       `SELECT apartment,
               SUM(status != 'cancelled') AS total_orders,
               COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0) AS total_revenue
          FROM orders
-        WHERE apartment IS NOT NULL AND apartment != ''
+        WHERE apartment IS NOT NULL AND apartment != '' ${dateWhere}
         GROUP BY apartment
-        ORDER BY total_orders DESC`
+        ORDER BY total_orders DESC`,
+      params
     );
     res.json({ apartments: rows });
   } catch (err) {
@@ -955,8 +996,11 @@ router.get("/admin/analytics/apartments", ...auth, async (req, res) => {
   }
 });
 
-// GET /api/admin/analytics/delivery-performance
+// GET /api/admin/analytics/delivery-performance?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/admin/analytics/delivery-performance", ...auth, async (req, res) => {
+  const { from, to } = req.query;
+  const dateWhere = from && to ? "AND DATE(o.created_at) BETWEEN ? AND ?" : "";
+  const params = from && to ? [from, to] : [];
   try {
     const [rows] = await pool.query(
       `SELECT u.name,
@@ -967,9 +1011,10 @@ router.get("/admin/analytics/delivery-performance", ...auth, async (req, res) =>
          JOIN users u ON da.delivery_agent_id = u.id
          JOIN orders o ON da.order_id = o.id
          LEFT JOIN ratings r ON o.id = r.order_id
-        WHERE o.status = 'delivered'
+        WHERE o.status = 'delivered' ${dateWhere}
         GROUP BY da.delivery_agent_id
-        ORDER BY total_deliveries DESC`
+        ORDER BY total_deliveries DESC`,
+      params
     );
     res.json({ agents: rows.map(a => ({ ...a, avg_rating: parseFloat(a.avg_rating || 0).toFixed(1) })) });
   } catch (err) {
