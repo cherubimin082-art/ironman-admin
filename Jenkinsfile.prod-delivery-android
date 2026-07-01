@@ -1,0 +1,157 @@
+pipeline {
+  agent any
+
+  environment {
+    ANDROID_HOME = '/home/ubuntu/android-sdk'
+    JAVA_HOME    = '/usr/lib/jvm/java-21-openjdk-amd64'
+    PATH         = "${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0:${JAVA_HOME}/bin"
+    IRONMAN_PROD_HOST = credentials('ironman_prod_host')
+    KEYSTORE          = '/home/ubuntu/keystores/ironman-delivery.jks'
+    KEY_ALIAS         = 'ironman-delivery'
+    KEY_PASSWORD      = 'IronMan@2024'
+  }
+
+  parameters {
+    string(
+      name: 'IRONMAN_DEPLOY_TAG',
+      defaultValue: '',
+      description: 'Git tag to build delivery APK from (e.g. v1.0.0-prod).'
+    )
+    text(
+      name: 'IRONMAN_DEPLOY_REASON',
+      defaultValue: '',
+      description: 'Reason for this production APK build (mandatory).'
+    )
+  }
+
+  stages {
+
+    stage('Validate Parameters') {
+      steps {
+        script {
+          if (!params.IRONMAN_DEPLOY_TAG?.trim()) {
+            error('IRONMAN_DEPLOY_TAG is required.')
+          }
+          if (!params.IRONMAN_DEPLOY_REASON?.trim()) {
+            error('IRONMAN_DEPLOY_REASON is required.')
+          }
+          echo "Tag    : ${params.IRONMAN_DEPLOY_TAG}"
+          echo "Reason : ${params.IRONMAN_DEPLOY_REASON}"
+        }
+      }
+    }
+
+    stage('Confirm Production APK Build') {
+      steps {
+        input(
+          message: """Build Delivery Partner APK from *${params.IRONMAN_DEPLOY_TAG}* for PRODUCTION?
+
+Reason: ${params.IRONMAN_DEPLOY_REASON}
+
+APK will be published to https://admin.ironman.today/downloads/ironman-delivery.apk""",
+          ok: 'Yes, Build Now',
+          submitterParameter: 'IRONMAN_APPROVED_BY'
+        )
+      }
+    }
+
+    stage('Checkout Tag') {
+      steps {
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "refs/tags/${params.IRONMAN_DEPLOY_TAG}"]],
+          userRemoteConfigs: [[url: 'https://github.com/cherubimin082-art/ironman-admin.git']]
+        ])
+      }
+    }
+
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+
+    stage('Build Web (Production)') {
+      steps {
+        sh "VITE_API_URL=https://admin.ironman.today/api VITE_SOCKET_URL=https://admin.ironman.today npm run build:android"
+      }
+    }
+
+    stage('Sync Capacitor') {
+      steps {
+        sh 'cp capacitor.config.delivery.ts capacitor.config.ts'
+        sh 'npx cap add android || true'
+        sh 'npx cap sync android'
+        sh '''sed -i 's|<string name="app_name">.*</string>|<string name="app_name">Ironman Delivery Partner</string>|g' android/app/src/main/res/values/strings.xml'''
+        sh '''sed -i 's|<string name="title_activity_main">.*</string>|<string name="title_activity_main">Ironman Delivery Partner</string>|g' android/app/src/main/res/values/strings.xml'''
+      }
+    }
+
+    stage('Inject Signing Config') {
+      steps {
+        sh '''
+python3 - << 'PYEOF'
+with open("android/app/build.gradle", "r") as f:
+    content = f.read()
+
+if "signingConfigs" not in content:
+    signing = """
+    signingConfigs {
+        release {
+            storeFile file('/home/ubuntu/keystores/ironman-delivery.jks')
+            storePassword 'IronMan@2024'
+            keyAlias 'ironman-delivery'
+            keyPassword 'IronMan@2024'
+        }
+    }
+"""
+    content = content.replace("    buildTypes {", signing + "    buildTypes {")
+    content = content.replace(
+        "proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'",
+        "proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'\\n            signingConfig signingConfigs.release"
+    )
+    with open("android/app/build.gradle", "w") as f:
+        f.write(content)
+    print("Signing config injected")
+else:
+    print("Signing config already present")
+PYEOF
+        '''
+      }
+    }
+
+    stage('Build APK') {
+      steps {
+        dir('android') {
+          sh 'chmod +x gradlew'
+          sh './gradlew clean assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"'
+        }
+      }
+    }
+
+    stage('Publish APK') {
+      steps {
+        sshagent(credentials: ['ironman_prod_ssh_key']) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@${IRONMAN_PROD_HOST} 'mkdir -p /var/www/ironman-downloads'
+            scp -o StrictHostKeyChecking=no \
+              android/app/build/outputs/apk/release/app-release.apk \
+              ubuntu@${IRONMAN_PROD_HOST}:/var/www/ironman-downloads/ironman-delivery.apk
+          """
+        }
+        echo "APK published: https://admin.ironman.today/downloads/ironman-delivery.apk"
+      }
+    }
+
+  }
+
+  post {
+    success {
+      echo "Delivery APK ${params.IRONMAN_DEPLOY_TAG} published successfully."
+      echo "Download: https://admin.ironman.today/downloads/ironman-delivery.apk"
+    }
+    failure {
+      echo "Delivery APK build for ${params.IRONMAN_DEPLOY_TAG} FAILED."
+    }
+  }
+}

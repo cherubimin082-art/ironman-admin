@@ -1,0 +1,140 @@
+pipeline {
+  agent any
+
+  parameters {
+    string(
+      name: 'IRONMAN_DEPLOY_TAG',
+      defaultValue: '',
+      description: 'Git tag to deploy to production (e.g. v1.0.0-prod). Must exist in the repository.'
+    )
+    text(
+      name: 'IRONMAN_DEPLOY_REASON',
+      defaultValue: '',
+      description: 'Reason for this production deployment (mandatory).'
+    )
+  }
+
+  environment {
+    IRONMAN_PROD_HOST       = credentials('ironman_prod_host')
+    IRONMAN_DB_NAME         = credentials('ironman_prod_db_name')
+    IRONMAN_DB_USER         = credentials('ironman_prod_db_user')
+    IRONMAN_DB_PASS         = credentials('ironman_prod_db_pass')
+    IRONMAN_JWT_SECRET      = credentials('ironman_prod_jwt_secret')
+    IRONMAN_INTERNAL_SECRET = credentials('ironman_prod_internal_secret')
+    IRONMAN_RZP_KEY         = credentials('ironman_razorpay_key_id')
+    IRONMAN_RZP_SECRET      = credentials('ironman_razorpay_secret')
+  }
+
+  stages {
+
+    stage('Validate Parameters') {
+      steps {
+        script {
+          if (!params.IRONMAN_DEPLOY_TAG?.trim()) {
+            error('IRONMAN_DEPLOY_TAG is required. Provide a valid git tag.')
+          }
+          if (!params.IRONMAN_DEPLOY_REASON?.trim()) {
+            error('IRONMAN_DEPLOY_REASON is required. State why this deployment is being made.')
+          }
+          echo "Tag     : ${params.IRONMAN_DEPLOY_TAG}"
+          echo "Reason  : ${params.IRONMAN_DEPLOY_REASON}"
+        }
+      }
+    }
+
+    stage('Confirm Production Deployment') {
+      steps {
+        input(
+          message: """Deploy *${params.IRONMAN_DEPLOY_TAG}* to PRODUCTION (admin.ironman.today)?
+
+Reason: ${params.IRONMAN_DEPLOY_REASON}
+
+This will restart the admin backend on the production server.""",
+          ok: 'Yes, Deploy Now',
+          submitterParameter: 'IRONMAN_APPROVED_BY'
+        )
+      }
+    }
+
+    stage('Checkout Tag') {
+      steps {
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "refs/tags/${params.IRONMAN_DEPLOY_TAG}"]],
+          userRemoteConfigs: [[url: 'https://github.com/cherubimin082-art/ironman-admin.git']]
+        ])
+        echo "Checked out tag: ${params.IRONMAN_DEPLOY_TAG}"
+      }
+    }
+
+    stage('Build Frontend') {
+      steps {
+        sh 'npm ci'
+        sh "VITE_API_URL=https://admin.ironman.today/api VITE_SOCKET_URL=https://admin.ironman.today npm run build"
+      }
+    }
+
+    stage('Deploy Frontend') {
+      steps {
+        sshagent(credentials: ['ironman_prod_ssh_key']) {
+          sh """
+            rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+              dist/ ubuntu@${IRONMAN_PROD_HOST}:/var/www/ironman-admin/dist/
+          """
+        }
+      }
+    }
+
+    stage('Deploy Backend') {
+      steps {
+        sshagent(credentials: ['ironman_prod_ssh_key']) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@${IRONMAN_PROD_HOST} '
+              set -e
+              cd /home/ubuntu/apps/ironman-admin
+
+              git fetch --tags
+              git checkout ${params.IRONMAN_DEPLOY_TAG}
+              git reset --hard ${params.IRONMAN_DEPLOY_TAG}
+
+              cd backend
+              npm ci --omit=dev
+
+              cat > .env <<ENV
+NODE_ENV=production
+PORT=5002
+DB_HOST=localhost
+DB_NAME=${IRONMAN_DB_NAME}
+DB_USER=${IRONMAN_DB_USER}
+DB_PASS=${IRONMAN_DB_PASS}
+JWT_SECRET=${IRONMAN_JWT_SECRET}
+INTERNAL_SECRET=${IRONMAN_INTERNAL_SECRET}
+RAZORPAY_KEY_ID=${IRONMAN_RZP_KEY}
+RAZORPAY_KEY_SECRET=${IRONMAN_RZP_SECRET}
+FRONTEND_URL=https://ironman.today
+ADMIN_FRONTEND_URL=https://admin.ironman.today
+CUSTOMER_API_URL=http://localhost:5001
+ENV
+
+              pm2 describe ironman-admin-api > /dev/null 2>&1 \
+                && pm2 restart ironman-admin-api \
+                || pm2 start server.js --name ironman-admin-api
+              pm2 save
+            '
+          """
+        }
+      }
+    }
+
+  }
+
+  post {
+    success {
+      echo "Deployment of ${params.IRONMAN_DEPLOY_TAG} to production completed successfully."
+      echo "Deployed by: ${env.IRONMAN_APPROVED_BY ?: 'auto'} | Reason: ${params.IRONMAN_DEPLOY_REASON}"
+    }
+    failure {
+      echo "Deployment of ${params.IRONMAN_DEPLOY_TAG} FAILED. Production server may be in an inconsistent state — check immediately."
+    }
+  }
+}
