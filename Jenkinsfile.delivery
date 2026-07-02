@@ -40,6 +40,18 @@ pipeline {
       }
     }
 
+    stage('Inject Delivery Icon') {
+      steps {
+        sh '''
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp android-icons-delivery/mipmap-$density/ic_launcher.png           android/app/src/main/res/mipmap-$density/ic_launcher.png
+            cp android-icons-delivery/mipmap-$density/ic_launcher_round.png     android/app/src/main/res/mipmap-$density/ic_launcher_round.png
+            cp android-icons-delivery/mipmap-$density/ic_launcher_foreground.png android/app/src/main/res/mipmap-$density/ic_launcher_foreground.png
+          done
+        '''
+      }
+    }
+
     stage('Inject Signing Config') {
       steps {
         sh '''
