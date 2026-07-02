@@ -14,6 +14,7 @@ import CapacityPage from "./pages/vendor/CapacityPage";
 import StaffPage from "./pages/vendor/StaffPage";
 import ReportsPage from "./pages/vendor/ReportsPage";
 import ApartmentManagementPage from "./pages/vendor/ApartmentManagementPage";
+import PricingPage from "./pages/vendor/PricingPage";
 
 import DeliveryDashboard from "./pages/delivery/DeliveryDashboard";
 import PickupJobsPage from "./pages/delivery/PickupJobsPage";
@@ -27,7 +28,6 @@ import VendorManagementPage from "./pages/admin/VendorManagementPage";
 import CustomerManagementPage from "./pages/admin/CustomerManagementPage";
 import ApartmentsPage from "./pages/admin/ApartmentsPage";
 import DeliveryManagementPage from "./pages/admin/DeliveryManagementPage";
-import PricingPage from "./pages/admin/PricingPage";
 import AnalyticsPage from "./pages/admin/AnalyticsPage";
 import ActivityLogPage from "./pages/admin/ActivityLogPage";
 
@@ -48,6 +48,7 @@ export default function App() {
             <Route path="/vendor/staff"     element={<RoleRoute allowedRole="vendor"><StaffPage /></RoleRoute>} />
             <Route path="/vendor/reports"     element={<RoleRoute allowedRole="vendor"><ReportsPage /></RoleRoute>} />
             <Route path="/vendor/apartments" element={<RoleRoute allowedRole="vendor"><ApartmentManagementPage /></RoleRoute>} />
+            <Route path="/vendor/pricing"    element={<RoleRoute allowedRole="vendor"><PricingPage /></RoleRoute>} />
             <Route path="/tablet"           element={<TabletApp />} />
 
             {/* Delivery routes */}
@@ -64,7 +65,6 @@ export default function App() {
             <Route path="/admin/customers"  element={<RoleRoute allowedRole="admin"><CustomerManagementPage /></RoleRoute>} />
             <Route path="/admin/apartments" element={<RoleRoute allowedRole="admin"><ApartmentsPage /></RoleRoute>} />
             <Route path="/admin/delivery"  element={<RoleRoute allowedRole="admin"><DeliveryManagementPage /></RoleRoute>} />
-            <Route path="/admin/pricing"   element={<RoleRoute allowedRole="admin"><PricingPage /></RoleRoute>} />
             <Route path="/admin/analytics"     element={<RoleRoute allowedRole="admin"><AnalyticsPage /></RoleRoute>} />
             <Route path="/admin/activity-log" element={<RoleRoute allowedRole="admin"><ActivityLogPage /></RoleRoute>} />
 

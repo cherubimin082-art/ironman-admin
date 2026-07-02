@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/shared/Layout";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import api from "../../services/api";
@@ -108,7 +108,7 @@ function ImageField({ value, onChange }) {
     try {
       const fd = new FormData();
       fd.append("image", file);
-      const { data } = await api.post("/admin/upload-image", fd, {
+      const { data } = await api.post("/vendor/upload-image", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       onChange(data.url);
@@ -227,7 +227,7 @@ export default function PricingPage() {
   const loadCategories = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const { data } = await api.get("/admin/categories");
+      const { data } = await api.get("/vendor/categories");
       setCategories(data.categories || []);
     } catch { setError("Failed to load categories"); }
     finally { setLoading(false); }
@@ -236,7 +236,7 @@ export default function PricingPage() {
   const loadGarments = useCallback(async (catId) => {
     setLoading(true); setError("");
     try {
-      const url = catId ? `/admin/garments?category_id=${catId}` : "/admin/garments";
+      const url = catId ? `/vendor/garments?category_id=${catId}` : "/vendor/garments";
       const { data } = await api.get(url);
       setGarments(data.garments || []);
     } catch { setError("Failed to load garments"); }
@@ -275,7 +275,7 @@ export default function PricingPage() {
     if (!catForm.name.trim()) return setFormErr("Category name is required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.post("/admin/categories", { name: catForm.name });
+      await api.post("/vendor/categories", { name: catForm.name });
       setFormOk("Category created");
       await loadCategories();
       setTimeout(closeModal, 900);
@@ -289,7 +289,7 @@ export default function PricingPage() {
     if (!catForm.name.trim()) return setFormErr("Category name is required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.put(`/admin/categories/${selected.id}`, { name: catForm.name });
+      await api.put(`/vendor/categories/${selected.id}`, { name: catForm.name });
       setFormOk("Category updated");
       await loadCategories();
       setTimeout(closeModal, 900);
@@ -301,7 +301,7 @@ export default function PricingPage() {
   async function handleDelCat() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.delete(`/admin/categories/${selected.id}`);
+      await api.delete(`/vendor/categories/${selected.id}`);
       setFormOk("Category deleted");
       await loadCategories();
       setTimeout(closeModal, 900);
@@ -334,7 +334,7 @@ export default function PricingPage() {
       return setFormErr("Category, name and price are all required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.post("/admin/garments", {
+      await api.post("/vendor/garments", {
         category_id: Number(gmtForm.category_id),
         name: gmtForm.name,
         price: gmtForm.price,
@@ -354,7 +354,7 @@ export default function PricingPage() {
       return setFormErr("Category, name and price are all required");
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.put(`/admin/garments/${selected.id}`, {
+      await api.put(`/vendor/garments/${selected.id}`, {
         category_id: Number(gmtForm.category_id),
         name: gmtForm.name,
         price: gmtForm.price,
@@ -371,7 +371,7 @@ export default function PricingPage() {
   async function handleDelGmt() {
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.delete(`/admin/garments/${selected.id}`);
+      await api.delete(`/vendor/garments/${selected.id}`);
       setFormOk("Garment deleted");
       await loadGarments(filterCat);
       setTimeout(closeModal, 900);
@@ -401,13 +401,13 @@ export default function PricingPage() {
         {/* Header */}
         <div>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
-            Admin
+            Vendor Tools
           </p>
           <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 28, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.15 }}>
             Pricing Management
           </h1>
           <p style={{ fontSize: 13.5, color: "#9ca3af", margin: "6px 0 0", fontWeight: 400 }}>
-            Manage garment categories and set prices for each item.
+            Manage the garment categories and prices you offer. Customers in your apartments see this pricing.
           </p>
         </div>
 

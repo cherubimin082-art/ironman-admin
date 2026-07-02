@@ -45,9 +45,10 @@ const ApartmentIcon = () => (
     <line x1="5" y1="16" x2="5" y2="16.01" /><line x1="9" y1="16" x2="9" y2="16.01" />
   </svg>
 );
-const PaymentsIcon = () => (
+const PricingIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
   </svg>
 );
 const AnalyticsIcon = () => (
@@ -118,7 +119,6 @@ const ADMIN_LINKS = [
   { to: "/admin/vendors",       label: "Center Heads", Icon: IronsHeadIcon    },
   { to: "/admin/delivery",      label: "Delivery Boys",Icon: DeliveryBoyIcon  },
   { to: "/admin/apartments",    label: "Apartments",   Icon: ApartmentIcon    },
-  { to: "/admin/pricing",       label: "Payments",     Icon: PaymentsIcon     },
   { to: "/admin/activity-log",  label: "Iron Log",     Icon: ActivityLogIcon  },
   { to: "/admin/analytics",     label: "Settings",     Icon: SettingsIcon     },
 ];
@@ -136,6 +136,7 @@ const VENDOR_LINKS = [
   { to: "/vendor/orders",     label: "Orders",       Icon: OrdersIcon     },
   { to: "/vendor/staff",      label: "Delivery Boy", Icon: DeliveryBoyIcon },
   { to: "/vendor/capacity",   label: "Capacity",     Icon: CapacityIcon   },
+  { to: "/vendor/pricing",    label: "Pricing",      Icon: PricingIcon    },
   { to: "/vendor/reports",    label: "Reports",      Icon: AnalyticsIcon  },
   { to: "/vendor/apartments", label: "Locations",    Icon: LocationIcon   },
 ];

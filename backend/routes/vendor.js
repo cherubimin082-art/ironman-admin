@@ -1,9 +1,28 @@
 const express = require("express");
 const http    = require("http");
+const path    = require("path");
+const multer  = require("multer");
 const bcrypt  = require("bcryptjs");
 const pool    = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
+
+// ── Image upload (multer) — used by vendor Pricing Management ──────────
+const uploadStorage = multer.diskStorage({
+  destination: path.join(__dirname, "../public/uploads"),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `garment_${Date.now()}${ext}`);
+  },
+});
+const upload = multer({
+  storage: uploadStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Images only"));
+  },
+});
 
 // Bridge — customer frontend listens on port 5001; this backend is on 5002.
 function emitToCustomer(customerId, event, payload) {
@@ -575,6 +594,187 @@ router.delete("/vendor/capacity/:apartment", ...auth, async (req, res) => {
     console.error("vendor/capacity DELETE error:", err);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+// ── Pricing Management: Categories & Garments (vendor-scoped) ──────────
+
+// GET /api/vendor/categories
+router.get("/vendor/categories", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id, c.name, c.created_at,
+              SUM(g.is_active = 1) AS garment_count
+         FROM categories c
+         LEFT JOIN garments g ON g.category_id = c.id AND g.vendor_id = c.vendor_id
+        WHERE c.vendor_id = ?
+        GROUP BY c.id
+        ORDER BY c.id ASC`,
+      [vendorId]
+    );
+    res.json({ categories: rows });
+  } catch (err) {
+    console.error("vendor/categories GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/vendor/categories
+router.post("/vendor/categories", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ message: "Category name is required" });
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO categories (vendor_id, name) VALUES (?, ?)", [vendorId, name.trim()]
+    );
+    res.status(201).json({ message: "Category created", id: result.insertId });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Category name already exists" });
+    console.error("vendor/categories POST error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/vendor/categories/:id
+router.put("/vendor/categories/:id", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ message: "Category name is required" });
+  try {
+    const [result] = await pool.query(
+      "UPDATE categories SET name = ? WHERE id = ? AND vendor_id = ?", [name.trim(), id, vendorId]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Category not found" });
+    res.json({ message: "Category updated" });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Category name already exists" });
+    console.error("vendor/categories PUT error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/vendor/categories/:id
+router.delete("/vendor/categories/:id", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { id } = req.params;
+  try {
+    const [[{ garmentCount }]] = await pool.query(
+      "SELECT COUNT(*) AS garmentCount FROM garments WHERE category_id = ? AND vendor_id = ?", [id, vendorId]
+    );
+    if (garmentCount > 0)
+      return res.status(409).json({
+        message: `Cannot delete: category has ${garmentCount} garment(s). Delete garments first.`,
+        garmentCount,
+      });
+    const [result] = await pool.query("DELETE FROM categories WHERE id = ? AND vendor_id = ?", [id, vendorId]);
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Category not found" });
+    res.json({ message: "Category deleted" });
+  } catch (err) {
+    console.error("vendor/categories DELETE error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/vendor/garments
+router.get("/vendor/garments", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const { category_id } = req.query;
+    const where = category_id
+      ? "WHERE g.is_active = 1 AND g.vendor_id = ? AND g.category_id = ?"
+      : "WHERE g.is_active = 1 AND g.vendor_id = ?";
+    const params = category_id ? [vendorId, category_id] : [vendorId];
+    const [rows] = await pool.query(
+      `SELECT g.id, g.name, g.price, g.category_id, g.image_url, g.icon, g.is_active, g.created_at,
+              c.name AS category_name
+         FROM garments g
+         LEFT JOIN categories c ON c.id = g.category_id
+         ${where}
+        ORDER BY g.id ASC`,
+      params
+    );
+    res.json({ garments: rows });
+  } catch (err) {
+    console.error("vendor/garments GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/vendor/garments
+router.post("/vendor/garments", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { category_id, name, price, image_url } = req.body;
+  if (!category_id || !name?.trim() || price === undefined)
+    return res.status(400).json({ message: "category_id, name and price are required" });
+  const priceVal = parseFloat(price);
+  if (isNaN(priceVal) || priceVal < 0)
+    return res.status(400).json({ message: "Price must be a positive number" });
+  try {
+    const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ? AND vendor_id = ?", [category_id, vendorId]);
+    if (!cat) return res.status(404).json({ message: "Category not found" });
+    const [result] = await pool.query(
+      "INSERT INTO garments (vendor_id, category_id, name, price, image_url, is_active) VALUES (?, ?, ?, ?, ?, 1)",
+      [vendorId, category_id, name.trim(), priceVal, image_url?.trim() || null]
+    );
+    res.status(201).json({ message: "Garment added", id: result.insertId });
+  } catch (err) {
+    console.error("vendor/garments POST error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/vendor/garments/:id
+router.put("/vendor/garments/:id", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { id } = req.params;
+  const { category_id, name, price, image_url } = req.body;
+  if (!category_id || !name?.trim() || price === undefined)
+    return res.status(400).json({ message: "category_id, name and price are required" });
+  const priceVal = parseFloat(price);
+  if (isNaN(priceVal) || priceVal < 0)
+    return res.status(400).json({ message: "Price must be a positive number" });
+  try {
+    const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ? AND vendor_id = ?", [category_id, vendorId]);
+    if (!cat) return res.status(404).json({ message: "Category not found" });
+    const [result] = await pool.query(
+      "UPDATE garments SET category_id = ?, name = ?, price = ?, image_url = ? WHERE id = ? AND vendor_id = ?",
+      [category_id, name.trim(), priceVal, image_url?.trim() || null, id, vendorId]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Garment not found" });
+    res.json({ message: "Garment updated" });
+  } catch (err) {
+    console.error("vendor/garments PUT error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/vendor/garments/:id  (soft-delete — hides from customer, preserves order history)
+router.delete("/vendor/garments/:id", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query("UPDATE garments SET is_active = 0 WHERE id = ? AND vendor_id = ?", [id, vendorId]);
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Garment not found" });
+    res.json({ message: "Garment removed from catalogue" });
+  } catch (err) {
+    console.error("vendor/garments DELETE error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/vendor/upload-image
+router.post("/vendor/upload-image", ...auth, upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+  const url = `https://devadmin.ironman.today/api/uploads/${req.file.filename}`;
+  res.json({ url });
 });
 
 // ── Staff Management ───────────────────────────────────────────────────
