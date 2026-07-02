@@ -71,6 +71,7 @@ This will restart the admin backend on the production server.""",
       steps {
         sh 'rm -rf node_modules package-lock.json'
         sh 'npm install'
+        sh 'npm install @rolldown/binding-linux-x64-gnu --no-save --force || true'
         sh "VITE_API_URL=https://admin.ironman.today/api VITE_SOCKET_URL=https://admin.ironman.today npm run build"
       }
     }
