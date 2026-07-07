@@ -11,7 +11,7 @@ const auth   = [verifyToken, requireRole("delivery")];
 // ── WhatsApp OTP sender ─────────────────────────────────────
 function sendWhatsAppOtp(phone10digit, otp) {
   const phone = "91" + phone10digit;
-  const path  = `/webhook/014bb05a-ec6e-4cda-b3dc-614b418dfe79?phone_number=${phone}&otp=${otp}`;
+  const path  = `/webhook/e85975b1-fc4f-4537-8e99-1bf3c70729ad?phone_number=${phone}&otp=${otp}`;
   return new Promise((resolve, reject) => {
     const req = https.request(
       { hostname: "automate.cherubim.in", path, method: "POST",
