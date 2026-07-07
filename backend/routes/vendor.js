@@ -1043,11 +1043,15 @@ router.put("/vendor/tablet-bags/:bagId/start-iron", ...tabletAuth, async (req, r
   const vendorId = req.user.vendor_id || req.user.id;
   const bagId    = req.params.bagId;
   try {
-    // Only one bag can be ironed at a time
+    // Only one bag can be ironed at a time — scoped to active orders only, so a
+    // bag left at 'ironing' by an order that later got delivered/cancelled through
+    // another path can't permanently block new ironing sessions for this vendor.
     const [active] = await pool.query(
       `SELECT ob.id FROM order_bags ob
        JOIN orders o ON o.id = ob.order_id
-       WHERE o.vendor_id = ? AND ob.ironing_status = 'ironing' LIMIT 1`,
+       WHERE o.vendor_id = ? AND ob.ironing_status = 'ironing'
+         AND o.status NOT IN ('delivered', 'cancelled')
+       LIMIT 1`,
       [vendorId]
     );
     if (active.length > 0)
