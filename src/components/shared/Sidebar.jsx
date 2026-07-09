@@ -201,12 +201,53 @@ function ExternalNavItem({ to, label, Icon, onClose }) {
   );
 }
 
+// ── Mobile bottom tab bar (delivery role only) ─────────────────
+function BottomNav({ links }) {
+  return (
+    <nav style={{
+      position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 200,
+      background: SIDEBAR_BG,
+      borderTop: "1px solid rgba(255,255,255,0.08)",
+      boxShadow: "0 -2px 16px rgba(0,0,0,0.25)",
+      display: "flex",
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    }}>
+      {links.map(({ to, label, Icon }) => (
+        <NavLink key={to} to={to} style={{ textDecoration: "none", flex: 1 }}>
+          {({ isActive }) => (
+            <div style={{
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: 3, padding: "9px 2px 7px",
+            }}>
+              <span style={{ color: isActive ? "white" : "rgba(255,255,255,0.45)", display: "flex" }}>
+                <Icon />
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: isActive ? 700 : 600,
+                color: isActive ? "white" : "rgba(255,255,255,0.45)",
+                whiteSpace: "nowrap",
+              }}>
+                {label}
+              </span>
+            </div>
+          )}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 // ── Sidebar ──────────────────────────────────────────────────
 export default function Sidebar({ open, onClose, isMobile }) {
   const { user } = useAuth();
   const role = user?.role ?? "admin";
   const links = role === "vendor" ? VENDOR_LINKS : role === "delivery" ? DELIVERY_LINKS : ADMIN_LINKS;
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
+
+  // Delivery role gets a bottom tab bar on mobile instead of the slide-out drawer.
+  if (isMobile && role === "delivery") {
+    return <BottomNav links={links} />;
+  }
 
   const sidebarStyle = isMobile
     ? {

@@ -53,8 +53,13 @@ function UpdateBanner() {
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isMobile, isTablet } = useWindowSize();
+  const { user } = useAuth();
 
-  const mainPadding = isMobile ? "16px" : isTablet ? "20px 24px" : "28px 32px";
+  // Delivery role uses a fixed bottom tab bar on mobile — reserve space so content isn't hidden under it.
+  const isDeliveryBottomNav = isMobile && user?.role === "delivery";
+  const mainPadding = isMobile
+    ? (isDeliveryBottomNav ? "16px 16px calc(70px + env(safe-area-inset-bottom, 0px))" : "16px")
+    : isTablet ? "20px 24px" : "28px 32px";
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", flexDirection: "column" }}>

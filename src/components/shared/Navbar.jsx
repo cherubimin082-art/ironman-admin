@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useWindowSize } from "../../hooks/useWindowSize";
 
 const ROLE_CONFIG = {
   vendor: {
@@ -27,9 +28,12 @@ const ROLE_CONFIG = {
 export default function Navbar({ onMenuClick }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isMobile } = useWindowSize();
   const cfg = ROLE_CONFIG[user?.role] ?? ROLE_CONFIG.admin;
   const initials = user?.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
   const [logoutHover, setLogoutHover] = useState(false);
+  // Delivery role uses a bottom tab bar on mobile instead of the hamburger drawer.
+  const showHamburger = !(isMobile && user?.role === "delivery");
 
   function handleSignOut() {
     signOut();
@@ -51,25 +55,27 @@ export default function Navbar({ onMenuClick }) {
 
         {/* ── LEFT: Hamburger + Logo ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {/* Mobile hamburger */}
-          <button
-            onClick={onMenuClick}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              width: 36, height: 36, borderRadius: 10,
-              border: "1px solid #f1f5f9", background: "white",
-              color: "#64748b", cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#f1f5f9"; }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 16, height: 16 }}>
-              <line x1="4" y1="8" x2="20" y2="8" />
-              <line x1="4" y1="14" x2="14" y2="14" />
-              <line x1="4" y1="20" x2="20" y2="20" />
-            </svg>
-          </button>
+          {/* Mobile hamburger — hidden for delivery role, which uses a bottom tab bar instead */}
+          {showHamburger && (
+            <button
+              onClick={onMenuClick}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 36, height: 36, borderRadius: 10,
+                border: "1px solid #f1f5f9", background: "white",
+                color: "#64748b", cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#f1f5f9"; }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: 16, height: 16 }}>
+                <line x1="4" y1="8" x2="20" y2="8" />
+                <line x1="4" y1="14" x2="14" y2="14" />
+                <line x1="4" y1="20" x2="20" y2="20" />
+              </svg>
+            </button>
+          )}
 
           {/* Logo mark */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
