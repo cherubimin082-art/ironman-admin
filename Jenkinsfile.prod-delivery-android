@@ -9,7 +9,7 @@ pipeline {
     // this does not touch the system Node used by other projects' pipelines.
     PATH         = "/var/lib/jenkins/tools/node22/bin:${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0:${JAVA_HOME}/bin"
     IRONMAN_PROD_HOST = credentials('ironman_prod_host')
-    KEYSTORE          = '/home/ubuntu/keystores/ironman-delivery.jks'
+    KEYSTORE          = '/var/lib/jenkins/keystores/ironman-delivery.jks'
     KEY_ALIAS         = 'ironman-delivery'
     KEY_PASSWORD      = 'IronMan@2024'
   }
@@ -115,7 +115,7 @@ if "signingConfigs" not in content:
     signing = """
     signingConfigs {
         release {
-            storeFile file('/home/ubuntu/keystores/ironman-delivery.jks')
+            storeFile file('/var/lib/jenkins/keystores/ironman-delivery.jks')
             storePassword 'IronMan@2024'
             keyAlias 'ironman-delivery'
             keyPassword 'IronMan@2024'
