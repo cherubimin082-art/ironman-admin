@@ -88,6 +88,14 @@ function ClockIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 12, height: 12, flexShrink: 0 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.5 1.5 0 012.122 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+    </svg>
+  );
+}
+
 function InfoBadge({ icon, text, bg = "#f9fafb", border = "#e5e7eb", color = "#6b7280" }) {
   return (
     <div style={{
@@ -472,6 +480,12 @@ export default function OrderCard({ order, onStatusChange }) {
           <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
             <ClockIcon /> {order.time}
           </span>
+        </div>
+
+        {/* Address */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "#6b7280", fontWeight: 500, lineHeight: 1.4 }}>
+          <span style={{ marginTop: 2 }}><HomeIcon /></span>
+          <span>{order.customer_address || "Address not available"}</span>
         </div>
 
         {/* Bag numbers — shown once clothes are picked up */}

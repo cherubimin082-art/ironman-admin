@@ -292,6 +292,9 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>{order.customer}</p>
+              {order.apartment && (
+                <p style={{ fontSize: 11.5, fontWeight: 700, color: "#059669", margin: "2px 0 0" }}>{order.apartment}</p>
+              )}
               <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0" }}>{order.customer_address || "—"}</p>
               {(() => {
                 const url = mapsUrl(order);
