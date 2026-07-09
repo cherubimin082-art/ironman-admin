@@ -126,14 +126,14 @@ function StaffForm({ onSubmit, form, onFieldChange, mode, onClose, saving, formE
         <label style={labelSt}>
           Password{" "}
           <span style={{ color: "#9ca3af", fontWeight: 500 }}>
-            {mode === "edit" ? "(leave blank to keep current)" : "*"}
+            {mode === "edit" ? "(leave blank to keep current)" : "(optional)"}
           </span>
         </label>
         <div style={{ position: "relative" }}>
           <input
             style={{ ...inputSt, paddingRight: 44 }}
             type={showPass ? "text" : "password"}
-            placeholder={mode === "edit" ? "Enter new password to change" : "Set a password"}
+            placeholder={mode === "edit" ? "Enter new password to change" : "Set a password (optional)"}
             value={form.password}
             onChange={e => onFieldChange("password", e.target.value)}
             onFocus={fo} onBlur={fb}
@@ -236,18 +236,17 @@ export default function StaffPage() {
     setModal("delete");
   }
 
-  function validate(requirePassword = false) {
+  function validate() {
     if (!form.name.trim())                    return "Full name is required.";
     if (!form.mobile_number)                  return "Mobile number is required.";
     if (!/^\d{10}$/.test(form.mobile_number)) return "Enter a valid 10-digit mobile number.";
-    if (requirePassword && !form.password)    return "Password is required.";
     if (form.password && form.password.length < 6) return "Password must be at least 6 characters.";
     return null;
   }
 
   async function handleAdd(e) {
     e.preventDefault();
-    const err = validate(true);
+    const err = validate();
     if (err) return setFormErr(err);
     setSaving(true); setFormErr(""); setFormOk("");
     try {

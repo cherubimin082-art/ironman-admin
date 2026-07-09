@@ -801,8 +801,6 @@ router.post("/vendor/staff", ...auth, async (req, res) => {
   const { name, mobile_number, role_title, password } = req.body;
   if (!name?.trim() || !mobile_number?.trim())
     return res.status(400).json({ message: "Name and mobile number are required" });
-  if (!password)
-    return res.status(400).json({ message: "Password is required" });
   try {
     const [[existing]] = await pool.query(
       "SELECT id FROM users WHERE phone = ?", [mobile_number.trim()]
@@ -810,7 +808,7 @@ router.post("/vendor/staff", ...auth, async (req, res) => {
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = password ? await bcrypt.hash(password, 10) : null;
     const [result] = await pool.query(
       `INSERT INTO users (name, phone, password_hash, role, status, vendor_id, role_title)
        VALUES (?, ?, ?, 'delivery', 'active', ?, ?)`,
