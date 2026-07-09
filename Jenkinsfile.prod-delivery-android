@@ -4,7 +4,10 @@ pipeline {
   environment {
     ANDROID_HOME = '/home/ubuntu/android-sdk'
     JAVA_HOME    = '/usr/lib/jvm/java-21-openjdk-amd64'
-    PATH         = "${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0:${JAVA_HOME}/bin"
+    // Capacitor CLI requires Node >=22; the shared Jenkins agent's system Node is 20,
+    // so a scoped Node 22 install at /var/lib/jenkins/tools/node22 is prepended here —
+    // this does not touch the system Node used by other projects' pipelines.
+    PATH         = "/var/lib/jenkins/tools/node22/bin:${env.PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/34.0.0:${JAVA_HOME}/bin"
     IRONMAN_PROD_HOST = credentials('ironman_prod_host')
     KEYSTORE          = '/home/ubuntu/keystores/ironman-delivery.jks'
     KEY_ALIAS         = 'ironman-delivery'
