@@ -130,31 +130,11 @@ function OrderActions({ order, onAction, busyId }) {
   const { id, status } = order;
   const busy = busyId === id;
 
-  if (status === "ready_for_delivery") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <ActionBtn label={busy ? "Updating..." : "Picked from Vendor"} disabled={busy}
-          color="#10b981" onClick={() => onAction(id, "pick_from_vendor")} />
-        <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
-          Tap after collecting ironed clothes from the vendor shop
-        </p>
-      </div>
-    );
-  }
-
-  if (status === "picked_from_vendor") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <ActionBtn label={busy ? "Starting..." : "Start Ride to Customer"} disabled={busy}
-          color="#DC2626" onClick={() => onAction(id, "start_ride")} />
-        <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
-          Tap to begin the final delivery ride to the customer
-        </p>
-      </div>
-    );
-  }
-
-  if (status === "out_for_delivery") {
+  // ready_for_delivery / picked_from_vendor only linger for orders created
+  // before this simplification shipped — the server now skips straight to
+  // out_for_delivery, but any stale order still gets the same single
+  // "I've Reached" button (the parent chains the skipped steps under the hood).
+  if (status === "ready_for_delivery" || status === "picked_from_vendor" || status === "out_for_delivery") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <button
@@ -251,7 +231,7 @@ function useLocationShare(orderId) {
 function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
   const { sharing, start, stop } = useLocationShare(order.id);
 
-  const needOtp = order.status === "out_for_delivery";
+  const needOtp = ["ready_for_delivery", "picked_from_vendor", "out_for_delivery"].includes(order.status);
   const autoStartedRef = useRef(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -422,16 +402,31 @@ export default function ActiveDeliveryPage() {
     }
   }
 
-  function showOtpModal(orderId, type) {
-    // Trigger the "reached/end-ride" notification first (generates & sends OTP), then show input
-    const action = type === "pickup" ? "reach_pickup" : "end_ride";
+  async function showOtpModal(orderId, type) {
     setBusyId(orderId);
-    deliveryAction(orderId, action)
-      .catch(() => {})
-      .finally(() => {
-        setBusyId(null);
-        setOtpModal({ orderId, type });
-      });
+    try {
+      if (type === "pickup") {
+        await deliveryAction(orderId, "reach_pickup");
+      } else {
+        // Chain through any skipped legs for orders still stuck on an older
+        // status (created before the auto-advance change) — new orders land
+        // straight on out_for_delivery so this is normally a no-op.
+        const order = pickupJobs.find(j => j.id === orderId);
+        if (order?.status === "ready_for_delivery") {
+          await deliveryAction(orderId, "pick_from_vendor").catch(() => {});
+          await deliveryAction(orderId, "start_ride").catch(() => {});
+        } else if (order?.status === "picked_from_vendor") {
+          await deliveryAction(orderId, "start_ride").catch(() => {});
+        }
+        await deliveryAction(orderId, "end_ride");
+      }
+    } catch (_) {
+      // Surface nothing here — worst case the OTP hasn't been (re)generated
+      // and the user can retry; the modal still opens so they aren't stuck.
+    } finally {
+      setBusyId(null);
+      setOtpModal({ orderId, type });
+    }
   }
 
   async function handleOtpVerify(otp) {
