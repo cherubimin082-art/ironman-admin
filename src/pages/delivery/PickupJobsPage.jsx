@@ -449,11 +449,12 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
             style={{
               flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
               cursor: (busy || !ready) ? "not-allowed" : "pointer",
-              background: (busy || !ready) ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
+              background: (busy || !ready) ? "#e5e7eb" : "linear-gradient(135deg, #8B5CF6, #7C3AED)",
               color: (busy || !ready) ? "#9ca3af" : "#fff", fontSize: 13, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}
           >
-            {busy ? "Notifying customer…" : "I've Reached"}
+            {busy ? "Notifying customer…" : <>🚪 I've Reached</>}
           </button>
         </div>
         {!ready && (
