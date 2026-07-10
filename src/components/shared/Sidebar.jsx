@@ -142,12 +142,12 @@ const VENDOR_LINKS = [
 ];
 
 const DELIVERY_LINKS = [
-  { to: "/delivery/dashboard", label: "Dashboard", Icon: DashboardIcon },
-  { to: "/delivery/pickups",   label: "Pickups",   Icon: PickupIcon    },
-  { to: "/delivery/active",    label: "Deliveries",Icon: TruckIcon     },
+  { to: "/delivery/dashboard", label: "Dashboard", Icon: DashboardIcon, color: "#3B82F6" },
+  { to: "/delivery/pickups",   label: "Pickups",   Icon: PickupIcon,    color: "#F59E0B" },
+  { to: "/delivery/active",    label: "Deliveries",Icon: TruckIcon,     color: "#10B981" },
   // Temporarily hidden — uncomment to bring back.
-  // { to: "/delivery/completed", label: "Completed", Icon: CompletedIcon },
-  // { to: "/delivery/earnings",  label: "Earnings",  Icon: EarningsIcon  },
+  // { to: "/delivery/completed", label: "Completed", Icon: CompletedIcon, color: "#8B5CF6" },
+  // { to: "/delivery/earnings",  label: "Earnings",  Icon: EarningsIcon,  color: "#EC4899" },
 ];
 
 const SIDEBAR_BG = "#0D1B2A";
@@ -209,23 +209,30 @@ function BottomNav({ links }) {
       position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 200,
       background: SIDEBAR_BG,
       borderTop: "1px solid rgba(255,255,255,0.08)",
-      boxShadow: "0 -2px 16px rgba(0,0,0,0.25)",
+      boxShadow: "0 -4px 20px rgba(0,0,0,0.3)",
       display: "flex",
       paddingBottom: "env(safe-area-inset-bottom, 0px)",
     }}>
-      {links.map(({ to, label, Icon }) => (
+      {links.map(({ to, label, Icon, color = "#DC2626" }) => (
         <NavLink key={to} to={to} style={{ textDecoration: "none", flex: 1 }}>
           {({ isActive }) => (
             <div style={{
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: 3, padding: "9px 2px 7px",
+              gap: 6, padding: "14px 4px 12px",
             }}>
-              <span style={{ color: isActive ? "white" : "rgba(255,255,255,0.45)", display: "flex" }}>
-                <Icon />
+              <span style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 46, height: 46, borderRadius: 16,
+                background: isActive ? color : color + "26",
+                transition: "background 0.2s",
+              }}>
+                <span style={{ color: isActive ? "white" : color, display: "flex", transform: "scale(1.45)" }}>
+                  <Icon />
+                </span>
               </span>
               <span style={{
-                fontSize: 10, fontWeight: isActive ? 700 : 600,
-                color: isActive ? "white" : "rgba(255,255,255,0.45)",
+                fontSize: 13, fontWeight: isActive ? 800 : 700,
+                color: isActive ? color : "rgba(255,255,255,0.6)",
                 whiteSpace: "nowrap",
               }}>
                 {label}
