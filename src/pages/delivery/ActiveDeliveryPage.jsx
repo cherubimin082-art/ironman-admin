@@ -6,6 +6,10 @@ import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
 
 const ACTIVE_STATUSES = ["ready_for_delivery", "picked_from_vendor", "out_for_delivery", "delivery_rescheduled"];
+// ready_for_delivery / picked_from_vendor are now auto-skipped server-side the
+// moment ironing completes — orders land directly in out_for_delivery, so only
+// "I've Reached" remains. The two older statuses stay in ACTIVE_STATUSES only
+// as a safety net for any pre-existing order caught mid-transition.
 
 // ── OTP Modal ─────────────────────────────────────────────────
 function OtpModal({ title, hint, onVerify, onClose, loading }) {
@@ -153,8 +157,22 @@ function OrderActions({ order, onAction, busyId }) {
   if (status === "out_for_delivery") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <ActionBtn label={busy ? "Notifying..." : "End Ride — Send OTP"} disabled={busy}
-          color="#f97316" onClick={() => onAction(id, "end_ride")} />
+        <button
+          onClick={() => !busy && onAction(id, "end_ride")}
+          disabled={busy}
+          style={{
+            width: "100%", padding: "13px 0", border: "none", borderRadius: 10,
+            cursor: busy ? "not-allowed" : "pointer",
+            background: busy ? "#e5e7eb" : "linear-gradient(135deg, #F59E0B, #EA580C)",
+            color: busy ? "#9ca3af" : "#fff",
+            fontSize: 14, fontWeight: 800, letterSpacing: "0.02em",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            boxShadow: busy ? "none" : "0 4px 14px rgba(234,88,12,0.35)",
+          }}
+        >
+          <span style={{ fontSize: 22, lineHeight: 1 }}>🚪</span>
+          {busy ? "Notifying..." : "I've Reached"}
+        </button>
         <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
           Tap when you arrive at customer — sends them a delivery OTP
         </p>
@@ -464,7 +482,7 @@ export default function ActiveDeliveryPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 14, fontWeight: 800, color: "white", margin: "0 0 2px" }}>Ironing Complete!</p>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0, fontWeight: 500 }}>
-              Order #{deliveryAlert.orderId} — Pick up from vendor and deliver to customer
+              Order #{deliveryAlert.orderId} — deliver to customer now
             </p>
           </div>
           <button onClick={clearDeliveryAlert} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", padding: 4, flexShrink: 0, display: "flex" }}>
@@ -522,13 +540,9 @@ export default function ActiveDeliveryPage() {
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             {[
-              { label: "Ready", color: "#10b981" },
+              { label: "Ironing Complete", color: "#10b981" },
               { label: "→" },
-              { label: "Picked from Vendor", color: "#DC2626" },
-              { label: "→" },
-              { label: "Start Ride", color: "#f97316" },
-              { label: "→" },
-              { label: "End Ride", color: "#c2410c" },
+              { label: "I've Reached", color: "#EA580C" },
               { label: "→" },
               { label: "Delivery OTP", color: "#16a34a" },
             ].map((item, i) => (
