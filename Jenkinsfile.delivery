@@ -8,7 +8,7 @@ pipeline {
     APK_OUT_DIR  = '/var/www/ironman-downloads'
     KEYSTORE     = '/home/ubuntu/keystores/ironman-delivery.jks'
     KEY_ALIAS    = 'ironman-delivery'
-    KEY_PASSWORD = 'IronMan@2024'
+    KEY_PASSWORD = credentials('ironman_delivery_keystore_password')
   }
 
   stages {
@@ -56,19 +56,22 @@ pipeline {
       steps {
         sh '''
 python3 - << 'PYEOF'
+import os
+
 with open("android/app/build.gradle", "r") as f:
     content = f.read()
 
 if "signingConfigs" not in content:
-    signing = """
-    signingConfigs {
-        release {
+    key_password = os.environ["KEY_PASSWORD"]
+    signing = f"""
+    signingConfigs {{
+        release {{
             storeFile file('/home/ubuntu/keystores/ironman-delivery.jks')
-            storePassword 'IronMan@2024'
+            storePassword '{key_password}'
             keyAlias 'ironman-delivery'
-            keyPassword 'IronMan@2024'
-        }
-    }
+            keyPassword '{key_password}'
+        }}
+    }}
 """
     content = content.replace("    buildTypes {", signing + "    buildTypes {")
     content = content.replace(

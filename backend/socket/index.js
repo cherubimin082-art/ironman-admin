@@ -2,8 +2,10 @@ let _io = null;
 
 function init(httpServer) {
   const { Server } = require('socket.io');
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
   _io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: { origin: allowedOrigins.length ? allowedOrigins : '*', methods: ['GET', 'POST'] },
   });
 
   _io.on('connection', (socket) => {

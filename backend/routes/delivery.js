@@ -1,12 +1,24 @@
-const express = require("express");
-const http    = require("http");
-const https   = require("https");
-const pool    = require("../db");
+const express   = require("express");
+const http      = require("http");
+const https     = require("https");
+const rateLimit = require("express-rate-limit");
+const pool      = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
 
 const router = express.Router();
 const auth   = [verifyToken, requireRole("delivery")];
+
+// Caps OTP guesses per order so a 4-digit pickup/delivery OTP can't be brute-forced
+// by an authenticated agent (or anyone holding a leaked agent token).
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.params.orderId || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many OTP attempts. Please try again later." },
+});
 
 // ── WhatsApp OTP sender ─────────────────────────────────────
 function sendWhatsAppOtp(phone10digit, otp) {
@@ -300,7 +312,7 @@ router.put("/delivery/reached-for-pickup/:orderId", ...auth, async (req, res) =>
 
 // PUT /api/delivery/verify-pickup-otp/:orderId
 // Agent verifies OTP spoken by customer; marks order picked_up
-router.put("/delivery/verify-pickup-otp/:orderId", ...auth, async (req, res) => {
+router.put("/delivery/verify-pickup-otp/:orderId", ...auth, otpVerifyLimiter, async (req, res) => {
   const orderId = req.params.orderId;
   const agentId = req.user.id;
   const { otp }  = req.body;
@@ -555,7 +567,7 @@ router.get("/delivery/available-bags/:vendorId", ...auth, async (req, res) => {
 
 // PUT /api/delivery/confirm-pickup/:orderId
 // Body: { otp, bag_ids: [id, ...] } — verifies pickup OTP, assigns bags, marks order picked_up
-router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
+router.put("/delivery/confirm-pickup/:orderId", ...auth, otpVerifyLimiter, async (req, res) => {
   const orderId = req.params.orderId;
   const agentId = req.user.id;
   const { otp, bag_ids, latitude, longitude } = req.body;
@@ -648,7 +660,7 @@ router.put("/delivery/confirm-pickup/:orderId", ...auth, async (req, res) => {
 
 // PUT /api/delivery/verify-delivery-otp/:orderId
 // Agent verifies final OTP → delivered
-router.put("/delivery/verify-delivery-otp/:orderId", ...auth, async (req, res) => {
+router.put("/delivery/verify-delivery-otp/:orderId", ...auth, otpVerifyLimiter, async (req, res) => {
   const orderId = req.params.orderId;
   const agentId = req.user.id;
   const { otp, latitude, longitude } = req.body;
