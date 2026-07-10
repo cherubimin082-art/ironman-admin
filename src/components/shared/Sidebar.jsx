@@ -145,8 +145,9 @@ const DELIVERY_LINKS = [
   { to: "/delivery/dashboard", label: "Dashboard", Icon: DashboardIcon },
   { to: "/delivery/pickups",   label: "Pickups",   Icon: PickupIcon    },
   { to: "/delivery/active",    label: "Deliveries",Icon: TruckIcon     },
-  { to: "/delivery/completed", label: "Completed", Icon: CompletedIcon },
-  { to: "/delivery/earnings",  label: "Earnings",  Icon: EarningsIcon  },
+  // Temporarily hidden — uncomment to bring back.
+  // { to: "/delivery/completed", label: "Completed", Icon: CompletedIcon },
+  // { to: "/delivery/earnings",  label: "Earnings",  Icon: EarningsIcon  },
 ];
 
 const SIDEBAR_BG = "#0D1B2A";
