@@ -1140,16 +1140,24 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     await conn.query(
       `UPDATE order_bags SET ironing_status = 'completed' WHERE id = ?`, [bagId]
     );
-    await conn.query(
-      `UPDATE order_activity_log SET iron_complete_time = NOW()
-       WHERE ob_id = ? AND iron_complete_time IS NULL`, [bagId]
-    );
 
     const [[bagRow]] = await conn.query(
       `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
        FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]
     );
     bag = bagRow;
+
+    // Close out this bag's activity-log row. Also falls back to an order-level
+    // row (ob_id IS NULL) so a bag started via the center-head "start-ironing"
+    // flow still gets its complete time recorded when finished from the tablet —
+    // the two flows track the same work under different keys (ob_id vs order_id),
+    // so completion must recognize either.
+    await conn.query(
+      `UPDATE order_activity_log SET iron_complete_time = NOW()
+       WHERE iron_complete_time IS NULL AND (ob_id = ? OR (ob_id IS NULL AND order_id = ?))
+       ORDER BY id DESC LIMIT 1`,
+      [bagId, bag.order_id]
+    );
 
     // FOR UPDATE locks the rows so concurrent completions can't both see cnt=0
     const [[remaining]] = await conn.query(
