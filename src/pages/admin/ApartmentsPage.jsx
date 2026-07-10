@@ -28,6 +28,8 @@ const TIME_SLOTS = [
   "7:00 PM – 8:00 PM",
 ];
 
+const CUSTOM_OPTION = "__custom__";
+
 function Modal({ title, onClose, children, maxWidth = 440 }) {
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()} style={{
@@ -71,7 +73,51 @@ function Alert({ type, msg }) {
   );
 }
 
-function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit, vendors }) {
+function TimeSlotField({ label, required, value, onChange, isCustom, onToggleCustom }) {
+  return (
+    <div>
+      <label style={labelSt}>{label}</label>
+      {isCustom ? (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder="e.g. 9:15 AM – 10:15 AM"
+            style={inputSt}
+            onFocus={fo}
+            onBlur={fb}
+            required={required}
+          />
+          <button
+            type="button"
+            onClick={() => { onToggleCustom(false); onChange(""); }}
+            style={{ flexShrink: 0, background: "none", border: "none", color: "#B91C1C", fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+          >
+            Use list
+          </button>
+        </div>
+      ) : (
+        <select
+          value={TIME_SLOTS.includes(value) ? value : ""}
+          onChange={e => {
+            if (e.target.value === CUSTOM_OPTION) { onToggleCustom(true); onChange(""); }
+            else onChange(e.target.value);
+          }}
+          style={{ ...inputSt, cursor: "pointer" }}
+          onFocus={fo}
+          onBlur={fb}
+          required={required}
+        >
+          <option value="">— Select a time slot —</option>
+          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+          <option value={CUSTOM_OPTION}>+ Custom time…</option>
+        </select>
+      )}
+    </div>
+  );
+}
+
+function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit, vendors, customPickup, setCustomPickup, customDelivery, setCustomDelivery }) {
   return (
     <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div>
@@ -85,20 +131,21 @@ function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit, vendors 
           {vendors.map(v => <option key={v.id} value={String(v.id)}>{v.name}</option>)}
         </select>
       </div>
-      <div>
-        <label style={labelSt}>Pickup Time Slot *</label>
-        <select value={form.pickup_time} onChange={set("pickup_time")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb} required>
-          <option value="">— Select a time slot —</option>
-          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={labelSt}>Delivery Time Slot</label>
-        <select value={form.delivery_time} onChange={set("delivery_time")} style={{ ...inputSt, cursor: "pointer" }} onFocus={fo} onBlur={fb}>
-          <option value="">— Select a time slot —</option>
-          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      <TimeSlotField
+        label="Pickup Time Slot *"
+        required
+        value={form.pickup_time}
+        onChange={v => set("pickup_time")({ target: { value: v } })}
+        isCustom={customPickup}
+        onToggleCustom={setCustomPickup}
+      />
+      <TimeSlotField
+        label="Delivery Time Slot"
+        value={form.delivery_time}
+        onChange={v => set("delivery_time")({ target: { value: v } })}
+        isCustom={customDelivery}
+        onToggleCustom={setCustomDelivery}
+      />
       <Alert type="error" msg={formErr} />
       <Alert type="ok"    msg={formOk}  />
       <button type="submit" disabled={saving} style={{ padding: "11px 0", borderRadius: 10, border: "none", background: "#B91C1C", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
@@ -118,6 +165,8 @@ export default function ApartmentsPage() {
   const [formErr, setFormErr]       = useState("");
   const [formOk, setFormOk]         = useState("");
   const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "", vendor_id: "" });
+  const [customPickup, setCustomPickup]     = useState(false);
+  const [customDelivery, setCustomDelivery] = useState(false);
 
   const [loadErr, setLoadErr] = useState("");
 
@@ -143,11 +192,14 @@ export default function ApartmentsPage() {
 
   function openAdd() {
     setForm({ name: "", pickup_time: "", delivery_time: "", vendor_id: "" });
+    setCustomPickup(false); setCustomDelivery(false);
     setFormErr(""); setFormOk(""); setModal("add");
   }
   function openEdit(a) {
     setSelected(a);
     setForm({ name: a.name, pickup_time: a.pickup_time, delivery_time: a.delivery_time || "", vendor_id: a.vendor_id ? String(a.vendor_id) : "" });
+    setCustomPickup(!!a.pickup_time && !TIME_SLOTS.includes(a.pickup_time));
+    setCustomDelivery(!!a.delivery_time && !TIME_SLOTS.includes(a.delivery_time));
     setFormErr(""); setFormOk(""); setModal("edit");
   }
 
@@ -280,8 +332,8 @@ export default function ApartmentsPage() {
 
         {loading && <p style={{ color: "#9ca3af", fontSize: 14 }}>Loading…</p>}
 
-        {modal === "add"  && <Modal title="Add Apartment" onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleAdd} vendors={vendors} /></Modal>}
-        {modal === "edit" && selected && <Modal title={`Edit — ${selected.name}`} onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleEdit} vendors={vendors} /></Modal>}
+        {modal === "add"  && <Modal title="Add Apartment" onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleAdd} vendors={vendors} customPickup={customPickup} setCustomPickup={setCustomPickup} customDelivery={customDelivery} setCustomDelivery={setCustomDelivery} /></Modal>}
+        {modal === "edit" && selected && <Modal title={`Edit — ${selected.name}`} onClose={closeModal}><AptForm form={form} set={set} modal={modal} saving={saving} formErr={formErr} formOk={formOk} onSubmit={handleEdit} vendors={vendors} customPickup={customPickup} setCustomPickup={setCustomPickup} customDelivery={customDelivery} setCustomDelivery={setCustomDelivery} /></Modal>}
         {modal === "delete" && selected && (
           <Modal title="Delete Apartment?" onClose={closeModal} maxWidth={380}>
             <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 18 }}>
