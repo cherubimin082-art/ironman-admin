@@ -151,6 +151,8 @@ ENV
               echo cmVxdWlyZSgnL2hvbWUvdWJ1bnR1L2FwcHMvaXJvbm1hbi1hZG1pbi9iYWNrZW5kL25vZGVfbW9kdWxlcy9kb3RlbnYnKS5jb25maWcoeyBwYXRoOiAnL2hvbWUvdWJ1bnR1L2FwcHMvaXJvbm1hbi1hZG1pbi9iYWNrZW5kLy5lbnYnIH0pOwpjb25zdCBqd3QgPSByZXF1aXJlKCcvaG9tZS91YnVudHUvYXBwcy9pcm9ubWFuLWFkbWluL2JhY2tlbmQvbm9kZV9tb2R1bGVzL2pzb253ZWJ0b2tlbicpOwpjb25zdCBodHRwID0gcmVxdWlyZSgnaHR0cCcpOwoKY29uc3QgdG9rZW4gPSBqd3Quc2lnbih7IGlkOiAyNSwgbmFtZTogJ2RpYWcnLCBwaG9uZTogJzcwODA3MDE5ODInLCByb2xlOiAndmVuZG9yJywgdmVuZG9yX2lkOiBudWxsIH0sIHByb2Nlc3MuZW52LkpXVF9TRUNSRVQsIHsgZXhwaXJlc0luOiAnNW0nIH0pOwoKY29uc3QgcmVxID0gaHR0cC5yZXF1ZXN0KHsKICBob3N0bmFtZTogJ2xvY2FsaG9zdCcsIHBvcnQ6IDUwMDIsIHBhdGg6ICcvYXBpL3ZlbmRvci9jYXRlZ29yaWVzJywgbWV0aG9kOiAnR0VUJywKICBoZWFkZXJzOiB7ICdBdXRob3JpemF0aW9uJzogJ0JlYXJlciAnICsgdG9rZW4gfQp9LCAocmVzKSA9PiB7CiAgbGV0IGJvZHkgPSAnJzsKICByZXMub24oJ2RhdGEnLCBjID0+IGJvZHkgKz0gYyk7CiAgcmVzLm9uKCdlbmQnLCAoKSA9PiB7CiAgICBjb25zb2xlLmxvZygnSFRUUCBTVEFUVVM6JywgcmVzLnN0YXR1c0NvZGUpOwogICAgY29uc29sZS5sb2coJ0JPRFk6JywgYm9keSk7CiAgICBwcm9jZXNzLmV4aXQoMCk7CiAgfSk7Cn0pOwpyZXEub24oJ2Vycm9yJywgZSA9PiB7IGNvbnNvbGUuZXJyb3IoJ1JFUSBFUlJPUjonLCBlLm1lc3NhZ2UpOyBwcm9jZXNzLmV4aXQoMCk7IH0pOwpyZXEuZW5kKCk7Cg== | base64 -d > /tmp/prod_diag.js
               node /tmp/prod_diag.js
               rm -f /tmp/prod_diag.js
+              echo "=== pm2 error log tail (real error behind the 500) ==="
+              pm2 logs ironman-admin-api --err --lines 15 --nostream
             '
           """
         }
