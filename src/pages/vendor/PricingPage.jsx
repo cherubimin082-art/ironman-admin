@@ -589,7 +589,15 @@ export default function PricingPage() {
                               <div style={{ width: 36, height: 36, borderRadius: 9, background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                 {g.image_url
                                   ? <img src={g.image_url} alt={g.name} style={{ width: 24, height: 24, objectFit: "contain" }} />
-                                  : <span style={{ fontSize: 18 }}>{g.icon || "👗"}</span>}
+                                  : g.icon
+                                    ? <span style={{ fontSize: 18 }}>{g.icon}</span>
+                                    : (
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                                        <rect x="3" y="3" width="18" height="18" rx="3" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <path d="M21 15l-5-5L5 21" />
+                                      </svg>
+                                    )}
                               </div>
                               <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827" }}>{g.name}</span>
                             </div>
