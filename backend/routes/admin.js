@@ -316,7 +316,11 @@ router.put("/admin/vendors/:id/apartments", ...auth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/vendors/:id
+// DELETE /api/admin/vendors/:id — permanently wipes the vendor, their delivery
+// boys, and every order/catalogue row tied to either. Irreversible by design
+// (the caller explicitly wants a full purge, not a deactivate) — everything
+// runs in one transaction so a missed edge case rolls back cleanly instead of
+// leaving orphaned rows.
 router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
   const { id } = req.params;
 
@@ -325,27 +329,78 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
   );
   if (!vendor) return res.status(404).json({ message: "Vendor not found" });
 
-  const [[{ activeCount }]] = await pool.query(
-    `SELECT COUNT(*) AS activeCount FROM orders
-     WHERE vendor_id = ? AND status NOT IN ('delivered', 'cancelled')`, [id]
-  );
-  if (activeCount > 0)
-    return res.status(409).json({
-      message: `Cannot delete: vendor has ${activeCount} active order(s). Resolve or cancel them first.`,
-      activeCount,
-    });
-
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    await conn.query("DELETE FROM bags WHERE vendor_id = ?", [id]);
-    await conn.query("DELETE FROM apartment_slots WHERE vendor_id = ?", [id]);
+
+    const [staffRows] = await conn.query(
+      "SELECT id FROM users WHERE role = 'delivery' AND vendor_id = ?", [id]
+    );
+    const staffIds     = staffRows.map(r => r.id);
+    const allUserIds   = [Number(id), ...staffIds];
+    const uph          = allUserIds.map(() => "?").join(",");
+
+    // Every order touching this vendor, either as the ironing vendor or via
+    // one of their delivery boys.
+    const [orderRows] = await conn.query(
+      `SELECT id FROM orders WHERE vendor_id = ?` +
+      (staffIds.length ? ` OR delivery_agent_id IN (${staffIds.map(() => "?").join(",")})` : ""),
+      staffIds.length ? [id, ...staffIds] : [id]
+    );
+    const orderIds = orderRows.map(r => r.id);
+
+    if (orderIds.length) {
+      const oph = orderIds.map(() => "?").join(",");
+      // order_activity_log can key off ob_id (order_bags.id) as well as
+      // order_id directly, so it must go before order_bags is cleared.
+      await conn.query(`DELETE FROM order_activity_log   WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM order_bags            WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM order_items           WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM order_status_history   WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM delivery_assignments   WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM orders                 WHERE id IN (${oph})`, orderIds);
+    }
+
+    // Any history/assignment/log rows keyed by user id rather than order id
+    // (e.g. an assignment the vendor made on an order that belongs, as a
+    // record, to a different vendor).
+    await conn.query(`DELETE FROM order_status_history WHERE changed_by IN (${uph})`, allUserIds);
+    await conn.query(
+      `DELETE FROM delivery_assignments WHERE delivery_agent_id IN (${uph}) OR assigned_by IN (${uph})`,
+      [...allUserIds, ...allUserIds]
+    );
+    await conn.query(`DELETE FROM order_activity_log WHERE vendor_id = ?`, [id]);
+
+    // Vendor-owned catalogue/config
+    await conn.query(
+      `DELETE FROM pricing WHERE updated_by IN (${uph}) OR garment_id IN (SELECT id FROM garments WHERE vendor_id = ?)`,
+      [...allUserIds, id]
+    );
+    await conn.query("DELETE FROM garments        WHERE vendor_id = ?", [id]);
+    await conn.query("DELETE FROM categories       WHERE vendor_id = ?", [id]);
+    await conn.query("DELETE FROM order_bags       WHERE bag_id IN (SELECT id FROM bags WHERE vendor_id = ?)", [id]);
+    await conn.query("DELETE FROM bags             WHERE vendor_id = ?", [id]);
+    await conn.query("DELETE FROM apartment_slots  WHERE vendor_id = ?", [id]);
+    // staff (legacy/unused table) and ratings: best-effort, don't abort the
+    // whole purge if either table doesn't exist or has drifted.
+    await conn.query("DELETE FROM staff WHERE vendor_id = ?", [id]).catch(() => {});
+    await conn.query(
+      `DELETE FROM ratings WHERE vendor_id = ? OR delivery_agent_id IN (${uph})`,
+      [id, ...allUserIds]
+    ).catch(() => {});
+    // vendor_capacity / vendor_staff have ON DELETE CASCADE on vendor_id —
+    // removing the users row below clears them automatically.
+
+    if (staffIds.length) {
+      await conn.query(`DELETE FROM users WHERE id IN (${staffIds.map(() => "?").join(",")})`, staffIds);
+    }
     await conn.query("DELETE FROM users WHERE id = ? AND role = 'vendor'", [id]);
+
     await conn.commit();
   } catch (err) {
     await conn.rollback().catch(() => {});
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
+    console.error("admin/vendors DELETE error:", err);
+    return res.status(500).json({ message: "Server error", detail: err.message });
   } finally {
     conn.release();
   }

@@ -422,7 +422,8 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
           )}
         </div>
 
-        {/* Ride to Pickup — embedded map */}
+        {/* Ride to Pickup — embedded map (temporarily hidden) */}
+        {/*
         <button
           onClick={() => ready && onRide(job)}
           disabled={!ready}
@@ -439,21 +440,29 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
           </svg>
           Ride to Pickup
         </button>
+        */}
 
-        {/* Action row: Navigate (external) + I've Reached */}
+        {/* Action row: Navigate (temporarily hidden) + I've Reached */}
         <div style={{ display: "flex", gap: 8 }}>
-          <NavigateBtn job={job} compact />
+          {/* <NavigateBtn job={job} compact /> */}
           <button
             onClick={() => onReach(job)}
             disabled={busy || !ready}
             style={{
-              flex: 1, padding: "11px 0", border: "none", borderRadius: 10,
+              flex: 1, padding: "13px 0", border: "none", borderRadius: 12,
               cursor: (busy || !ready) ? "not-allowed" : "pointer",
-              background: (busy || !ready) ? "#e5e7eb" : "linear-gradient(135deg, #3b82f6, #DC2626)",
-              color: (busy || !ready) ? "#9ca3af" : "#fff", fontSize: 13, fontWeight: 700,
+              background: (busy || !ready) ? "#e5e7eb" : "linear-gradient(135deg, #F59E0B, #EA580C)",
+              color: (busy || !ready) ? "#9ca3af" : "#fff", fontSize: 14.5, fontWeight: 800,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+              boxShadow: (busy || !ready) ? "none" : "0 4px 14px rgba(234,88,12,0.35)",
             }}
           >
-            {busy ? "Notifying customer…" : "I've Reached"}
+            {busy ? "Notifying customer…" : (
+              <>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>🚪</span>
+                I've Reached
+              </>
+            )}
           </button>
         </div>
         {!ready && (
@@ -463,7 +472,7 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
         )}
         {ready && (
           <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", margin: 0 }}>
-            "Ride to Pickup" shows a live map · "I've Reached" when you arrive
+            Tap "I've Reached" when you arrive at the customer
           </p>
         )}
       </div>

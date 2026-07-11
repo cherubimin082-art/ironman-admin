@@ -2,6 +2,7 @@
 const express       = require("express");
 const http          = require("http");
 const cors          = require("cors");
+const crypto        = require("crypto");
 const path          = require("path");
 const fs            = require("fs");
 const pool          = require("./db");
@@ -18,7 +19,17 @@ const server = http.createServer(app);
 const uploadsDir = path.join(__dirname, "public", "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
-app.use(cors({ origin: "*" }));
+// If ALLOWED_ORIGINS isn't set (e.g. local/dev without it configured yet), fall back to
+// open CORS so existing deployments keep working until the env var is added.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",").map(s => s.trim()).filter(Boolean);
+
+app.use(cors(allowedOrigins.length ? {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
+  },
+} : { origin: "*" }));
 app.use(express.json());
 
 // Serve uploaded garment images publicly
@@ -33,9 +44,10 @@ app.use("/api", adminRoutes);
 
 // Internal bridge — customer backend (port 5001) POSTs here to reach vendor/admin via THIS socket.io instance
 app.post("/api/internal/notify", (req, res) => {
-  const secret = req.headers["x-internal-secret"];
-  if (!secret || secret !== process.env.INTERNAL_SECRET)
-    return res.status(403).json({ ok: false });
+  const expected = Buffer.from(process.env.INTERNAL_SECRET || "");
+  const given    = Buffer.from(String(req.headers["x-internal-secret"] || ""));
+  const valid    = expected.length > 0 && expected.length === given.length && crypto.timingSafeEqual(expected, given);
+  if (!valid) return res.status(403).json({ ok: false });
   const { room, event, payload } = req.body || {};
   if (!room || !event) return res.status(400).json({ ok: false });
   try {

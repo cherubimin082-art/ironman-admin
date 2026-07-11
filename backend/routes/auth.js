@@ -1,11 +1,38 @@
-const express  = require("express");
-const jwt      = require("jsonwebtoken");
-const https    = require("https");
-const bcrypt   = require("bcryptjs");
-const pool     = require("../db");
+const express   = require("express");
+const jwt       = require("jsonwebtoken");
+const https     = require("https");
+const bcrypt    = require("bcryptjs");
+const rateLimit = require("express-rate-limit");
+const pool      = require("../db");
 require("dotenv").config();
 
 const router = express.Router();
+
+// OTP request/verify: cap attempts per phone number so the 4-digit OTP can't be brute-forced.
+const otpRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => String(req.body?.phone || req.ip).replace(/\D/g, "") || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many OTP requests. Please try again later." },
+});
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => String(req.body?.phone || req.ip).replace(/\D/g, "") || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many attempts. Please try again later." },
+});
+const passwordLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => String(req.body?.phone || req.body?.email || req.ip).replace(/\s/g, "") || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many login attempts. Please try again later." },
+});
 
 // ── WhatsApp OTP sender ─────────────────────────────────────
 function sendWhatsAppOtp(phone10digit, otp) {
@@ -34,7 +61,7 @@ function makeJwt(user) {
 }
 
 // ── POST /api/request-otp ───────────────────────────────────
-router.post("/request-otp", async (req, res) => {
+router.post("/request-otp", otpRequestLimiter, async (req, res) => {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ message: "phone is required" });
 
@@ -64,7 +91,7 @@ router.post("/request-otp", async (req, res) => {
 });
 
 // ── POST /api/verify-otp ────────────────────────────────────
-router.post("/verify-otp", async (req, res) => {
+router.post("/verify-otp", otpVerifyLimiter, async (req, res) => {
   const { phone, otp } = req.body;
   if (!phone || !otp)
     return res.status(400).json({ message: "phone and otp are required" });
@@ -96,7 +123,7 @@ router.post("/verify-otp", async (req, res) => {
 });
 
 // ── POST /api/login  (password-based) ──────────────────────
-router.post("/login", async (req, res) => {
+router.post("/login", passwordLoginLimiter, async (req, res) => {
   const { phone, password } = req.body;
   if (!phone || !password)
     return res.status(400).json({ message: "phone and password are required" });
@@ -128,7 +155,7 @@ router.post("/login", async (req, res) => {
 });
 
 // ── POST /api/tablet-login (email + password for iron shop tablet) ───────────
-router.post("/tablet-login", async (req, res) => {
+router.post("/tablet-login", passwordLoginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ message: "email and password are required" });

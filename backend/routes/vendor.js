@@ -227,17 +227,23 @@ router.put("/accept-order/:id", ...auth, async (req, res) => {
     if (agents.length > 0) {
       agentId = agents[0].id;
 
-      // 4. Create delivery assignment
+      // 4. Create delivery assignment — pre-accepted, so the delivery boy
+      // never sees a manual "Accept Assignment" step for this order.
       await conn.query(
         `INSERT INTO delivery_assignments (order_id, delivery_agent_id, assigned_by, status)
-         VALUES (?, ?, ?, "assigned")`,
+         VALUES (?, ?, ?, "accepted")`,
         [orderId, agentId, vendorId]
       );
 
-      // 5. Update order with delivery_agent_id
+      // 5. Update order with delivery_agent_id and skip straight to
+      // delivery_assigned (the state PendingPickupCard / "I've Reached" reads).
       await conn.query(
-        `UPDATE orders SET delivery_agent_id = ? WHERE id = ?`,
+        `UPDATE orders SET delivery_agent_id = ?, status = "delivery_assigned" WHERE id = ?`,
         [agentId, orderId]
+      );
+      await conn.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "delivery_assigned", ?)`,
+        [orderId, vendorId]
       );
     }
 
@@ -251,20 +257,29 @@ router.put("/accept-order/:id", ...auth, async (req, res) => {
     // Emit to all relevant parties
     try {
       const io = getIO();
+      const finalStatus = agentId ? "delivery_assigned" : "vendor_accepted";
       emitToCustomer(customerId, "order_status_update", {
-        orderId, status: "vendor_accepted"
+        orderId, status: finalStatus
       });
       io.to("admin_room").emit("order_status_update", {
-        orderId, status: "vendor_accepted", vendorId
+        orderId, status: finalStatus, vendorId
       });
       if (agentId) {
+        const [agentRows] = await pool.query(`SELECT name, phone FROM users WHERE id = ?`, [agentId]);
+        const agent = agentRows[0] || {};
         io.to("delivery_" + agentId).emit("new_delivery_order", {
-          orderId, message: "New order assigned to you"
+          orderId, message: "New order ready for pickup"
+        });
+        emitToCustomer(customerId, "delivery_accepted", {
+          orderId,
+          agentName:  agent.name  || "Delivery Agent",
+          agentPhone: agent.phone || "",
+          status: "delivery_assigned",
         });
       }
     } catch (_) {}
 
-    res.json({ message: "Order accepted", orderId, status: "vendor_accepted", agentId });
+    res.json({ message: "Order accepted", orderId, status: agentId ? "delivery_assigned" : "vendor_accepted", agentId });
   } catch (err) {
     await conn.rollback();
     console.error(err);
@@ -367,8 +382,11 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
   const orderId  = req.params.id;
   const vendorId = req.user.id;
   try {
+    // Skip straight to out_for_delivery — the delivery boy no longer taps
+    // "Picked from Vendor" / "Start Ride" as separate steps; ironing complete
+    // itself starts the delivery leg and only "I've Reached" remains.
     const [result] = await pool.query(
-      `UPDATE orders SET status = "ready_for_delivery"
+      `UPDATE orders SET status = "out_for_delivery"
         WHERE id = ? AND vendor_id = ? AND status IN ("at_vendor", "ironing_in_progress")`,
       [orderId, vendorId]
     );
@@ -392,6 +410,14 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
         `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ready_for_delivery", ?)`,
         [orderId, vendorId]
       );
+      await pool.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "picked_from_vendor", ?)`,
+        [orderId, vendorId]
+      );
+      await pool.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "out_for_delivery", ?)`,
+        [orderId, vendorId]
+      );
     } catch (_) {}
 
     // Log iron complete time
@@ -408,22 +434,29 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
     );
     const { customer_id, delivery_agent_id } = rows[0];
 
+    if (delivery_agent_id) {
+      await pool.query(
+        `UPDATE delivery_assignments SET status = "out_for_delivery" WHERE order_id = ?`,
+        [orderId]
+      );
+    }
+
     try {
       const io = getIO();
       emitToCustomer(customer_id, "order_status_update", {
-        orderId, status: "ready_for_delivery"
+        orderId, status: "out_for_delivery"
       });
       io.to("admin_room").emit("order_status_update", {
-        orderId, status: "ready_for_delivery"
+        orderId, status: "out_for_delivery"
       });
       if (delivery_agent_id) {
         io.to("delivery_" + delivery_agent_id).emit("order_ready_for_delivery", {
-          orderId, message: "Ironing complete — pick up from vendor and deliver to customer"
+          orderId, message: "Ironing complete — deliver to customer now"
         });
       }
     } catch (_) {}
 
-    res.json({ message: "Marked ready for delivery", orderId, status: "ready_for_delivery" });
+    res.json({ message: "Marked ready for delivery", orderId, status: "out_for_delivery" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -805,7 +838,8 @@ router.get("/vendor/staff", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, phone AS mobile_number, role_title, status, created_at
-         FROM users WHERE role = 'delivery' AND vendor_id = ? ORDER BY created_at DESC`,
+         FROM users WHERE role = 'delivery' AND vendor_id = ? AND status != 'inactive'
+         ORDER BY created_at DESC`,
       [vendorId]
     );
     res.json({ staff: rows });
@@ -879,12 +913,18 @@ router.put("/vendor/staff/:id", ...auth, async (req, res) => {
 });
 
 // DELETE /api/vendor/staff/:id — remove delivery boy (vendor can only delete their own)
+// Soft-delete (deactivate) rather than hard DELETE: users.id is FK-referenced by
+// orders.delivery_agent_id, delivery_assignments.delivery_agent_id, and
+// order_status_history.changed_by, so any delivery boy who has ever handled a
+// real order would fail a hard delete with a FK constraint violation. Marking
+// them inactive also removes them from the auto-assign pool (accept-order only
+// picks u.status = "active" agents).
 router.delete("/vendor/staff/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id }   = req.params;
   try {
     const [result] = await pool.query(
-      `DELETE FROM users WHERE id = ? AND vendor_id = ? AND role = 'delivery'`,
+      `UPDATE users SET status = 'inactive' WHERE id = ? AND vendor_id = ? AND role = 'delivery' AND status != 'inactive'`,
       [id, vendorId]
     );
     if (!result.affectedRows)
@@ -1127,16 +1167,24 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     await conn.query(
       `UPDATE order_bags SET ironing_status = 'completed' WHERE id = ?`, [bagId]
     );
-    await conn.query(
-      `UPDATE order_activity_log SET iron_complete_time = NOW()
-       WHERE ob_id = ? AND iron_complete_time IS NULL`, [bagId]
-    );
 
     const [[bagRow]] = await conn.query(
       `SELECT ob.order_id, o.customer_id, o.delivery_agent_id
        FROM order_bags ob JOIN orders o ON o.id = ob.order_id WHERE ob.id = ?`, [bagId]
     );
     bag = bagRow;
+
+    // Close out this bag's activity-log row. Also falls back to an order-level
+    // row (ob_id IS NULL) so a bag started via the center-head "start-ironing"
+    // flow still gets its complete time recorded when finished from the tablet —
+    // the two flows track the same work under different keys (ob_id vs order_id),
+    // so completion must recognize either.
+    await conn.query(
+      `UPDATE order_activity_log SET iron_complete_time = NOW()
+       WHERE iron_complete_time IS NULL AND (ob_id = ? OR (ob_id IS NULL AND order_id = ?))
+       ORDER BY id DESC LIMIT 1`,
+      [bagId, bag.order_id]
+    );
 
     // FOR UPDATE locks the rows so concurrent completions can't both see cnt=0
     const [[remaining]] = await conn.query(
@@ -1146,14 +1194,37 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     );
 
     if (remaining.cnt === 0) {
+      // Skip straight to out_for_delivery — no manual "Picked from Vendor" /
+      // "Start Ride" steps; only "I've Reached" remains for the delivery boy.
+      // Guard on the actual pre-delivery statuses (not just "!= out_for_delivery")
+      // so a late/duplicate bag-complete call can't resurrect an order that has
+      // already moved past this point (delivered, cancelled, etc).
       await conn.query(
-        `UPDATE orders SET status = 'ready_for_delivery'
-         WHERE id = ? AND status != 'ready_for_delivery'`, [bag.order_id]
+        `UPDATE orders SET status = 'out_for_delivery'
+         WHERE id = ? AND status IN ('at_vendor', 'ironing_in_progress', 'in_progress')`, [bag.order_id]
       );
       await conn.query(
         `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
         [bag.order_id]
       );
+      await conn.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "ready_for_delivery", ?)`,
+        [bag.order_id, vendorId]
+      );
+      await conn.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "picked_from_vendor", ?)`,
+        [bag.order_id, vendorId]
+      );
+      await conn.query(
+        `INSERT INTO order_status_history (order_id, status, changed_by) VALUES (?, "out_for_delivery", ?)`,
+        [bag.order_id, vendorId]
+      );
+      if (bag.delivery_agent_id) {
+        await conn.query(
+          `UPDATE delivery_assignments SET status = "out_for_delivery" WHERE order_id = ?`,
+          [bag.order_id]
+        );
+      }
       orderReady = true;
     }
 
@@ -1169,13 +1240,13 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
   try {
     const io = getIO();
     if (orderReady) {
-      emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
-      io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
-      io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id, status: "ready_for_delivery" });
+      emitToCustomer(bag.customer_id, "order_status_update", { orderId: bag.order_id, status: "out_for_delivery" });
+      io.to("admin_room").emit("order_status_update", { orderId: bag.order_id, status: "out_for_delivery" });
+      io.to(`vendor_${vendorId}`).emit("order_status_update", { orderId: bag.order_id, status: "out_for_delivery" });
       io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: true });
       if (bag.delivery_agent_id) {
         io.to(`delivery_${bag.delivery_agent_id}`).emit("order_ready_for_delivery", {
-          orderId: bag.order_id, message: "Ironing complete — pick up from shop"
+          orderId: bag.order_id, message: "Ironing complete — deliver to customer now"
         });
       }
     } else {
