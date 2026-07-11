@@ -3,14 +3,6 @@ import Layout from "../../components/shared/Layout";
 import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
 
-const APARTMENTS = [
-  "Green Valley Apartments",
-  "Sunrise Residency",
-  "Lake View Towers",
-  "Palm Grove Apartments",
-  "Maple Heights",
-];
-
 const TIME_SLOTS = {
   Morning: [
     "7:00 AM - 8:00 AM",
@@ -77,6 +69,7 @@ function parseItems(raw) {
 const fmtDate = d => d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
 export default function ApartmentManagementPage() {
+  const [apartments, setApartments]   = useState([]);    // real apartments assigned to this vendor
   const [selectedApt, setSelectedApt] = useState("");
   const [savedSlots, setSavedSlots]   = useState({});    // { [apartment]: { pickup_time, delivery_time } }
   const [pickupTime, setPickupTime]   = useState("");
@@ -90,8 +83,11 @@ export default function ApartmentManagementPage() {
   const [ordersErr, setOrdersErr]     = useState("");
   const { isMobile } = useWindowSize();
 
-  // Fetch all saved slot configs for this vendor on mount
+  // Fetch the apartments actually assigned to this vendor, and all saved slot configs
   useEffect(() => {
+    api.get("/vendor/my-apartments")
+      .then(({ data }) => setApartments((data.apartments || []).map(a => a.name)))
+      .catch(() => setSaveErr("Failed to load apartments. Please refresh the page."));
     api.get("/vendor/apartment-slots")
       .then(({ data }) => {
         const map = {};
@@ -196,7 +192,7 @@ export default function ApartmentManagementPage() {
               style={selectStyle(!!selectedApt)}
             >
               <option value="" disabled>Choose an apartment…</option>
-              {APARTMENTS.map(apt => (
+              {apartments.map(apt => (
                 <option key={apt} value={apt}>{apt}</option>
               ))}
             </select>
@@ -205,11 +201,16 @@ export default function ApartmentManagementPage() {
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
+          {apartments.length === 0 && !saveErr && (
+            <p style={{ fontSize: 12, color: "#9ca3af", margin: "10px 0 0" }}>
+              No apartments assigned to you yet — contact admin to get one assigned.
+            </p>
+          )}
 
           {/* Saved indicator dots */}
           {selectedApt && (
             <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {APARTMENTS.map(apt => {
+              {apartments.map(apt => {
                 const isSaved = !!savedSlots[apt];
                 const isSelected = apt === selectedApt;
                 return (

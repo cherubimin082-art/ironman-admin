@@ -480,6 +480,26 @@ router.put("/vendor/apartment-slot", ...auth, async (req, res) => {
   }
 });
 
+// GET /api/vendor/my-apartments — real apartments assigned to this vendor by admin
+// (used by the Apartment Management page's dropdown instead of any hardcoded list)
+router.get("/vendor/my-apartments", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT a.id, a.name
+         FROM apartment_slots s
+         JOIN apartments a ON a.name = s.apartment
+        WHERE s.vendor_id = ?
+        ORDER BY a.name ASC`,
+      [vendorId]
+    );
+    res.json({ apartments: rows });
+  } catch (err) {
+    console.error("vendor/my-apartments GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /api/vendor/apartment-slots — list all apartment slot configs for this vendor
 router.get("/vendor/apartment-slots", ...auth, async (req, res) => {
   const vendorId = req.user.id;
