@@ -29,11 +29,14 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
   return (
     <div style={{
       position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
-      zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+      zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center",
+      padding: "16px", paddingTop: "calc(48px + env(safe-area-inset-top, 0px))",
+      overflowY: "auto",
     }}>
       <div style={{
         background: "#fff", borderRadius: 20, padding: "32px 28px",
         width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
+        maxHeight: "calc(100vh - 96px)", overflowY: "auto",
       }}>
         <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 20, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>
           {title}
@@ -462,7 +465,7 @@ export default function ActiveDeliveryPage() {
     <Layout>
       {deliveryAlert && (
         <div style={{
-          position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)",
+          position: "fixed", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)",
           zIndex: 1100, width: "calc(100% - 32px)", maxWidth: 480,
           background: "#065f46", borderRadius: 16,
           boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
