@@ -98,6 +98,16 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
   );
 }
 
+// Only worth showing when it differs from pickup_date (apartment has a >0 day offset) —
+// same-day apartments already deliver the same day they're picked up.
+function deliveryDateLabel(order) {
+  if (!order.delivery_date || order.delivery_date === order.pickup_date) return null;
+  const s = String(order.delivery_date).slice(0, 10);
+  const dt = new Date(s + "T00:00:00");
+  if (isNaN(dt)) return null;
+  return dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
 // ── Navigate helper ───────────────────────────────────────────
 function mapsUrl(order) {
   if (order.customer_latitude && order.customer_longitude) {
@@ -343,6 +353,16 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
             </p>
           </div>
         </div>
+
+        {/* Delivery date — only shown for apartments with a delivery-day offset */}
+        {deliveryDateLabel(order) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "8px 13px" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1d4ed8" }}>Deliver by {deliveryDateLabel(order)}</span>
+          </div>
+        )}
 
         {/* Bag number(s) */}
         {(order.bag_numbers || order.bag_number) && (
