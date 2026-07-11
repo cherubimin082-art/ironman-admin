@@ -1169,9 +1169,12 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
     if (remaining.cnt === 0) {
       // Skip straight to out_for_delivery — no manual "Picked from Vendor" /
       // "Start Ride" steps; only "I've Reached" remains for the delivery boy.
+      // Guard on the actual pre-delivery statuses (not just "!= out_for_delivery")
+      // so a late/duplicate bag-complete call can't resurrect an order that has
+      // already moved past this point (delivered, cancelled, etc).
       await conn.query(
         `UPDATE orders SET status = 'out_for_delivery'
-         WHERE id = ? AND status != 'out_for_delivery'`, [bag.order_id]
+         WHERE id = ? AND status IN ('at_vendor', 'ironing_in_progress', 'in_progress')`, [bag.order_id]
       );
       await conn.query(
         `UPDATE bags b JOIN order_bags ob ON ob.bag_id = b.id SET b.status = 'available' WHERE ob.order_id = ?`,
