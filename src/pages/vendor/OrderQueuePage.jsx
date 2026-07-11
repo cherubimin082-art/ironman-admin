@@ -1,8 +1,9 @@
 ﻿import Layout from "../../components/shared/Layout";
 import OrderCard from "../../components/vendor/OrderCard";
 import { useOrders } from "../../context/OrderContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWindowSize } from "../../hooks/useWindowSize";
+import api from "../../services/api";
 
 const FILTERS = [
   { key: "all",         label: "All Orders",  color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
@@ -17,15 +18,6 @@ const IN_PROGRESS_STATUSES = new Set([
   "vendor_accepted", "delivery_assigned", "picked_up",
   "at_vendor", "ironing_in_progress", "in_progress",
 ]);
-
-const APARTMENTS = [
-  "All",
-  "Green Valley Apartments",
-  "Sunrise Residency",
-  "Lake View Towers",
-  "Palm Grove Apartments",
-  "Maple Heights",
-];
 
 function FilterTab({ item, count, isActive, onClick }) {
   return (
@@ -61,7 +53,14 @@ export default function OrderQueuePage() {
   const { orders, vendorAction } = useOrders();
   const [filter, setFilter] = useState("all");
   const [apt, setApt]       = useState("All");
+  const [apartments, setApartments] = useState([]); // real apartments assigned to this vendor
   const { isMobile, isTablet } = useWindowSize();
+
+  useEffect(() => {
+    api.get("/vendor/my-apartments")
+      .then(({ data }) => setApartments((data.apartments || []).map(a => a.name)))
+      .catch(() => {});
+  }, []);
 
   const byApt    = apt === "All" ? orders : orders.filter(o => o.apartment === apt);
   const matchFilter = (o) => {
@@ -132,8 +131,9 @@ export default function OrderQueuePage() {
               minWidth: 220,
             }}
           >
-            {APARTMENTS.map(a => (
-              <option key={a} value={a}>{a === "All" ? "All Apartments" : a}</option>
+            <option value="All">All Apartments</option>
+            {apartments.map(a => (
+              <option key={a} value={a}>{a}</option>
             ))}
           </select>
           {apt !== "All" && (

@@ -2,14 +2,6 @@
 import Layout from "../../components/shared/Layout";
 import api from "../../services/api";
 
-const APARTMENTS = [
-  "Green Valley Apartments",
-  "Sunrise Residency",
-  "Lake View Towers",
-  "Palm Grove Apartments",
-  "Maple Heights",
-];
-
 const labelSt = {
   fontSize: 11, fontWeight: 700, color: "#6b7280",
   textTransform: "uppercase", letterSpacing: "0.08em",
@@ -96,6 +88,7 @@ function ConfirmModal({ apartment, onConfirm, onCancel, saving }) {
 }
 
 export default function CapacityPage() {
+  const [apartments, setApartments]   = useState([]); // real apartments assigned to this vendor
   const [capacities, setCapacities]   = useState({});  // { apartment: max_orders_per_day }
   const [selectedApt, setSelectedApt] = useState("");
   const [limitInput, setLimitInput]   = useState("");   // string from <input>
@@ -108,8 +101,12 @@ export default function CapacityPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loadingApt, setLoadingApt]   = useState(false);
 
-  // Load all capacity settings on mount (for overview chips)
+  // Load real assigned apartments + capacity settings on mount (for overview chips)
   const loadAll = useCallback(async () => {
+    try {
+      const { data } = await api.get("/vendor/my-apartments");
+      setApartments((data.apartments || []).map(a => a.name));
+    } catch (_) {}
     try {
       const { data } = await api.get("/vendor/capacity");
       const map = {};
@@ -229,7 +226,7 @@ export default function CapacityPage() {
             </div>
             <div>
               <p style={{ fontFamily: "'Outfit',sans-serif", fontSize: 26, fontWeight: 800, color: "#374151", margin: 0, lineHeight: 1 }}>
-                {APARTMENTS.length - limitedCount}
+                {apartments.length - limitedCount}
               </p>
               <p style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", margin: "3px 0 0" }}>Unlimited</p>
             </div>
@@ -242,7 +239,7 @@ export default function CapacityPage() {
           <div style={{ position: "relative", maxWidth: 440 }}>
             <select value={selectedApt} onChange={e => handleAptChange(e.target.value)} style={selectSt(!!selectedApt)}>
               <option value="" disabled>Choose an apartment…</option>
-              {APARTMENTS.map(apt => (
+              {apartments.map(apt => (
                 <option key={apt} value={apt}>{apt}</option>
               ))}
             </select>
@@ -252,7 +249,7 @@ export default function CapacityPage() {
           {/* Quick-jump chips */}
           {selectedApt && (
             <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {APARTMENTS.map(apt => {
+              {apartments.map(apt => {
                 const hasLimit = capacities[apt] !== undefined;
                 const isSel    = apt === selectedApt;
                 return (
@@ -398,7 +395,7 @@ export default function CapacityPage() {
                 </tr>
               </thead>
               <tbody>
-                {APARTMENTS.filter(apt => capacities[apt] !== undefined).map((apt, idx, arr) => (
+                {apartments.filter(apt => capacities[apt] !== undefined).map((apt, idx, arr) => (
                   <tr key={apt}
                     style={{ borderBottom: idx < arr.length - 1 ? "1px solid #f9fafb" : "none" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
