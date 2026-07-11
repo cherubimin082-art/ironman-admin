@@ -728,17 +728,28 @@ router.delete("/admin/customers/:id", ...auth, async (req, res) => {
 async function ensureApartmentsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS apartments (
-      id            INT AUTO_INCREMENT PRIMARY KEY,
-      name          VARCHAR(255) NOT NULL UNIQUE,
-      pickup_time   VARCHAR(100) NOT NULL,
-      delivery_time VARCHAR(100) NULL,
-      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id                  INT AUTO_INCREMENT PRIMARY KEY,
+      name                VARCHAR(255) NOT NULL UNIQUE,
+      pickup_time         VARCHAR(100) NOT NULL,
+      delivery_time       VARCHAR(100) NULL,
+      delivery_day_offset INT NOT NULL DEFAULT 0,
+      created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  // add delivery_time if missing (existing installs)
+  // add columns if missing (existing installs)
   await pool.query(`
     ALTER TABLE apartments ADD COLUMN IF NOT EXISTS delivery_time VARCHAR(100) NULL
   `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE apartments ADD COLUMN IF NOT EXISTS delivery_day_offset INT NOT NULL DEFAULT 0
+  `).catch(() => {});
+}
+
+// Clamp to a sane 0-6 day range so a typo can't schedule a delivery months out.
+function clampDeliveryDayOffset(value) {
+  const n = parseInt(value, 10);
+  if (!Number.isInteger(n)) return 0;
+  return Math.min(6, Math.max(0, n));
 }
 
 // GET /api/admin/apartments-list
@@ -763,14 +774,14 @@ router.get("/admin/apartments-list", ...auth, async (req, res) => {
 
 // POST /api/admin/apartments-list
 router.post("/admin/apartments-list", ...auth, async (req, res) => {
-  const { name, pickup_time, delivery_time, vendor_id } = req.body;
+  const { name, pickup_time, delivery_time, vendor_id, delivery_day_offset } = req.body;
   if (!name?.trim() || !pickup_time?.trim())
     return res.status(400).json({ message: "Apartment name and pickup time are required" });
   try {
     await ensureApartmentsTable();
     const [result] = await pool.query(
-      "INSERT INTO apartments (name, pickup_time, delivery_time) VALUES (?, ?, ?)",
-      [name.trim(), pickup_time.trim(), delivery_time?.trim() || null]
+      "INSERT INTO apartments (name, pickup_time, delivery_time, delivery_day_offset) VALUES (?, ?, ?, ?)",
+      [name.trim(), pickup_time.trim(), delivery_time?.trim() || null, clampDeliveryDayOffset(delivery_day_offset)]
     );
 
     if (vendor_id) {
@@ -793,14 +804,14 @@ router.post("/admin/apartments-list", ...auth, async (req, res) => {
 // PUT /api/admin/apartments-list/:id
 router.put("/admin/apartments-list/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { name, pickup_time, delivery_time, vendor_id } = req.body;
+  const { name, pickup_time, delivery_time, vendor_id, delivery_day_offset } = req.body;
   if (!name?.trim() || !pickup_time?.trim())
     return res.status(400).json({ message: "Apartment name and pickup time are required" });
   try {
     await ensureApartmentsTable();
     const [result] = await pool.query(
-      "UPDATE apartments SET name = ?, pickup_time = ?, delivery_time = ? WHERE id = ?",
-      [name.trim(), pickup_time.trim(), delivery_time?.trim() || null, id]
+      "UPDATE apartments SET name = ?, pickup_time = ?, delivery_time = ?, delivery_day_offset = ? WHERE id = ?",
+      [name.trim(), pickup_time.trim(), delivery_time?.trim() || null, clampDeliveryDayOffset(delivery_day_offset), id]
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Apartment not found" });
