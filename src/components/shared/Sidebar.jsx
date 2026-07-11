@@ -110,6 +110,13 @@ const ActivityLogIcon = () => (
   </svg>
 );
 
+const TabletIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <line x1="12" y1="18" x2="12" y2="18.01" />
+  </svg>
+);
+
 // ── Nav configs per role ──────────────────────────────────────
 const ADMIN_LINKS = [
   { to: "/admin/dashboard",     label: "Dashboard",    Icon: DashboardIcon    },
@@ -117,17 +124,11 @@ const ADMIN_LINKS = [
   { to: "/admin/customers",     label: "Customers",    Icon: CustomersIcon    },
   { to: "/admin/vendors",       label: "Center Heads", Icon: IronsHeadIcon    },
   { to: "/admin/delivery",      label: "Delivery Boys",Icon: DeliveryBoyIcon  },
+  { to: "/admin/iron-boys",     label: "Iron Boys",    Icon: TabletIcon       },
   { to: "/admin/apartments",    label: "Apartments",   Icon: ApartmentIcon    },
   { to: "/admin/activity-log",  label: "Iron Log",     Icon: ActivityLogIcon  },
   { to: "/admin/analytics",     label: "Settings",     Icon: SettingsIcon     },
 ];
-
-const TabletIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-    <rect x="4" y="2" width="16" height="20" rx="2" />
-    <line x1="12" y1="18" x2="12" y2="18.01" />
-  </svg>
-);
 
 const VENDOR_LINKS = [
   { to: "/vendor/dashboard",  label: "Dashboard",   Icon: DashboardIcon  },

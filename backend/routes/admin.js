@@ -1119,4 +1119,102 @@ router.get("/admin/activity-log", ...auth, async (req, res) => {
   }
 });
 
+// ── IRON BOY CRUD ──────────────────────────────────────────────
+// Replaces the old shared-tablet (email+password) login: each iron boy gets
+// their own account and logs in with phone + OTP via the existing
+// /request-otp and /verify-otp routes (already generic for any non-customer
+// role), then lands on the same start-iron/complete-iron bag screen the
+// tablet used, scoped to whichever vendor shop admin assigns them to here.
+
+// GET /api/admin/iron-boys
+router.get("/admin/iron-boys", ...auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.name, u.phone, u.status, u.vendor_id, u.created_at,
+              v.name AS vendor_name
+         FROM users u
+         LEFT JOIN users v ON v.id = u.vendor_id AND v.role = 'vendor'
+        WHERE u.role = 'iron_boy' AND u.status != 'inactive'
+        ORDER BY u.created_at DESC`
+    );
+    res.json({ iron_boys: rows });
+  } catch (err) {
+    console.error("admin/iron-boys GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/admin/iron-boys
+router.post("/admin/iron-boys", ...auth, async (req, res) => {
+  const { name, phone, vendor_id } = req.body;
+  if (!name?.trim() || !phone?.trim() || !vendor_id)
+    return res.status(400).json({ message: "Name, mobile number, and vendor are required" });
+  const cleanPhone = String(phone).replace(/\D/g, "");
+  if (cleanPhone.length !== 10)
+    return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
+  try {
+    const [[existing]] = await pool.query("SELECT id FROM users WHERE phone = ?", [cleanPhone]);
+    if (existing) return res.status(409).json({ message: "Mobile number already registered" });
+
+    const [[vendor]] = await pool.query("SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]);
+    if (!vendor) return res.status(400).json({ message: "Invalid vendor selected" });
+
+    const [result] = await pool.query(
+      `INSERT INTO users (name, phone, role, status, vendor_id) VALUES (?, ?, 'iron_boy', 'active', ?)`,
+      [name.trim(), cleanPhone, vendor_id]
+    );
+    res.status(201).json({ message: "Iron boy added", id: result.insertId });
+  } catch (err) {
+    console.error("admin/iron-boys POST error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/iron-boys/:id
+router.put("/admin/iron-boys/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, vendor_id } = req.body;
+  if (!name?.trim() || !phone?.trim() || !vendor_id)
+    return res.status(400).json({ message: "Name, mobile number, and vendor are required" });
+  const cleanPhone = String(phone).replace(/\D/g, "");
+  if (cleanPhone.length !== 10)
+    return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
+  try {
+    const [[dup]] = await pool.query("SELECT id FROM users WHERE phone = ? AND id != ?", [cleanPhone, id]);
+    if (dup) return res.status(409).json({ message: "Mobile number already in use" });
+
+    const [[vendor]] = await pool.query("SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]);
+    if (!vendor) return res.status(400).json({ message: "Invalid vendor selected" });
+
+    const [result] = await pool.query(
+      `UPDATE users SET name = ?, phone = ?, vendor_id = ? WHERE id = ? AND role = 'iron_boy'`,
+      [name.trim(), cleanPhone, vendor_id, id]
+    );
+    if (!result.affectedRows) return res.status(404).json({ message: "Iron boy not found" });
+    res.json({ message: "Iron boy updated" });
+  } catch (err) {
+    console.error("admin/iron-boys PUT error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/admin/iron-boys/:id — soft-delete (deactivate), matching the
+// delivery-boy pattern: preserves order_activity_log history, drops them
+// out of any assignment, avoids the FK-crash class of bug hard-delete hit
+// for staff who've already done real work.
+router.delete("/admin/iron-boys/:id", ...auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query(
+      `UPDATE users SET status = 'inactive' WHERE id = ? AND role = 'iron_boy' AND status != 'inactive'`,
+      [id]
+    );
+    if (!result.affectedRows) return res.status(404).json({ message: "Iron boy not found" });
+    res.json({ message: "Iron boy removed" });
+  } catch (err) {
+    console.error("admin/iron-boys DELETE error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

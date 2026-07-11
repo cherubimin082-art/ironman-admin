@@ -52,7 +52,7 @@ function emitToCustomer(customerId, event, payload) {
 
 const router     = express.Router();
 const auth       = [verifyToken, requireRole("vendor")];
-const tabletAuth = [verifyToken, requireRole("vendor", "tablet")];
+const tabletAuth = [verifyToken, requireRole("vendor", "tablet", "iron_boy")];
 
 // GET /api/vendor/completed-orders — all delivered orders for this vendor
 router.get("/vendor/completed-orders", ...auth, async (req, res) => {

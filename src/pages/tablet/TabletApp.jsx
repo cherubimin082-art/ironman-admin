@@ -14,22 +14,42 @@ function tabletApi(token) {
 }
 
 // ── Login Screen ─────────────────────────────────────────────
+// Phone + WhatsApp OTP — same two-step flow as delivery/vendor staff login,
+// replacing the old shared email+password tablet account. /request-otp and
+// /verify-otp already work for any non-customer role, so no new backend
+// login endpoint was needed for this.
 function LoginScreen({ onLogin }) {
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
+  const [step,     setStep]     = useState("phone"); // "phone" | "otp"
+  const [phone,    setPhone]    = useState("");
+  const [otp,      setOtp]      = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
-  const [showPass, setShowPass] = useState(false);
 
-  const submit = async (e) => {
+  const requestOtp = async (e) => {
     e.preventDefault();
     setError("");
+    if (phone.length !== 10) { setError("Enter a valid 10-digit mobile number"); return; }
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API_BASE}/tablet-login`, { email: email.trim(), password });
+      await axios.post(`${API_BASE}/request-otp`, { phone });
+      setStep("otp");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (otp.length !== 4) { setError("Enter the 4-digit OTP"); return; }
+    setLoading(true);
+    try {
+      const { data } = await axios.post(`${API_BASE}/verify-otp`, { phone, otp });
       onLogin(data.token, data.user);
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || "Incorrect OTP. Try again.");
     } finally {
       setLoading(false);
     }
@@ -45,90 +65,104 @@ function LoginScreen({ onLogin }) {
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <img src="/logo.png" alt="logo" style={{ height: 56, objectFit: "contain", marginBottom: 20, display: "block", margin: "0 auto 20px" }} />
           <h1 style={{ fontSize: 28, fontWeight: 900, color: "white", margin: "0 0 6px", fontFamily: "'Outfit', sans-serif" }}>
-            Iron Shop Tablet
+            Iron Boy
           </h1>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>Sign in to start ironing</p>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+            {step === "phone" ? "Sign in with your mobile number" : `OTP sent to ${phone} via WhatsApp`}
+          </p>
         </div>
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="example@ironman.com"
-              required
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.05)", color: "white", fontSize: 15,
-                outline: "none", boxSizing: "border-box",
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-              Password
-            </label>
-            <div style={{ position: "relative" }}>
+        {step === "phone" ? (
+          <form onSubmit={requestOtp} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                Mobile Number
+              </label>
               <input
-                type={showPass ? "text" : "password"}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="10-digit mobile number"
+                autoFocus
                 required
                 style={{
-                  width: "100%", padding: "14px 48px 14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
+                  width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
                   background: "rgba(255,255,255,0.05)", color: "white", fontSize: 15,
+                  outline: "none", boxSizing: "border-box", letterSpacing: "0.05em",
+                }}
+              />
+            </div>
+
+            {error && (
+              <div style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 10, padding: "12px 16px", color: "#FCA5A5", fontSize: 14, fontWeight: 600 }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%", padding: 16, borderRadius: 12, border: "none",
+                background: loading ? "rgba(185,28,28,0.5)" : "linear-gradient(135deg,#B91C1C,#DC2626)",
+                color: "white", fontSize: 16, fontWeight: 800, cursor: loading ? "wait" : "pointer",
+                boxShadow: "0 6px 20px rgba(185,28,28,0.35)", marginTop: 4,
+              }}
+            >
+              {loading ? "Sending OTP..." : "Send OTP →"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={verifyOtp} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                4-Digit OTP
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="••••"
+                autoFocus
+                required
+                style={{
+                  width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.05)", color: "white", fontSize: 22, fontWeight: 800,
+                  letterSpacing: "0.5em", textAlign: "center",
                   outline: "none", boxSizing: "border-box",
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPass(v => !v)}
-                style={{
-                  position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", cursor: "pointer", padding: 4,
-                  color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center",
-                }}
-              >
-                {showPass ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                    <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </button>
             </div>
-          </div>
 
-          {error && (
-            <div style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 10, padding: "12px 16px", color: "#FCA5A5", fontSize: 14, fontWeight: 600 }}>
-              {error}
-            </div>
-          )}
+            {error && (
+              <div style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 10, padding: "12px 16px", color: "#FCA5A5", fontSize: 14, fontWeight: 600 }}>
+                {error}
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%", padding: 16, borderRadius: 12, border: "none",
-              background: loading ? "rgba(185,28,28,0.5)" : "linear-gradient(135deg,#B91C1C,#DC2626)",
-              color: "white", fontSize: 16, fontWeight: 800, cursor: loading ? "wait" : "pointer",
-              boxShadow: "0 6px 20px rgba(185,28,28,0.35)", marginTop: 4,
-            }}
-          >
-            {loading ? "Signing in..." : "Sign In →"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%", padding: 16, borderRadius: 12, border: "none",
+                background: loading ? "rgba(185,28,28,0.5)" : "linear-gradient(135deg,#B91C1C,#DC2626)",
+                color: "white", fontSize: 16, fontWeight: 800, cursor: loading ? "wait" : "pointer",
+                boxShadow: "0 6px 20px rgba(185,28,28,0.35)", marginTop: 4,
+              }}
+            >
+              {loading ? "Verifying..." : "Verify & Sign In →"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStep("phone"); setOtp(""); setError(""); }}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 4 }}
+            >
+              ← Use a different number
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
@@ -385,7 +419,7 @@ export default function TabletApp() {
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <img src="/logo.png" alt="logo" style={{ height: 48, width: "auto", objectFit: "contain" }} />
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 3px" }}>Iron Shop Tablet</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 3px" }}>Iron Boy</p>
               <h1 style={{ fontSize: 26, fontWeight: 900, color: "white", margin: 0, fontFamily: "'Outfit', sans-serif" }}>Ironing Queue</h1>
             </div>
           </div>

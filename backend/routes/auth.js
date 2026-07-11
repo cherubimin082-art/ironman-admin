@@ -56,7 +56,7 @@ function sendWhatsAppOtp(phone10digit, otp) {
 }
 
 function makeJwt(user) {
-  const payload = { id: user.id, name: user.name, phone: user.phone, role: user.role };
+  const payload = { id: user.id, name: user.name, phone: user.phone, role: user.role, vendor_id: user.vendor_id ?? null };
   return { token: jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "12h" }), user: payload };
 }
 
@@ -100,7 +100,7 @@ router.post("/verify-otp", otpVerifyLimiter, async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, name, phone, role, otp FROM users WHERE phone = ? AND role != ?",
+      "SELECT id, name, phone, role, vendor_id, otp FROM users WHERE phone = ? AND role != ?",
       [cleanPhone, "customer"]
     );
     if (!rows.length)
@@ -132,7 +132,7 @@ router.post("/login", passwordLoginLimiter, async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, name, phone, role, password_hash FROM users WHERE phone = ? AND role != ?",
+      "SELECT id, name, phone, role, vendor_id, password_hash FROM users WHERE phone = ? AND role != ?",
       [cleanPhone, "customer"]
     );
     if (!rows.length)
