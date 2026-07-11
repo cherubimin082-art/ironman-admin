@@ -685,11 +685,38 @@ async function ensureCategoriesVendorScoped() {
   }
 }
 
+// Same problem, sibling table: garments predates vendor_id/category_id/icon/
+// image_url/is_active (the original schema only had the legacy `category`
+// ENUM column) - these were hand-added on dev but never captured in a
+// migration, so an environment that never got the same hand-patch 500s with
+// "Unknown column" the moment any of these are referenced (confirmed live on
+// production: "Unknown column 'g.vendor_id' in 'on clause'").
+async function ensureGarmentsSchema() {
+  const [cols] = await pool.query(
+    `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'garments'`
+  );
+  const have = new Set(cols.map(c => c.COLUMN_NAME));
+  const wanted = [
+    ['vendor_id',   'INT NULL'],
+    ['category_id', 'INT NULL'],
+    ['icon',        'VARCHAR(10) NULL'],
+    ['image_url',   'VARCHAR(500) NULL'],
+    ['is_active',   'TINYINT(1) NOT NULL DEFAULT 1'],
+  ];
+  for (const [name, definition] of wanted) {
+    if (!have.has(name)) {
+      await pool.query(`ALTER TABLE garments ADD COLUMN ${name} ${definition}`);
+    }
+  }
+}
+
 // GET /api/vendor/categories
 router.get("/vendor/categories", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   try {
     await ensureCategoriesVendorScoped();
+    await ensureGarmentsSchema();
     const [rows] = await pool.query(
       `SELECT c.id, c.name, c.created_at,
               SUM(g.is_active = 1) AS garment_count
@@ -754,6 +781,7 @@ router.delete("/vendor/categories/:id", ...auth, async (req, res) => {
   const { id } = req.params;
   try {
     await ensureCategoriesVendorScoped();
+    await ensureGarmentsSchema();
     const [[{ garmentCount }]] = await pool.query(
       "SELECT COUNT(*) AS garmentCount FROM garments WHERE category_id = ? AND vendor_id = ?", [id, vendorId]
     );
@@ -776,6 +804,7 @@ router.delete("/vendor/categories/:id", ...auth, async (req, res) => {
 router.get("/vendor/garments", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   try {
+    await ensureGarmentsSchema();
     const { category_id } = req.query;
     const where = category_id
       ? "WHERE g.is_active = 1 AND g.vendor_id = ? AND g.category_id = ?"
@@ -808,6 +837,7 @@ router.post("/vendor/garments", ...auth, async (req, res) => {
     return res.status(400).json({ message: "Price must be a positive number" });
   try {
     await ensureCategoriesVendorScoped();
+    await ensureGarmentsSchema();
     const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ? AND vendor_id = ?", [category_id, vendorId]);
     if (!cat) return res.status(404).json({ message: "Category not found" });
     const [result] = await pool.query(
@@ -833,6 +863,7 @@ router.put("/vendor/garments/:id", ...auth, async (req, res) => {
     return res.status(400).json({ message: "Price must be a positive number" });
   try {
     await ensureCategoriesVendorScoped();
+    await ensureGarmentsSchema();
     const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ? AND vendor_id = ?", [category_id, vendorId]);
     if (!cat) return res.status(404).json({ message: "Category not found" });
     const [result] = await pool.query(
@@ -853,6 +884,7 @@ router.delete("/vendor/garments/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id } = req.params;
   try {
+    await ensureGarmentsSchema();
     const [result] = await pool.query("UPDATE garments SET is_active = 0 WHERE id = ? AND vendor_id = ?", [id, vendorId]);
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Garment not found" });

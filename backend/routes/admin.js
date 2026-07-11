@@ -422,6 +422,10 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
     await conn.query(`DELETE FROM order_activity_log WHERE vendor_id = ?`, [id]);
 
     // Vendor-owned catalogue/config
+    // garments.vendor_id may not exist on environments that never got the
+    // manual schema patch vendor.js's ensureGarmentsSchema() applies - add
+    // it here too so this cascading delete doesn't 500 on those envs.
+    await addColumnIfMissing("garments", "vendor_id", "INT NULL");
     await conn.query(
       `DELETE FROM pricing WHERE updated_by IN (${uph}) OR garment_id IN (SELECT id FROM garments WHERE vendor_id = ?)`,
       [...allUserIds, id]
