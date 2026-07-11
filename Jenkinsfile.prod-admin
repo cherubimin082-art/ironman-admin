@@ -131,6 +131,33 @@ ENV
       }
     }
 
+    // Read-only diagnostics: category-add works but the new row isn't
+    // showing up on reload for the vendor who created it. Print the process
+    // list (rule out a stale process winning the port, same class of bug
+    // the customer app hit earlier) and the actual categories rows so we
+    // can see what's really in the production DB without separate SSH
+    // access. Base64-encoded to avoid nested quote-escaping across
+    // Groovy/shell/ssh/node - pure SELECTs, nothing here writes to the DB.
+    stage('Diagnostics (read-only)') {
+      steps {
+        sshagent(credentials: ['ironman_prod_ssh_key']) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@${IRONMAN_PROD_HOST} '
+              echo "=== pm2 list ==="
+              pm2 list
+              echo "=== pm2 describe ironman-admin-api ==="
+              pm2 describe ironman-admin-api | grep -E "script path|exec cwd|status|pid|restarts" || true
+              echo "=== categories + recent vendors ==="
+              cd /home/ubuntu/apps/ironman-admin/backend
+              echo cmVxdWlyZSgnZG90ZW52JykuY29uZmlnKCk7CmNvbnN0IHBvb2wgPSByZXF1aXJlKCcuL2RiJyk7Cihhc3luYyAoKSA9PiB7CiAgY29uc3QgW2NhdHNdID0gYXdhaXQgcG9vbC5xdWVyeSgnU0VMRUNUIGlkLCB2ZW5kb3JfaWQsIG5hbWUsIGNyZWF0ZWRfYXQgRlJPTSBjYXRlZ29yaWVzIE9SREVSIEJZIGlkIERFU0MgTElNSVQgMTUnKTsKICBjb25zb2xlLmxvZygnPT09IHJlY2VudCBjYXRlZ29yaWVzID09PScpOwogIGNvbnNvbGUubG9nKEpTT04uc3RyaW5naWZ5KGNhdHMsIG51bGwsIDIpKTsKICBjb25zdCBbdmVuZG9yc10gPSBhd2FpdCBwb29sLnF1ZXJ5KCJTRUxFQ1QgaWQsIG5hbWUsIHBob25lIEZST00gdXNlcnMgV0hFUkUgcm9sZSA9ICd2ZW5kb3InIE9SREVSIEJZIGlkIERFU0MgTElNSVQgMTAiKTsKICBjb25zb2xlLmxvZygnPT09IHJlY2VudCB2ZW5kb3JzID09PScpOwogIGNvbnNvbGUubG9nKEpTT04uc3RyaW5naWZ5KHZlbmRvcnMsIG51bGwsIDIpKTsKICBwcm9jZXNzLmV4aXQoMCk7Cn0pKCkuY2F0Y2goZSA9PiB7IGNvbnNvbGUuZXJyb3IoJ0RJQUcgRVJST1I6JywgZS5tZXNzYWdlKTsgcHJvY2Vzcy5leGl0KDApOyB9KTsK | base64 -d > /tmp/prod_diag.js
+              node /tmp/prod_diag.js
+              rm -f /tmp/prod_diag.js
+            '
+          """
+        }
+      }
+    }
+
   }
 
   post {
