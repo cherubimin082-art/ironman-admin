@@ -225,7 +225,7 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
 
   try {
     const [[existing]] = await pool.query(
-      "SELECT id FROM users WHERE phone = ?", [phone]
+      "SELECT id FROM users WHERE phone = ? AND status != 'inactive'", [phone]
     );
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
@@ -279,7 +279,7 @@ router.put("/admin/vendors/:id", ...auth, async (req, res) => {
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
 
     const [[dup]] = await pool.query(
-      "SELECT id FROM users WHERE phone = ? AND id != ?", [phone, id]
+      "SELECT id FROM users WHERE phone = ? AND id != ? AND status != 'inactive'", [phone, id]
     );
     if (dup) return res.status(409).json({ message: "Mobile number already in use by another account" });
 
@@ -537,7 +537,7 @@ router.post("/admin/delivery-boys", ...auth, async (req, res) => {
 
   try {
     const [[existing]] = await pool.query(
-      "SELECT id FROM users WHERE phone = ?", [phone]
+      "SELECT id FROM users WHERE phone = ? AND status != 'inactive'", [phone]
     );
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
@@ -578,7 +578,7 @@ router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
     if (!person) return res.status(404).json({ message: "Delivery boy not found" });
 
     const [[dup]] = await pool.query(
-      "SELECT id FROM users WHERE phone = ? AND id != ?", [phone, id]
+      "SELECT id FROM users WHERE phone = ? AND id != ? AND status != 'inactive'", [phone, id]
     );
     if (dup) return res.status(409).json({ message: "Mobile number already in use" });
 
@@ -693,7 +693,9 @@ router.post("/admin/customers", ...auth, async (req, res) => {
   if (!name || !phone || !password)
     return res.status(400).json({ message: "Name, phone and password are required" });
   try {
-    const [[existing]] = await pool.query("SELECT id FROM users WHERE phone = ?", [phone]);
+    const [[existing]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND (status IS NULL OR status != 'inactive')", [phone]
+    );
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
     const hash = await bcrypt.hash(password, 10);
@@ -717,7 +719,7 @@ router.put("/admin/customers/:id", ...auth, async (req, res) => {
     return res.status(400).json({ message: "Name and phone are required" });
   try {
     const [[dup]] = await pool.query(
-      "SELECT id FROM users WHERE phone = ? AND id != ?", [phone, id]
+      "SELECT id FROM users WHERE phone = ? AND id != ? AND (status IS NULL OR status != 'inactive')", [phone, id]
     );
     if (dup) return res.status(409).json({ message: "Mobile number already in use" });
     await pool.query(
@@ -1184,7 +1186,9 @@ router.post("/admin/iron-boys", ...auth, async (req, res) => {
   if (cleanPhone.length !== 10)
     return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
   try {
-    const [[existing]] = await pool.query("SELECT id FROM users WHERE phone = ?", [cleanPhone]);
+    const [[existing]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND status != 'inactive'", [cleanPhone]
+    );
     if (existing) return res.status(409).json({ message: "Mobile number already registered" });
 
     const [[vendor]] = await pool.query("SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]);
@@ -1211,7 +1215,9 @@ router.put("/admin/iron-boys/:id", ...auth, async (req, res) => {
   if (cleanPhone.length !== 10)
     return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
   try {
-    const [[dup]] = await pool.query("SELECT id FROM users WHERE phone = ? AND id != ?", [cleanPhone, id]);
+    const [[dup]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND id != ? AND status != 'inactive'", [cleanPhone, id]
+    );
     if (dup) return res.status(409).json({ message: "Mobile number already in use" });
 
     const [[vendor]] = await pool.query("SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]);
