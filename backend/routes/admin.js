@@ -133,8 +133,9 @@ router.put("/assign-delivery/:orderId", ...auth, async (req, res) => {
 // GET /api/vendors
 router.get("/vendors", ...auth, async (req, res) => {
   try {
+    await ensureVendorLeaveColumn();
     const [rows] = await pool.query(
-      `SELECT u.id, u.name, u.phone, u.zone, u.status, u.rating,
+      `SELECT u.id, u.name, u.phone, u.zone, u.status, u.rating, u.full_day_leave,
               COUNT(o.id) AS total_orders
          FROM users u
          LEFT JOIN orders o ON o.vendor_id = u.id
@@ -143,6 +144,29 @@ router.get("/vendors", ...auth, async (req, res) => {
     );
     res.json({ vendors: rows });
   } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/admin/vendors/:id/leave-day — weekly full-day shop closure (e.g. "Sunday").
+// Customers can't select that weekday for pickup, and delivery dates computed from
+// an apartment's day offset skip forward past it - see customer repo scheduling.js.
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+router.put("/admin/vendors/:id/leave-day", ...auth, async (req, res) => {
+  const { id } = req.params;
+  const { full_day_leave } = req.body;
+  if (full_day_leave && !WEEKDAYS.includes(full_day_leave))
+    return res.status(400).json({ message: "Invalid day" });
+  try {
+    await ensureVendorLeaveColumn();
+    const [result] = await pool.query(
+      "UPDATE users SET full_day_leave = ? WHERE id = ? AND role = 'vendor'",
+      [full_day_leave || null, id]
+    );
+    if (!result.affectedRows) return res.status(404).json({ message: "Vendor not found" });
+    res.json({ message: "Leave day updated" });
+  } catch (err) {
+    console.error("vendors leave-day PUT error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -753,6 +777,10 @@ async function ensureApartmentsTable() {
   // add columns if missing (existing installs)
   await addColumnIfMissing("apartments", "delivery_time", "VARCHAR(100) NULL");
   await addColumnIfMissing("apartments", "delivery_day_offset", "INT NOT NULL DEFAULT 0");
+}
+
+async function ensureVendorLeaveColumn() {
+  await addColumnIfMissing("users", "full_day_leave", "VARCHAR(20) NULL");
 }
 
 // Clamp to a sane 0-6 day range so a typo can't schedule a delivery months out.

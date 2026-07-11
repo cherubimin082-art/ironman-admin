@@ -29,6 +29,7 @@ import CustomerManagementPage from "./pages/admin/CustomerManagementPage";
 import ApartmentsPage from "./pages/admin/ApartmentsPage";
 import DeliveryManagementPage from "./pages/admin/DeliveryManagementPage";
 import IronBoysPage from "./pages/admin/IronBoysPage";
+import LeaveManagementPage from "./pages/admin/LeaveManagementPage";
 import AnalyticsPage from "./pages/admin/AnalyticsPage";
 import ActivityLogPage from "./pages/admin/ActivityLogPage";
 
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="/admin/apartments" element={<RoleRoute allowedRole="admin"><ApartmentsPage /></RoleRoute>} />
             <Route path="/admin/delivery"  element={<RoleRoute allowedRole="admin"><DeliveryManagementPage /></RoleRoute>} />
             <Route path="/admin/iron-boys" element={<RoleRoute allowedRole="admin"><IronBoysPage /></RoleRoute>} />
+            <Route path="/admin/leave"     element={<RoleRoute allowedRole="admin"><LeaveManagementPage /></RoleRoute>} />
             <Route path="/admin/analytics"     element={<RoleRoute allowedRole="admin"><AnalyticsPage /></RoleRoute>} />
             <Route path="/admin/activity-log" element={<RoleRoute allowedRole="admin"><ActivityLogPage /></RoleRoute>} />
 
