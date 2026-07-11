@@ -231,32 +231,58 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
       return res.status(409).json({ message: "Mobile number already registered" });
 
     const hash = password ? await bcrypt.hash(password, 10) : null;
-    const [result] = await pool.query(
-      `INSERT INTO users (name, phone, password_hash, role, zone, address, status)
-       VALUES (?, ?, ?, 'vendor', ?, ?, 'active')`,
-      [name, phone, hash, zone || null, address || null]
+
+    // "Delete" elsewhere in this file soft-deletes (status='inactive') to
+    // preserve order history, but users.phone still has a hard UNIQUE
+    // constraint at the DB level - a fresh INSERT with the same phone as a
+    // deactivated account fails with ER_DUP_ENTRY even though the check
+    // above correctly let the request through. Revive that row instead of
+    // inserting a new one so the number can actually be reused.
+    const [[inactiveRow]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND status = 'inactive'", [phone]
     );
-    const vendorId = result.insertId;
-
-    const bagValues = Array.from({ length: numBags }, (_, i) => [vendorId, i + 1, "available"]);
-    await pool.query("INSERT INTO bags (vendor_id, bag_number, status) VALUES ?", [bagValues]);
-
-    // Assign apartments if provided
-    const apts = Array.isArray(apartment_names) ? apartment_names.filter(Boolean) : [];
-    if (apts.length > 0) {
-      const ph = apts.map(() => "?").join(",");
-      const [aptRows] = await pool.query(
-        `SELECT name, pickup_time, delivery_time FROM apartments WHERE name IN (${ph})`, apts
+    let vendorId;
+    if (inactiveRow) {
+      await pool.query(
+        `UPDATE users SET name = ?, password_hash = ?, role = 'vendor', zone = ?, address = ?, status = 'active'
+          WHERE id = ?`,
+        [name, hash, zone || null, address || null, inactiveRow.id]
       );
-      if (aptRows.length > 0) {
-        await pool.query(
-          "INSERT INTO apartment_slots (vendor_id, apartment, pickup_time, delivery_time) VALUES ?",
-          [aptRows.map(a => [vendorId, a.name, a.pickup_time, a.delivery_time || ""])]
+      vendorId = inactiveRow.id;
+    } else {
+      const [result] = await pool.query(
+        `INSERT INTO users (name, phone, password_hash, role, zone, address, status)
+         VALUES (?, ?, ?, 'vendor', ?, ?, 'active')`,
+        [name, phone, hash, zone || null, address || null]
+      );
+      vendorId = result.insertId;
+    }
+
+    // A revived vendor already has their old bags/apartment_slots rows
+    // (deactivating never deleted them) - only create fresh ones for a
+    // genuinely new row, so reviving doesn't double up their bag count.
+    let bagsCreated = 0;
+    if (!inactiveRow) {
+      const bagValues = Array.from({ length: numBags }, (_, i) => [vendorId, i + 1, "available"]);
+      await pool.query("INSERT INTO bags (vendor_id, bag_number, status) VALUES ?", [bagValues]);
+      bagsCreated = numBags;
+
+      const apts = Array.isArray(apartment_names) ? apartment_names.filter(Boolean) : [];
+      if (apts.length > 0) {
+        const ph = apts.map(() => "?").join(",");
+        const [aptRows] = await pool.query(
+          `SELECT name, pickup_time, delivery_time FROM apartments WHERE name IN (${ph})`, apts
         );
+        if (aptRows.length > 0) {
+          await pool.query(
+            "INSERT INTO apartment_slots (vendor_id, apartment, pickup_time, delivery_time) VALUES ?",
+            [aptRows.map(a => [vendorId, a.name, a.pickup_time, a.delivery_time || ""])]
+          );
+        }
       }
     }
 
-    res.status(201).json({ message: "Vendor created successfully", vendorId, bagsCreated: numBags });
+    res.status(201).json({ message: "Vendor created successfully", vendorId, bagsCreated });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -553,12 +579,30 @@ router.post("/admin/delivery-boys", ...auth, async (req, res) => {
       return res.status(400).json({ message: "Invalid Center Head selected" });
 
     const hash = password ? await bcrypt.hash(password, 10) : null;
-    const [result] = await pool.query(
-      `INSERT INTO users (name, phone, password_hash, role, status, vendor_id)
-       VALUES (?, ?, ?, 'delivery', 'active', ?)`,
-      [name, phone, hash, vendor_id]
+
+    // Revive a soft-deleted row with this phone instead of inserting a new
+    // one - users.phone has a hard UNIQUE constraint that a fresh INSERT
+    // would collide with even though "deleted" here only means inactive.
+    const [[inactiveRow]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND status = 'inactive'", [phone]
     );
-    res.status(201).json({ message: "Delivery boy created successfully", id: result.insertId });
+    let id;
+    if (inactiveRow) {
+      await pool.query(
+        `UPDATE users SET name = ?, password_hash = ?, role = 'delivery', status = 'active', vendor_id = ?
+          WHERE id = ?`,
+        [name, hash, vendor_id, inactiveRow.id]
+      );
+      id = inactiveRow.id;
+    } else {
+      const [result] = await pool.query(
+        `INSERT INTO users (name, phone, password_hash, role, status, vendor_id)
+         VALUES (?, ?, ?, 'delivery', 'active', ?)`,
+        [name, phone, hash, vendor_id]
+      );
+      id = result.insertId;
+    }
+    res.status(201).json({ message: "Delivery boy created successfully", id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -703,12 +747,30 @@ router.post("/admin/customers", ...auth, async (req, res) => {
     if (existing)
       return res.status(409).json({ message: "Mobile number already registered" });
     const hash = await bcrypt.hash(password, 10);
-    const [result] = await pool.query(
-      `INSERT INTO users (name, phone, password_hash, role, apartment, address)
-       VALUES (?, ?, ?, 'customer', ?, ?)`,
-      [name, phone, hash, apartment || null, address || null]
+
+    // Revive a soft-deleted row with this phone instead of inserting a new
+    // one - users.phone has a hard UNIQUE constraint that a fresh INSERT
+    // would collide with even though "deleted" here only means inactive.
+    const [[inactiveRow]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND status = 'inactive'", [phone]
     );
-    res.status(201).json({ message: "Customer created", id: result.insertId });
+    let id;
+    if (inactiveRow) {
+      await pool.query(
+        `UPDATE users SET name = ?, password_hash = ?, role = 'customer', apartment = ?, address = ?, status = NULL
+          WHERE id = ?`,
+        [name, hash, apartment || null, address || null, inactiveRow.id]
+      );
+      id = inactiveRow.id;
+    } else {
+      const [result] = await pool.query(
+        `INSERT INTO users (name, phone, password_hash, role, apartment, address)
+         VALUES (?, ?, ?, 'customer', ?, ?)`,
+        [name, phone, hash, apartment || null, address || null]
+      );
+      id = result.insertId;
+    }
+    res.status(201).json({ message: "Customer created", id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -1218,11 +1280,28 @@ router.post("/admin/iron-boys", ...auth, async (req, res) => {
     if (!vendor) return res.status(400).json({ message: "Invalid vendor selected" });
 
     await ensureIronBoyRole();
-    const [result] = await pool.query(
-      `INSERT INTO users (name, phone, role, status, vendor_id) VALUES (?, ?, 'iron_boy', 'active', ?)`,
-      [name.trim(), cleanPhone, vendor_id]
+
+    // Revive a soft-deleted row with this phone instead of inserting a new
+    // one - users.phone has a hard UNIQUE constraint that a fresh INSERT
+    // would collide with even though "deleted" here only means inactive.
+    const [[inactiveRow]] = await pool.query(
+      "SELECT id FROM users WHERE phone = ? AND status = 'inactive'", [cleanPhone]
     );
-    res.status(201).json({ message: "Iron boy added", id: result.insertId });
+    let id;
+    if (inactiveRow) {
+      await pool.query(
+        `UPDATE users SET name = ?, role = 'iron_boy', status = 'active', vendor_id = ? WHERE id = ?`,
+        [name.trim(), vendor_id, inactiveRow.id]
+      );
+      id = inactiveRow.id;
+    } else {
+      const [result] = await pool.query(
+        `INSERT INTO users (name, phone, role, status, vendor_id) VALUES (?, ?, 'iron_boy', 'active', ?)`,
+        [name.trim(), cleanPhone, vendor_id]
+      );
+      id = result.insertId;
+    }
+    res.status(201).json({ message: "Iron boy added", id });
   } catch (err) {
     console.error("admin/iron-boys POST error:", err);
     res.status(500).json({ message: "Server error" });
