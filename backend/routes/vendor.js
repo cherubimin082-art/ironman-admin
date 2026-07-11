@@ -818,7 +818,8 @@ router.get("/vendor/staff", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, phone AS mobile_number, role_title, status, created_at
-         FROM users WHERE role = 'delivery' AND vendor_id = ? ORDER BY created_at DESC`,
+         FROM users WHERE role = 'delivery' AND vendor_id = ? AND status != 'inactive'
+         ORDER BY created_at DESC`,
       [vendorId]
     );
     res.json({ staff: rows });
@@ -892,12 +893,18 @@ router.put("/vendor/staff/:id", ...auth, async (req, res) => {
 });
 
 // DELETE /api/vendor/staff/:id — remove delivery boy (vendor can only delete their own)
+// Soft-delete (deactivate) rather than hard DELETE: users.id is FK-referenced by
+// orders.delivery_agent_id, delivery_assignments.delivery_agent_id, and
+// order_status_history.changed_by, so any delivery boy who has ever handled a
+// real order would fail a hard delete with a FK constraint violation. Marking
+// them inactive also removes them from the auto-assign pool (accept-order only
+// picks u.status = "active" agents).
 router.delete("/vendor/staff/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id }   = req.params;
   try {
     const [result] = await pool.query(
-      `DELETE FROM users WHERE id = ? AND vendor_id = ? AND role = 'delivery'`,
+      `UPDATE users SET status = 'inactive' WHERE id = ? AND vendor_id = ? AND role = 'delivery' AND status != 'inactive'`,
       [id, vendorId]
     );
     if (!result.affectedRows)
