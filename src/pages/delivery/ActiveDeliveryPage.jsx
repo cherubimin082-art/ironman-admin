@@ -1,4 +1,5 @@
 ﻿import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -26,14 +27,17 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
     }
   }
 
-  return (
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
-      zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+      zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center",
+      padding: "16px", paddingTop: "calc(48px + env(safe-area-inset-top, 0px))",
+      overflowY: "auto",
     }}>
       <div style={{
         background: "#fff", borderRadius: 20, padding: "32px 28px",
         width: "100%", maxWidth: 380, boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
+        maxHeight: "calc(100vh - 96px)", overflowY: "auto",
       }}>
         <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 20, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>
           {title}
@@ -89,8 +93,19 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
+}
+
+// Only worth showing when it differs from pickup_date (apartment has a >0 day offset) —
+// same-day apartments already deliver the same day they're picked up.
+function deliveryDateLabel(order) {
+  if (!order.delivery_date || order.delivery_date === order.pickup_date) return null;
+  const s = String(order.delivery_date).slice(0, 10);
+  const dt = new Date(s + "T00:00:00");
+  if (isNaN(dt)) return null;
+  return dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 // ── Navigate helper ───────────────────────────────────────────
@@ -339,6 +354,16 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
           </div>
         </div>
 
+        {/* Delivery date — only shown for apartments with a delivery-day offset */}
+        {deliveryDateLabel(order) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "8px 13px" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1d4ed8" }}>Deliver by {deliveryDateLabel(order)}</span>
+          </div>
+        )}
+
         {/* Bag number(s) */}
         {(order.bag_numbers || order.bag_number) && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "8px 13px" }}>
@@ -460,9 +485,9 @@ export default function ActiveDeliveryPage() {
 
   return (
     <Layout>
-      {deliveryAlert && (
+      {deliveryAlert && createPortal(
         <div style={{
-          position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)",
+          position: "fixed", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)",
           zIndex: 1100, width: "calc(100% - 32px)", maxWidth: 480,
           background: "#065f46", borderRadius: 16,
           boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
@@ -483,7 +508,8 @@ export default function ActiveDeliveryPage() {
           <button onClick={clearDeliveryAlert} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", padding: 4, flexShrink: 0, display: "flex" }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
-        </div>
+        </div>,
+        document.body
       )}
       {otpModal && (
         <OtpModal

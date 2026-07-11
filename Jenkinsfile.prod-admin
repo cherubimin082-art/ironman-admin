@@ -95,6 +95,8 @@ This will restart the admin backend on the production server.""",
               set -e
               cd /home/ubuntu/apps/ironman-admin
 
+              git reset --hard HEAD
+              git clean -fd
               git fetch --tags
               git checkout ${params.IRONMAN_DEPLOY_TAG}
               git reset --hard ${params.IRONMAN_DEPLOY_TAG}

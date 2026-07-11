@@ -30,6 +30,8 @@ const TIME_SLOTS = [
 
 const CUSTOM_OPTION = "__custom__";
 
+const DAY_OFFSETS = [0, 1, 2, 3, 4, 5, 6];
+
 function Modal({ title, onClose, children, maxWidth = 440 }) {
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()} style={{
@@ -146,6 +148,25 @@ function AptForm({ form, set, modal, saving, formErr, formOk, onSubmit, vendors,
         isCustom={customDelivery}
         onToggleCustom={setCustomDelivery}
       />
+      <div>
+        <label style={labelSt}>Delivery Day</label>
+        <select
+          value={form.delivery_day_offset}
+          onChange={set("delivery_day_offset")}
+          style={{ ...inputSt, cursor: "pointer" }}
+          onFocus={fo}
+          onBlur={fb}
+        >
+          {DAY_OFFSETS.map(n => (
+            <option key={n} value={n}>
+              {n === 0 ? "+0 — Same day as pickup" : `+${n} — ${n} day${n > 1 ? "s" : ""} after pickup`}
+            </option>
+          ))}
+        </select>
+        <p style={{ fontSize: 11.5, color: "#9ca3af", margin: "5px 0 0" }}>
+          How many days after pickup the order is delivered back to this apartment.
+        </p>
+      </div>
       <Alert type="error" msg={formErr} />
       <Alert type="ok"    msg={formOk}  />
       <button type="submit" disabled={saving} style={{ padding: "11px 0", borderRadius: 10, border: "none", background: "#B91C1C", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
@@ -164,7 +185,7 @@ export default function ApartmentsPage() {
   const [saving, setSaving]         = useState(false);
   const [formErr, setFormErr]       = useState("");
   const [formOk, setFormOk]         = useState("");
-  const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "", vendor_id: "" });
+  const [form, setForm]             = useState({ name: "", pickup_time: "", delivery_time: "", vendor_id: "", delivery_day_offset: 0 });
   const [customPickup, setCustomPickup]     = useState(false);
   const [customDelivery, setCustomDelivery] = useState(false);
 
@@ -191,13 +212,13 @@ export default function ApartmentsPage() {
   const closeModal = () => { setModal(null); setSelected(null); setFormErr(""); setFormOk(""); };
 
   function openAdd() {
-    setForm({ name: "", pickup_time: "", delivery_time: "", vendor_id: "" });
+    setForm({ name: "", pickup_time: "", delivery_time: "", vendor_id: "", delivery_day_offset: 0 });
     setCustomPickup(false); setCustomDelivery(false);
     setFormErr(""); setFormOk(""); setModal("add");
   }
   function openEdit(a) {
     setSelected(a);
-    setForm({ name: a.name, pickup_time: a.pickup_time, delivery_time: a.delivery_time || "", vendor_id: a.vendor_id ? String(a.vendor_id) : "" });
+    setForm({ name: a.name, pickup_time: a.pickup_time, delivery_time: a.delivery_time || "", vendor_id: a.vendor_id ? String(a.vendor_id) : "", delivery_day_offset: a.delivery_day_offset ?? 0 });
     setCustomPickup(!!a.pickup_time && !TIME_SLOTS.includes(a.pickup_time));
     setCustomDelivery(!!a.delivery_time && !TIME_SLOTS.includes(a.delivery_time));
     setFormErr(""); setFormOk(""); setModal("edit");
@@ -315,7 +336,9 @@ export default function ApartmentsPage() {
                       {a.delivery_time && (
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "3px 10px", width: "fit-content" }}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#2563eb" }}>Delivery: {a.delivery_time}</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#2563eb" }}>
+                            Delivery: {a.delivery_time}{a.delivery_day_offset > 0 ? ` (+${a.delivery_day_offset}d)` : ""}
+                          </span>
                         </div>
                       )}
                     </div>

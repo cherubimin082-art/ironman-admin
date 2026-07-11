@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -129,15 +130,17 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
     }
   }
 
-  return (
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)",
-      zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+      zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center",
+      padding: "16px", paddingTop: "calc(32px + env(safe-area-inset-top, 0px))",
+      overflowY: "auto",
     }}>
       <div style={{
         background: "#fff", borderRadius: 20, padding: "28px 24px",
         width: "100%", maxWidth: 400, boxShadow: "0 24px 60px rgba(0,0,0,0.2)",
-        maxHeight: "90vh", overflowY: "auto",
+        maxHeight: "calc(100vh - 64px)", overflowY: "auto",
       }}>
         <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 20, fontWeight: 800, color: "#111827", margin: "0 0 4px" }}>
           Confirm Pickup
@@ -264,7 +267,8 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -30,6 +30,16 @@ function pickupFromLabel(order) {
   return slot ? `${d} from ${slot}` : d;
 }
 
+// Only worth showing when it differs from pickup_date (apartment has a >0 day offset) —
+// same-day apartments already convey this via the pickup date/time.
+function deliveryDateLabel(order) {
+  if (!order.delivery_date || order.delivery_date === order.pickup_date) return null;
+  const s = String(order.delivery_date).slice(0, 10);
+  const dt = new Date(s + "T00:00:00");
+  if (isNaN(dt)) return null;
+  return dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
 const STATUS_CONFIG = {
   pending:              { accent: "#f59e0b", avatarBg: "#fffbeb" },
   vendor_accepted:      { accent: "#3b82f6", avatarBg: "#eff6ff" },
@@ -420,6 +430,7 @@ function ActionArea({ order, onStatusChange }) {
 export default function OrderCard({ order, onStatusChange }) {
   const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
   const displayId = order.order_code || `#${order.id}`;
+  const deliveryDate = deliveryDateLabel(order);
 
   return (
     <div
@@ -481,6 +492,16 @@ export default function OrderCard({ order, onStatusChange }) {
             <ClockIcon /> {order.time}
           </span>
         </div>
+
+        {/* Delivery date — only shown for apartments with a delivery-day offset (delivery != pickup day) */}
+        {deliveryDate && (
+          <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 9, padding: "7px 12px" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, flexShrink: 0 }}>
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#1d4ed8" }}>Deliver by {deliveryDate}</span>
+          </div>
+        )}
 
         {/* Address */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "#6b7280", fontWeight: 500, lineHeight: 1.4 }}>
