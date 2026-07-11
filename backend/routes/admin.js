@@ -516,7 +516,7 @@ router.get("/admin/delivery-boys", ...auth, async (req, res) => {
          FROM users u
          LEFT JOIN users v ON v.id = u.vendor_id
          LEFT JOIN delivery_assignments da ON da.delivery_agent_id = u.id
-        WHERE u.role = 'delivery'
+        WHERE u.role = 'delivery' AND u.status != 'inactive'
         GROUP BY u.id
         ORDER BY u.created_at DESC`
     );
@@ -609,7 +609,12 @@ router.put("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/delivery-boys/:id
+// DELETE /api/admin/delivery-boys/:id — soft-delete (deactivate). A hard
+// DELETE here crashes for any delivery boy with real order history: their
+// id is still referenced by orders.delivery_agent_id and
+// order_status_history.changed_by even after delivery_assignments is
+// cleared, and neither of those was ever touched by this endpoint. Same
+// class of bug already fixed for /vendor/staff and applied to /admin/iron-boys.
 router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
   const { id } = req.params;
 
@@ -628,19 +633,11 @@ router.delete("/admin/delivery-boys/:id", ...auth, async (req, res) => {
       activeCount,
     });
 
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    await conn.query("DELETE FROM delivery_assignments WHERE delivery_agent_id = ?", [id]);
-    await conn.query("DELETE FROM users WHERE id = ? AND role = 'delivery'", [id]);
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback().catch(() => {});
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
-  } finally {
-    conn.release();
-  }
+  const [result] = await pool.query(
+    "UPDATE users SET status = 'inactive' WHERE id = ? AND role = 'delivery' AND status != 'inactive'",
+    [id]
+  );
+  if (!result.affectedRows) return res.status(404).json({ message: "Delivery boy not found" });
 
   res.json({ message: "Delivery boy deleted successfully" });
 });
@@ -680,7 +677,7 @@ router.get("/admin/customers", ...auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id, name, phone, apartment, address, created_at
-         FROM users WHERE role = 'customer'
+         FROM users WHERE role = 'customer' AND (status IS NULL OR status != 'inactive')
         ORDER BY created_at DESC`
     );
     res.json({ customers: rows });
@@ -734,11 +731,17 @@ router.put("/admin/customers/:id", ...auth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/customers/:id
+// DELETE /api/admin/customers/:id — soft-delete (deactivate). Same class of
+// bug as the delivery-boy/vendor deletes: a hard DELETE crashes the moment
+// this customer has ever placed an order, since orders.customer_id and
+// order_status_history.changed_by both still reference them.
 router.delete("/admin/customers/:id", ...auth, async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.query("DELETE FROM users WHERE id = ? AND role = 'customer'", [id]);
+    const [result] = await pool.query(
+      "UPDATE users SET status = 'inactive' WHERE id = ? AND role = 'customer' AND status != 'inactive'",
+      [id]
+    );
     if (result.affectedRows === 0) return res.status(404).json({ message: "Customer not found" });
     res.json({ message: "Customer deleted" });
   } catch (err) {
