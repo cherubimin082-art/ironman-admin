@@ -1,4 +1,5 @@
 ﻿import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -26,7 +27,7 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
     }
   }
 
-  return (
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
       zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center",
@@ -92,7 +93,8 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -463,7 +465,7 @@ export default function ActiveDeliveryPage() {
 
   return (
     <Layout>
-      {deliveryAlert && (
+      {deliveryAlert && createPortal(
         <div style={{
           position: "fixed", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)",
           zIndex: 1100, width: "calc(100% - 32px)", maxWidth: 480,
@@ -486,7 +488,8 @@ export default function ActiveDeliveryPage() {
           <button onClick={clearDeliveryAlert} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", padding: 4, flexShrink: 0, display: "flex" }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
-        </div>
+        </div>,
+        document.body
       )}
       {otpModal && (
         <OtpModal

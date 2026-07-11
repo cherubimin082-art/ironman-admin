@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../../components/shared/Layout";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
@@ -129,7 +130,7 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
     }
   }
 
-  return (
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)",
       zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center",
@@ -266,7 +267,8 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
