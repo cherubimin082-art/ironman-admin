@@ -788,6 +788,25 @@ async function ensureVendorLeaveColumn() {
   await addColumnIfMissing("users", "full_day_leave", "VARCHAR(20) NULL");
 }
 
+// users.role is a MySQL ENUM that predates the iron_boy feature, so inserting
+// role='iron_boy' fails with "Data truncated for column 'role'" (MySQL
+// silently truncates instead of rejecting invalid enum values by default).
+// Read the live enum definition from information_schema and widen it in
+// place rather than hardcoding a value list that could drift from reality.
+async function ensureIronBoyRole() {
+  const [[row]] = await pool.query(
+    `SELECT COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'`
+  );
+  if (!row || !row.COLUMN_TYPE.startsWith('enum(')) return;
+  if (row.COLUMN_TYPE.includes("'iron_boy'")) return;
+
+  const newType = row.COLUMN_TYPE.replace(/\)$/, ",'iron_boy')");
+  const nullClause = row.IS_NULLABLE === 'NO' ? 'NOT NULL' : 'NULL';
+  const defaultClause = row.COLUMN_DEFAULT != null ? `DEFAULT '${row.COLUMN_DEFAULT}'` : '';
+  await pool.query(`ALTER TABLE users MODIFY COLUMN role ${newType} ${nullClause} ${defaultClause}`);
+}
+
 // Clamp to a sane 0-6 day range so a typo can't schedule a delivery months out.
 function clampDeliveryDayOffset(value) {
   const n = parseInt(value, 10);
@@ -1194,6 +1213,7 @@ router.post("/admin/iron-boys", ...auth, async (req, res) => {
     const [[vendor]] = await pool.query("SELECT id FROM users WHERE id = ? AND role = 'vendor'", [vendor_id]);
     if (!vendor) return res.status(400).json({ message: "Invalid vendor selected" });
 
+    await ensureIronBoyRole();
     const [result] = await pool.query(
       `INSERT INTO users (name, phone, role, status, vendor_id) VALUES (?, ?, 'iron_boy', 'active', ?)`,
       [name.trim(), cleanPhone, vendor_id]
