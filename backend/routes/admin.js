@@ -351,13 +351,17 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
 
     if (orderIds.length) {
       const oph = orderIds.map(() => "?").join(",");
-      await conn.query(`DELETE FROM order_items          WHERE order_id IN (${oph})`, orderIds);
-      await conn.query(`DELETE FROM order_status_history  WHERE order_id IN (${oph})`, orderIds);
-      await conn.query(`DELETE FROM delivery_assignments  WHERE order_id IN (${oph})`, orderIds);
-      await conn.query(`DELETE FROM orders                WHERE id IN (${oph})`, orderIds);
+      // order_activity_log can key off ob_id (order_bags.id) as well as
+      // order_id directly, so it must go before order_bags is cleared.
+      await conn.query(`DELETE FROM order_activity_log   WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM order_bags            WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM order_items           WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM order_status_history   WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM delivery_assignments   WHERE order_id IN (${oph})`, orderIds);
+      await conn.query(`DELETE FROM orders                 WHERE id IN (${oph})`, orderIds);
     }
 
-    // Any history/assignment rows keyed by user id rather than order id
+    // Any history/assignment/log rows keyed by user id rather than order id
     // (e.g. an assignment the vendor made on an order that belongs, as a
     // record, to a different vendor).
     await conn.query(`DELETE FROM order_status_history WHERE changed_by IN (${uph})`, allUserIds);
@@ -365,6 +369,7 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
       `DELETE FROM delivery_assignments WHERE delivery_agent_id IN (${uph}) OR assigned_by IN (${uph})`,
       [...allUserIds, ...allUserIds]
     );
+    await conn.query(`DELETE FROM order_activity_log WHERE vendor_id = ?`, [id]);
 
     // Vendor-owned catalogue/config
     await conn.query(
@@ -373,6 +378,7 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
     );
     await conn.query("DELETE FROM garments        WHERE vendor_id = ?", [id]);
     await conn.query("DELETE FROM categories       WHERE vendor_id = ?", [id]);
+    await conn.query("DELETE FROM order_bags       WHERE bag_id IN (SELECT id FROM bags WHERE vendor_id = ?)", [id]);
     await conn.query("DELETE FROM bags             WHERE vendor_id = ?", [id]);
     await conn.query("DELETE FROM apartment_slots  WHERE vendor_id = ?", [id]);
     // staff (legacy/unused table) and ratings: best-effort, don't abort the
