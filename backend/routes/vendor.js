@@ -651,10 +651,45 @@ router.delete("/vendor/capacity/:apartment", ...auth, async (req, res) => {
 
 // ── Pricing Management: Categories & Garments (vendor-scoped) ──────────
 
+// categories.vendor_id was added directly on some environments' databases
+// without ever going through a migration script - the original migrate.js
+// CREATE TABLE has no vendor_id column and a global UNIQUE(name) instead.
+// Any environment that only ran migrate.js (e.g. production, if it was never
+// hand-patched like dev was) still has that old schema, so every query here
+// referencing vendor_id fails with "Unknown column 'vendor_id'". Bring any
+// such environment up to date here, the same way addColumnIfMissing works
+// in admin.js.
+async function ensureCategoriesVendorScoped() {
+  const [[col]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'vendor_id'`
+  );
+  if (col.cnt === 0) {
+    await pool.query("ALTER TABLE categories ADD COLUMN vendor_id INT NULL");
+  }
+
+  const [indexes] = await pool.query(
+    `SELECT INDEX_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols, NON_UNIQUE
+       FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND INDEX_NAME != 'PRIMARY'
+      GROUP BY INDEX_NAME, NON_UNIQUE`
+  );
+  const hasComposite = indexes.some(i => i.cols === 'name,vendor_id' || i.cols === 'vendor_id,name');
+  for (const idx of indexes) {
+    if (Number(idx.NON_UNIQUE) === 0 && idx.cols === 'name') {
+      await pool.query(`ALTER TABLE categories DROP INDEX \`${idx.INDEX_NAME}\``);
+    }
+  }
+  if (!hasComposite) {
+    await pool.query("ALTER TABLE categories ADD UNIQUE INDEX uq_vendor_category_name (vendor_id, name)");
+  }
+}
+
 // GET /api/vendor/categories
 router.get("/vendor/categories", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   try {
+    await ensureCategoriesVendorScoped();
     const [rows] = await pool.query(
       `SELECT c.id, c.name, c.created_at,
               SUM(g.is_active = 1) AS garment_count
@@ -678,6 +713,7 @@ router.post("/vendor/categories", ...auth, async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return res.status(400).json({ message: "Category name is required" });
   try {
+    await ensureCategoriesVendorScoped();
     const [result] = await pool.query(
       "INSERT INTO categories (vendor_id, name) VALUES (?, ?)", [vendorId, name.trim()]
     );
@@ -697,6 +733,7 @@ router.put("/vendor/categories/:id", ...auth, async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return res.status(400).json({ message: "Category name is required" });
   try {
+    await ensureCategoriesVendorScoped();
     const [result] = await pool.query(
       "UPDATE categories SET name = ? WHERE id = ? AND vendor_id = ?", [name.trim(), id, vendorId]
     );
@@ -716,6 +753,7 @@ router.delete("/vendor/categories/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id } = req.params;
   try {
+    await ensureCategoriesVendorScoped();
     const [[{ garmentCount }]] = await pool.query(
       "SELECT COUNT(*) AS garmentCount FROM garments WHERE category_id = ? AND vendor_id = ?", [id, vendorId]
     );
@@ -769,6 +807,7 @@ router.post("/vendor/garments", ...auth, async (req, res) => {
   if (isNaN(priceVal) || priceVal < 0)
     return res.status(400).json({ message: "Price must be a positive number" });
   try {
+    await ensureCategoriesVendorScoped();
     const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ? AND vendor_id = ?", [category_id, vendorId]);
     if (!cat) return res.status(404).json({ message: "Category not found" });
     const [result] = await pool.query(
@@ -793,6 +832,7 @@ router.put("/vendor/garments/:id", ...auth, async (req, res) => {
   if (isNaN(priceVal) || priceVal < 0)
     return res.status(400).json({ message: "Price must be a positive number" });
   try {
+    await ensureCategoriesVendorScoped();
     const [[cat]] = await pool.query("SELECT id FROM categories WHERE id = ? AND vendor_id = ?", [category_id, vendorId]);
     if (!cat) return res.status(404).json({ message: "Category not found" });
     const [result] = await pool.query(

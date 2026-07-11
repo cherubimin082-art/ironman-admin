@@ -401,6 +401,10 @@ router.delete("/admin/vendors/:id", ...auth, async (req, res) => {
       [...allUserIds, id]
     );
     await conn.query("DELETE FROM garments        WHERE vendor_id = ?", [id]);
+    // categories.vendor_id may not exist on environments that never got the
+    // manual schema patch vendor.js's ensureCategoriesVendorScoped() applies -
+    // add it here too so this cascading delete doesn't 500 on those envs.
+    await addColumnIfMissing("categories", "vendor_id", "INT NULL");
     await conn.query("DELETE FROM categories       WHERE vendor_id = ?", [id]);
     await conn.query("DELETE FROM order_bags       WHERE bag_id IN (SELECT id FROM bags WHERE vendor_id = ?)", [id]);
     await conn.query("DELETE FROM bags             WHERE vendor_id = ?", [id]);
