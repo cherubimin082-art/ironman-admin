@@ -725,24 +725,34 @@ router.delete("/admin/customers/:id", ...auth, async (req, res) => {
 
 // ── APARTMENT LIST CRUD ─────────────────────────────────────────
 
+// "ADD COLUMN IF NOT EXISTS" needs MySQL 8.0.29+ - some deploys run older
+// MySQL/MariaDB where that syntax throws, the .catch() swallows it, and the
+// column silently never gets created (then every INSERT/UPDATE referencing
+// it fails with "Unknown column"). Check information_schema instead, which
+// works on any version.
+async function addColumnIfMissing(table, column, definition) {
+  const [[row]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column]
+  );
+  if (row.cnt === 0) {
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 async function ensureApartmentsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS apartments (
-      id                  INT AUTO_INCREMENT PRIMARY KEY,
-      name                VARCHAR(255) NOT NULL UNIQUE,
-      pickup_time         VARCHAR(100) NOT NULL,
-      delivery_time       VARCHAR(100) NULL,
-      delivery_day_offset INT NOT NULL DEFAULT 0,
-      created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      name          VARCHAR(255) NOT NULL UNIQUE,
+      pickup_time   VARCHAR(100) NOT NULL,
+      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
   // add columns if missing (existing installs)
-  await pool.query(`
-    ALTER TABLE apartments ADD COLUMN IF NOT EXISTS delivery_time VARCHAR(100) NULL
-  `).catch(() => {});
-  await pool.query(`
-    ALTER TABLE apartments ADD COLUMN IF NOT EXISTS delivery_day_offset INT NOT NULL DEFAULT 0
-  `).catch(() => {});
+  await addColumnIfMissing("apartments", "delivery_time", "VARCHAR(100) NULL");
+  await addColumnIfMissing("apartments", "delivery_day_offset", "INT NOT NULL DEFAULT 0");
 }
 
 // Clamp to a sane 0-6 day range so a typo can't schedule a delivery months out.
