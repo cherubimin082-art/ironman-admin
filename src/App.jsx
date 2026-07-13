@@ -15,6 +15,7 @@ import StaffPage from "./pages/vendor/StaffPage";
 import ReportsPage from "./pages/vendor/ReportsPage";
 import ApartmentManagementPage from "./pages/vendor/ApartmentManagementPage";
 import PricingPage from "./pages/vendor/PricingPage";
+import CouponManagementPage from "./pages/vendor/CouponManagementPage";
 
 import DeliveryDashboard from "./pages/delivery/DeliveryDashboard";
 import PickupJobsPage from "./pages/delivery/PickupJobsPage";
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/vendor/reports"     element={<RoleRoute allowedRole="vendor"><ReportsPage /></RoleRoute>} />
             <Route path="/vendor/apartments" element={<RoleRoute allowedRole="vendor"><ApartmentManagementPage /></RoleRoute>} />
             <Route path="/vendor/pricing"    element={<RoleRoute allowedRole="vendor"><PricingPage /></RoleRoute>} />
+            <Route path="/vendor/coupons"    element={<RoleRoute allowedRole="vendor"><CouponManagementPage /></RoleRoute>} />
             <Route path="/tablet"           element={<TabletApp />} />
 
             {/* Delivery routes */}

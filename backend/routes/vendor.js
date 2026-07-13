@@ -711,6 +711,40 @@ async function ensureGarmentsSchema() {
   }
 }
 
+// coupons is owned by the vendor (Center Head) here, but read at checkout by
+// the customer backend too - each side self-provisions with an identical
+// CREATE TABLE IF NOT EXISTS rather than assuming the other one ran first,
+// same lesson as order_block_minutes.
+async function ensureCouponsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      vendor_id INT NOT NULL,
+      code VARCHAR(30) NOT NULL UNIQUE,
+      discount_type ENUM('percent','flat') NOT NULL DEFAULT 'percent',
+      discount_value DECIMAL(10,2) NOT NULL,
+      valid_from DATE NULL,
+      valid_till DATE NULL,
+      active TINYINT(1) NOT NULL DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  const [[col1]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'coupon_code'`
+  );
+  if (col1.cnt === 0) {
+    await pool.query("ALTER TABLE orders ADD COLUMN coupon_code VARCHAR(30) NULL");
+  }
+  const [[col2]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'discount_amount'`
+  );
+  if (col2.cnt === 0) {
+    await pool.query("ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0");
+  }
+}
+
 // GET /api/vendor/categories
 router.get("/vendor/categories", ...auth, async (req, res) => {
   const vendorId = req.user.id;
@@ -891,6 +925,96 @@ router.delete("/vendor/garments/:id", ...auth, async (req, res) => {
     res.json({ message: "Garment removed from catalogue" });
   } catch (err) {
     console.error("vendor/garments DELETE error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── Coupons ──────────────────────────────────────────────────────────────
+
+// GET /api/vendor/coupons
+router.get("/vendor/coupons", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  try {
+    await ensureCouponsTable();
+    const [rows] = await pool.query(
+      "SELECT * FROM coupons WHERE vendor_id = ? ORDER BY created_at DESC", [vendorId]
+    );
+    res.json({ coupons: rows });
+  } catch (err) {
+    console.error("vendor/coupons GET error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/vendor/coupons
+router.post("/vendor/coupons", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { code, discount_type, discount_value, valid_from, valid_till, active } = req.body;
+  if (!code?.trim()) return res.status(400).json({ message: "Coupon code is required" });
+  if (!["percent", "flat"].includes(discount_type))
+    return res.status(400).json({ message: "Discount type must be percent or flat" });
+  const value = parseFloat(discount_value);
+  if (isNaN(value) || value <= 0) return res.status(400).json({ message: "Enter a valid discount value" });
+
+  try {
+    await ensureCouponsTable();
+    const [result] = await pool.query(
+      `INSERT INTO coupons (vendor_id, code, discount_type, discount_value, valid_from, valid_till, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [vendorId, code.trim().toUpperCase(), discount_type, value, valid_from || null, valid_till || null, active ? 1 : 0]
+    );
+    res.status(201).json({ message: "Coupon created", id: result.insertId });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "This coupon code already exists" });
+    console.error("vendor/coupons POST error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /api/vendor/coupons/:id
+router.put("/vendor/coupons/:id", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { id } = req.params;
+  const { code, discount_type, discount_value, valid_from, valid_till, active } = req.body;
+  if (!code?.trim()) return res.status(400).json({ message: "Coupon code is required" });
+  if (!["percent", "flat"].includes(discount_type))
+    return res.status(400).json({ message: "Discount type must be percent or flat" });
+  const value = parseFloat(discount_value);
+  if (isNaN(value) || value <= 0) return res.status(400).json({ message: "Enter a valid discount value" });
+
+  try {
+    await ensureCouponsTable();
+    const [result] = await pool.query(
+      `UPDATE coupons SET code = ?, discount_type = ?, discount_value = ?, valid_from = ?, valid_till = ?, active = ?
+        WHERE id = ? AND vendor_id = ?`,
+      [code.trim().toUpperCase(), discount_type, value, valid_from || null, valid_till || null, active ? 1 : 0, id, vendorId]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Coupon not found" });
+    res.json({ message: "Coupon updated" });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "This coupon code already exists" });
+    console.error("vendor/coupons PUT error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE /api/vendor/coupons/:id
+router.delete("/vendor/coupons/:id", ...auth, async (req, res) => {
+  const vendorId = req.user.id;
+  const { id } = req.params;
+  try {
+    await ensureCouponsTable();
+    const [result] = await pool.query(
+      "DELETE FROM coupons WHERE id = ? AND vendor_id = ?", [id, vendorId]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Coupon not found" });
+    res.json({ message: "Coupon deleted" });
+  } catch (err) {
+    console.error("vendor/coupons DELETE error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

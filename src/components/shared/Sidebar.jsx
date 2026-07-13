@@ -51,6 +51,13 @@ const PricingIcon = () => (
     <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
   </svg>
 );
+const CouponIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v5a2 2 0 000 4v5a2 2 0 002 2h14a2 2 0 002-2v-5a2 2 0 000-4z" />
+    <line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="15" x2="15.01" y2="15" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+  </svg>
+);
 const AnalyticsIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
     <line x1="18" y1="20" x2="18" y2="10" />
@@ -144,6 +151,7 @@ const VENDOR_LINKS = [
   { to: "/vendor/staff",      label: "Delivery Boy", Icon: DeliveryBoyIcon },
   { to: "/vendor/capacity",   label: "Capacity",     Icon: CapacityIcon   },
   { to: "/vendor/pricing",    label: "Pricing",      Icon: PricingIcon    },
+  { to: "/vendor/coupons",    label: "Coupons",      Icon: CouponIcon     },
   { to: "/vendor/reports",    label: "Reports",      Icon: AnalyticsIcon  },
   { to: "/vendor/apartments", label: "Locations",    Icon: LocationIcon   },
 ];
