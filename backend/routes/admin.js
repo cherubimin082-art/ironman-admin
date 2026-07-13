@@ -193,8 +193,10 @@ router.get("/delivery-agents", ...auth, async (req, res) => {
 // GET /api/admin/vendors
 router.get("/admin/vendors", ...auth, async (req, res) => {
   try {
+    await ensureVendorLeaveColumn();
     const [rows] = await pool.query(
       `SELECT u.id, u.name, u.phone, u.zone, u.address, u.status, u.bags_available, u.created_at,
+              u.full_day_leave, u.order_block_minutes,
               COUNT(DISTINCT o.id) AS total_orders,
               GROUP_CONCAT(DISTINCT a.apartment ORDER BY a.apartment SEPARATOR ', ') AS apartments,
               (SELECT COUNT(*) FROM bags WHERE vendor_id = u.id AND status = 'available') AS available_bags,
@@ -215,15 +217,17 @@ router.get("/admin/vendors", ...auth, async (req, res) => {
 
 // POST /api/admin/vendors
 router.post("/admin/vendors", ...auth, async (req, res) => {
-  const { name, phone, password, zone, address, bagCount, apartment_names } = req.body;
+  const { name, phone, password, zone, address, bagCount, apartment_names, order_block_minutes } = req.body;
   if (!name || !phone)
     return res.status(400).json({ message: "name and phone are required" });
   if (password && password.length < 6)
     return res.status(400).json({ message: "Password must be at least 6 characters" });
 
   const numBags = Math.max(1, Math.min(200, parseInt(bagCount) || 20));
+  const blockMinutes = Math.max(0, Math.min(180, parseInt(order_block_minutes) || 0));
 
   try {
+    await ensureVendorLeaveColumn();
     const [[existing]] = await pool.query(
       "SELECT id FROM users WHERE phone = ? AND status != 'inactive'", [phone]
     );
@@ -244,16 +248,16 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
     let vendorId;
     if (inactiveRow) {
       await pool.query(
-        `UPDATE users SET name = ?, password_hash = ?, role = 'vendor', zone = ?, address = ?, status = 'active'
+        `UPDATE users SET name = ?, password_hash = ?, role = 'vendor', zone = ?, address = ?, status = 'active', order_block_minutes = ?
           WHERE id = ?`,
-        [name, hash, zone || null, address || null, inactiveRow.id]
+        [name, hash, zone || null, address || null, blockMinutes, inactiveRow.id]
       );
       vendorId = inactiveRow.id;
     } else {
       const [result] = await pool.query(
-        `INSERT INTO users (name, phone, password_hash, role, zone, address, status)
-         VALUES (?, ?, ?, 'vendor', ?, ?, 'active')`,
-        [name, phone, hash, zone || null, address || null]
+        `INSERT INTO users (name, phone, password_hash, role, zone, address, status, order_block_minutes)
+         VALUES (?, ?, ?, 'vendor', ?, ?, 'active', ?)`,
+        [name, phone, hash, zone || null, address || null, blockMinutes]
       );
       vendorId = result.insertId;
     }
@@ -292,13 +296,14 @@ router.post("/admin/vendors", ...auth, async (req, res) => {
 // PUT /api/admin/vendors/:id
 router.put("/admin/vendors/:id", ...auth, async (req, res) => {
   const { id } = req.params;
-  const { name, phone, zone, address, status, password } = req.body;
+  const { name, phone, zone, address, status, password, order_block_minutes } = req.body;
   if (!name || !phone)
     return res.status(400).json({ message: "name and phone are required" });
   if (password && password.length < 6)
     return res.status(400).json({ message: "Password must be at least 6 characters" });
 
   try {
+    await ensureVendorLeaveColumn();
     const [[vendor]] = await pool.query(
       "SELECT id FROM users WHERE id = ? AND role = 'vendor'", [id]
     );
@@ -312,9 +317,10 @@ router.put("/admin/vendors/:id", ...auth, async (req, res) => {
     const allowed = ["active", "inactive", "on_leave"];
     const newStatus = allowed.includes(status) ? status : undefined;
     const newHash = password ? await bcrypt.hash(password, 10) : null;
+    const blockMinutes = Math.max(0, Math.min(180, parseInt(order_block_minutes) || 0));
 
-    const setClauses = ["name = ?", "phone = ?", "zone = ?", "address = ?"];
-    const values     = [name, phone, zone || null, address || null];
+    const setClauses = ["name = ?", "phone = ?", "zone = ?", "address = ?", "order_block_minutes = ?"];
+    const values     = [name, phone, zone || null, address || null, blockMinutes];
     if (newStatus) { setClauses.push("status = ?");        values.push(newStatus); }
     if (newHash)   { setClauses.push("password_hash = ?"); values.push(newHash);   }
     values.push(id);
@@ -856,6 +862,7 @@ async function ensureApartmentsTable() {
 
 async function ensureVendorLeaveColumn() {
   await addColumnIfMissing("users", "full_day_leave", "VARCHAR(20) NULL");
+  await addColumnIfMissing("users", "order_block_minutes", "INT NOT NULL DEFAULT 0");
 }
 
 // users.role is a MySQL ENUM that predates the iron_boy feature, so inserting

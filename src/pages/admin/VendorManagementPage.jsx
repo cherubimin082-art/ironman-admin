@@ -331,6 +331,18 @@ function VendorFields({ form, onChange, isEdit, isMobile }) {
         <input style={inputSt} placeholder="e.g. 12 Park St, T. Nagar" value={form.address}
           onChange={onChange("address")} onFocus={fo} onBlur={fb} />
       </div>
+      <div>
+        <label style={labelSt}>Order Block Time (minutes before slot closes)</label>
+        <input
+          type="number" min={0} max={180} style={inputSt}
+          placeholder="e.g. 30 — stop today's orders 30 min before pickup/delivery slot closes"
+          value={form.order_block_minutes}
+          onChange={onChange("order_block_minutes")} onFocus={fo} onBlur={fb}
+        />
+        <p style={{ fontSize: 11, color: "#9ca3af", margin: "5px 0 0" }}>
+          Customers can't book today's pickup once it's this many minutes before the slot's closing time — order auto-shifts to tomorrow instead.
+        </p>
+      </div>
     </>
   );
 }
@@ -354,7 +366,7 @@ export default function VendorManagementPage() {
 
   const [form, setForm] = useState({
     name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20,
-    selectedApartments: [],
+    order_block_minutes: 0, selectedApartments: [],
   });
 
   const load = useCallback(async () => {
@@ -376,7 +388,7 @@ export default function VendorManagementPage() {
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
-    setForm({ name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20, selectedApartments: [] });
+    setForm({ name: "", phone: "", password: "", zone: "", address: "", status: "active", bagCount: 20, order_block_minutes: 0, selectedApartments: [] });
     setFormErr(""); setFormOk("");
     setModal("add");
   }
@@ -384,7 +396,7 @@ export default function VendorManagementPage() {
   function openEdit(v) {
     setSelected(v);
     const currentApts = v.apartments ? v.apartments.split(", ").map(s => s.trim()).filter(Boolean) : [];
-    setForm({ name: v.name || "", phone: v.phone || "", password: "", zone: v.zone || "", address: v.address || "", status: v.status || "active", selectedApartments: currentApts });
+    setForm({ name: v.name || "", phone: v.phone || "", password: "", zone: v.zone || "", address: v.address || "", status: v.status || "active", order_block_minutes: v.order_block_minutes ?? 0, selectedApartments: currentApts });
     setFormErr(""); setFormOk("");
     setModal("edit");
   }
@@ -435,6 +447,7 @@ export default function VendorManagementPage() {
       await api.put(`/admin/vendors/${selected.id}`, {
         name: form.name, phone: form.phone,
         zone: form.zone, address: form.address, status: form.status,
+        order_block_minutes: form.order_block_minutes,
         ...(form.password.trim() && { password: form.password.trim() }),
       });
       await api.put(`/admin/vendors/${selected.id}/apartments`, { apartment_names: form.selectedApartments });
