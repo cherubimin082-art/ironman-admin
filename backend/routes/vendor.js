@@ -743,6 +743,15 @@ async function ensureCouponsTable() {
   if (col2.cnt === 0) {
     await pool.query("ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0");
   }
+  // apartments = NULL means "all of this vendor's apartments"; otherwise a
+  // JSON array of apartment names this coupon is restricted to.
+  const [[col3]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'coupons' AND COLUMN_NAME = 'apartments'`
+  );
+  if (col3.cnt === 0) {
+    await pool.query("ALTER TABLE coupons ADD COLUMN apartments TEXT NULL");
+  }
 }
 
 // GET /api/vendor/categories
@@ -931,6 +940,20 @@ router.delete("/vendor/garments/:id", ...auth, async (req, res) => {
 
 // ── Coupons ──────────────────────────────────────────────────────────────
 
+// apartments comes from the client as either "all" or an array of apartment
+// names. Stored as NULL for "all" (matches any of this vendor's apartments)
+// or a JSON array string restricting the coupon to just those.
+function serializeApartments(apartments) {
+  if (!apartments || apartments === "all" || (Array.isArray(apartments) && apartments.length === 0)) return null;
+  if (Array.isArray(apartments)) return JSON.stringify(apartments);
+  return null;
+}
+function parseApartments(row) {
+  if (!row.apartments) return { ...row, apartments: null };
+  try { return { ...row, apartments: JSON.parse(row.apartments) }; }
+  catch { return { ...row, apartments: null }; }
+}
+
 // GET /api/vendor/coupons
 router.get("/vendor/coupons", ...auth, async (req, res) => {
   const vendorId = req.user.id;
@@ -939,7 +962,7 @@ router.get("/vendor/coupons", ...auth, async (req, res) => {
     const [rows] = await pool.query(
       "SELECT * FROM coupons WHERE vendor_id = ? ORDER BY created_at DESC", [vendorId]
     );
-    res.json({ coupons: rows });
+    res.json({ coupons: rows.map(parseApartments) });
   } catch (err) {
     console.error("vendor/coupons GET error:", err);
     res.status(500).json({ message: "Server error" });
@@ -949,7 +972,7 @@ router.get("/vendor/coupons", ...auth, async (req, res) => {
 // POST /api/vendor/coupons
 router.post("/vendor/coupons", ...auth, async (req, res) => {
   const vendorId = req.user.id;
-  const { code, discount_type, discount_value, valid_from, valid_till, active } = req.body;
+  const { code, discount_type, discount_value, valid_from, valid_till, active, apartments } = req.body;
   if (!code?.trim()) return res.status(400).json({ message: "Coupon code is required" });
   if (!["percent", "flat"].includes(discount_type))
     return res.status(400).json({ message: "Discount type must be percent or flat" });
@@ -959,9 +982,9 @@ router.post("/vendor/coupons", ...auth, async (req, res) => {
   try {
     await ensureCouponsTable();
     const [result] = await pool.query(
-      `INSERT INTO coupons (vendor_id, code, discount_type, discount_value, valid_from, valid_till, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [vendorId, code.trim().toUpperCase(), discount_type, value, valid_from || null, valid_till || null, active ? 1 : 0]
+      `INSERT INTO coupons (vendor_id, code, discount_type, discount_value, valid_from, valid_till, active, apartments)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [vendorId, code.trim().toUpperCase(), discount_type, value, valid_from || null, valid_till || null, active ? 1 : 0, serializeApartments(apartments)]
     );
     res.status(201).json({ message: "Coupon created", id: result.insertId });
   } catch (err) {
@@ -976,7 +999,7 @@ router.post("/vendor/coupons", ...auth, async (req, res) => {
 router.put("/vendor/coupons/:id", ...auth, async (req, res) => {
   const vendorId = req.user.id;
   const { id } = req.params;
-  const { code, discount_type, discount_value, valid_from, valid_till, active } = req.body;
+  const { code, discount_type, discount_value, valid_from, valid_till, active, apartments } = req.body;
   if (!code?.trim()) return res.status(400).json({ message: "Coupon code is required" });
   if (!["percent", "flat"].includes(discount_type))
     return res.status(400).json({ message: "Discount type must be percent or flat" });
@@ -986,9 +1009,9 @@ router.put("/vendor/coupons/:id", ...auth, async (req, res) => {
   try {
     await ensureCouponsTable();
     const [result] = await pool.query(
-      `UPDATE coupons SET code = ?, discount_type = ?, discount_value = ?, valid_from = ?, valid_till = ?, active = ?
+      `UPDATE coupons SET code = ?, discount_type = ?, discount_value = ?, valid_from = ?, valid_till = ?, active = ?, apartments = ?
         WHERE id = ? AND vendor_id = ?`,
-      [code.trim().toUpperCase(), discount_type, value, valid_from || null, valid_till || null, active ? 1 : 0, id, vendorId]
+      [code.trim().toUpperCase(), discount_type, value, valid_from || null, valid_till || null, active ? 1 : 0, serializeApartments(apartments), id, vendorId]
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Coupon not found" });

@@ -33,10 +33,15 @@ function generateCode() {
   return s;
 }
 
-const EMPTY_FORM = { code: "", discount_type: "percent", discount_value: "", valid_from: "", valid_till: "", active: true };
+const EMPTY_FORM = { code: "", discount_type: "percent", discount_value: "", valid_from: "", valid_till: "", active: true, applyToAll: true, apartments: [] };
 
 function describeDiscount(c) {
   return c.discount_type === "percent" ? `${c.discount_value}% off` : `₹${c.discount_value} off`;
+}
+function describeApartments(c) {
+  if (!c.apartments) return "All apartments";
+  const n = c.apartments.length;
+  return n === 1 ? c.apartments[0] : `${n} apartments`;
 }
 function isExpired(c) {
   if (!c.valid_till) return false;
@@ -96,7 +101,12 @@ function Modal({ title, onClose, children, maxWidth = 460 }) {
 // CouponForm MUST live outside CouponManagementPage so React sees a stable component
 // identity. If defined inside the page, a new function reference is created on every
 // render, causing React to unmount+remount the form on every keystroke → inputs lose focus.
-function CouponForm({ onSubmit, form, onFieldChange, mode, onClose, saving, formErr, formOk }) {
+function CouponForm({ onSubmit, form, onFieldChange, mode, onClose, saving, formErr, formOk, apartmentOptions }) {
+  const toggleApartment = (name) => {
+    const set = new Set(form.apartments);
+    if (set.has(name)) set.delete(name); else set.add(name);
+    onFieldChange("apartments", Array.from(set));
+  };
   return (
     <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
@@ -167,6 +177,37 @@ function CouponForm({ onSubmit, form, onFieldChange, mode, onClose, saving, form
         </div>
       </div>
 
+      <div>
+        <label style={labelSt}>Applies To *</label>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "8px 0" }}>
+          <input
+            type="checkbox"
+            checked={form.applyToAll}
+            onChange={e => onFieldChange("applyToAll", e.target.checked)}
+            style={{ width: 16, height: 16, cursor: "pointer" }}
+          />
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>All Apartments</span>
+        </label>
+        {!form.applyToAll && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 160, overflowY: "auto", border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "8px 12px" }}>
+            {apartmentOptions.length === 0 && (
+              <p style={{ fontSize: 12, color: "#9ca3af", margin: "6px 0" }}>No apartments assigned yet.</p>
+            )}
+            {apartmentOptions.map(a => (
+              <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "4px 0" }}>
+                <input
+                  type="checkbox"
+                  checked={form.apartments.includes(a.name)}
+                  onChange={() => toggleApartment(a.name)}
+                  style={{ width: 15, height: 15, cursor: "pointer" }}
+                />
+                <span style={{ fontSize: 13, color: "#374151" }}>{a.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
       <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
         <input
           type="checkbox"
@@ -208,6 +249,7 @@ export default function CouponManagementPage() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+  const [apartmentOptions, setApartmentOptions] = useState([]);
 
   const [modal,    setModal]    = useState(null);  // null | 'add' | 'edit' | 'delete'
   const [selected, setSelected] = useState(null);
@@ -226,6 +268,11 @@ export default function CouponManagementPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    api.get("/vendor/my-apartments")
+      .then(({ data }) => setApartmentOptions(data.apartments || []))
+      .catch(() => setApartmentOptions([]));
+  }, []);
 
   function closeModal() { setModal(null); setSelected(null); setFormErr(""); setFormOk(""); }
   const handleFieldChange = (field, value) => setForm(f => ({ ...f, [field]: value }));
@@ -241,6 +288,8 @@ export default function CouponManagementPage() {
       valid_from: c.valid_from ? c.valid_from.slice(0, 10) : "",
       valid_till: c.valid_till ? c.valid_till.slice(0, 10) : "",
       active: !!c.active,
+      applyToAll: !c.apartments,
+      apartments: c.apartments || [],
     });
     setFormErr(""); setFormOk("");
     setModal("edit");
@@ -257,7 +306,13 @@ export default function CouponManagementPage() {
     if (form.discount_type === "percent" && value > 100) return "Percent discount can't exceed 100.";
     if (form.valid_from && form.valid_till && form.valid_from > form.valid_till)
       return "Valid From date must be before Valid Till date.";
+    if (!form.applyToAll && form.apartments.length === 0)
+      return "Select at least one apartment, or choose All Apartments.";
     return null;
+  }
+
+  function buildPayload() {
+    return { ...form, apartments: form.applyToAll ? "all" : form.apartments };
   }
 
   async function handleAdd(e) {
@@ -266,7 +321,7 @@ export default function CouponManagementPage() {
     if (err) return setFormErr(err);
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.post("/vendor/coupons", form);
+      await api.post("/vendor/coupons", buildPayload());
       setFormOk("Coupon added successfully.");
       await load();
       setTimeout(closeModal, 900);
@@ -281,7 +336,7 @@ export default function CouponManagementPage() {
     if (err) return setFormErr(err);
     setSaving(true); setFormErr(""); setFormOk("");
     try {
-      await api.put(`/vendor/coupons/${selected.id}`, form);
+      await api.put(`/vendor/coupons/${selected.id}`, buildPayload());
       setFormOk("Coupon updated successfully.");
       await load();
       setTimeout(closeModal, 900);
@@ -392,7 +447,7 @@ export default function CouponManagementPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
                     <thead>
                       <tr style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-                        {["Code", "Discount", "Valid Period", "Status", "Actions"].map(h => (
+                        {["Code", "Discount", "Applies To", "Valid Period", "Status", "Actions"].map(h => (
                           <th key={h} style={{ padding: "12px 18px", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", textAlign: "left", whiteSpace: "nowrap" }}>
                             {h}
                           </th>
@@ -414,6 +469,9 @@ export default function CouponManagementPage() {
                             </td>
                             <td style={{ padding: "14px 18px", fontSize: 13.5, color: "#374151" }}>
                               {describeDiscount(c)}
+                            </td>
+                            <td style={{ padding: "14px 18px", fontSize: 12.5, color: "#6b7280" }}>
+                              {describeApartments(c)}
                             </td>
                             <td style={{ padding: "14px 18px", fontSize: 12.5, color: "#6b7280", whiteSpace: "nowrap" }}>
                               {c.valid_from || c.valid_till
@@ -454,7 +512,8 @@ export default function CouponManagementPage() {
                       }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 2px", fontFamily: "monospace" }}>{c.code}</p>
-                          <p style={{ fontSize: 12.5, color: "#6b7280", margin: "0 0 6px" }}>{describeDiscount(c)}</p>
+                          <p style={{ fontSize: 12.5, color: "#6b7280", margin: "0 0 4px" }}>{describeDiscount(c)}</p>
+                          <p style={{ fontSize: 11.5, color: "#9ca3af", margin: "0 0 6px" }}>{describeApartments(c)}</p>
                           {expired
                             ? <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "#f3f4f6", color: "#6b7280" }}>Expired</span>
                             : c.active
@@ -487,6 +546,7 @@ export default function CouponManagementPage() {
             saving={saving}
             formErr={formErr}
             formOk={formOk}
+            apartmentOptions={apartmentOptions}
           />
         </Modal>
       )}
@@ -503,6 +563,7 @@ export default function CouponManagementPage() {
             saving={saving}
             formErr={formErr}
             formOk={formOk}
+            apartmentOptions={apartmentOptions}
           />
         </Modal>
       )}
