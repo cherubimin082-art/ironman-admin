@@ -5,6 +5,8 @@ import StatusBadge from "../../components/shared/StatusBadge";
 import { useOrders } from "../../context/OrderContext";
 import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
+import DeliveryAlertBanner from "../../components/delivery/DeliveryAlertBanner";
+import ApartmentTabs from "../../components/delivery/ApartmentTabs";
 
 const ACTIVE_STATUSES = ["ready_for_delivery", "picked_from_vendor", "out_for_delivery", "delivery_rescheduled"];
 // ready_for_delivery / picked_from_vendor are now auto-skipped server-side the
@@ -408,13 +410,17 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function ActiveDeliveryPage() {
-  const { pickupJobs, deliveryAction, deliveryAlert, clearDeliveryAlert } = useOrders();
+  const { pickupJobs, deliveryAction, deliveryAlerts, clearDeliveryAlert } = useOrders();
   const [busyId, setBusyId]     = useState(null);
   const { isMobile } = useWindowSize();
   const [otpModal, setOtpModal] = useState(null); // { orderId, type: "pickup"|"delivery" }
   const [otpLoading, setOtpLoading] = useState(false);
+  const [activeApartment, setActiveApartment] = useState("All");
 
-  const activeOrders = pickupJobs.filter(j => ACTIVE_STATUSES.includes(j.status));
+  const allActiveOrders = pickupJobs.filter(j => ACTIVE_STATUSES.includes(j.status));
+  const activeOrders = activeApartment === "All"
+    ? allActiveOrders
+    : allActiveOrders.filter(j => j.apartment === activeApartment);
 
   async function handleAction(orderId, action, body = {}) {
     setBusyId(orderId);
@@ -485,32 +491,7 @@ export default function ActiveDeliveryPage() {
 
   return (
     <Layout>
-      {deliveryAlert && createPortal(
-        <div style={{
-          position: "fixed", top: "calc(16px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)",
-          zIndex: 1100, width: "calc(100% - 32px)", maxWidth: 480,
-          background: "#065f46", borderRadius: 16,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
-          display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
-          animation: "slideDown 0.3s ease",
-        }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
-              <path d="M5 13l4 4L19 7"/>
-            </svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 800, color: "white", margin: "0 0 2px" }}>Ironing Complete!</p>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0, fontWeight: 500 }}>
-              Order #{deliveryAlert.orderId} — deliver to customer now
-            </p>
-          </div>
-          <button onClick={clearDeliveryAlert} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)", padding: 4, flexShrink: 0, display: "flex" }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </div>,
-        document.body
-      )}
+      <DeliveryAlertBanner alerts={deliveryAlerts} onDismiss={clearDeliveryAlert} />
       {otpModal && (
         <OtpModal
           title={otpModal.type === "pickup" ? "Verify Pickup OTP" : "Verify Delivery OTP"}
@@ -551,6 +532,8 @@ export default function ActiveDeliveryPage() {
             </div>
           )}
         </div>
+
+        <ApartmentTabs jobs={allActiveOrders} active={activeApartment} onChange={setActiveApartment} />
 
         {/* Status legend */}
         <div style={{

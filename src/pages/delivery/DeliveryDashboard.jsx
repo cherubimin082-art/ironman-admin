@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useOrders } from "../../context/OrderContext";
 import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
+import DeliveryAlertBanner from "../../components/delivery/DeliveryAlertBanner";
 
 function StatCard({ label, value, sub, accent, bg, border, icon }) {
   return (
@@ -38,7 +39,7 @@ const ACTIVE_STATUSES = new Set(["delivery_assigned", "picked_up", "at_vendor", 
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
-  const { pickupJobs, loading, loadData } = useOrders();
+  const { pickupJobs, loading, loadData, deliveryAlerts, clearDeliveryAlert } = useOrders();
   const navigate = useNavigate();
 
   const [myRating,   setMyRating]   = useState(null);
@@ -86,6 +87,7 @@ export default function DeliveryDashboard() {
 
   return (
     <Layout>
+      <DeliveryAlertBanner alerts={deliveryAlerts} onDismiss={clearDeliveryAlert} />
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
 
         {/* Header */}

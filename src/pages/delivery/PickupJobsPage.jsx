@@ -6,6 +6,7 @@ import { useOrders } from "../../context/OrderContext";
 import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import RideMapModal from "../../components/delivery/RideMapModal";
+import ApartmentTabs from "../../components/delivery/ApartmentTabs";
 
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(d) {
@@ -627,11 +628,16 @@ export default function PickupJobsPage() {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
   const [rideMapJob, setRideMapJob] = useState(null);     // job being ridden to
+  const [activeApartment, setActiveApartment] = useState("All");
 
-  const newJobs      = pickupJobs.filter(j => j.status === "vendor_accepted");
-  const pendingPickup = pickupJobs.filter(j => j.status === "delivery_assigned");
-  const inTransit    = pickupJobs.filter(j => j.status === "picked_up");
-  const atVendor     = pickupJobs.filter(j => j.status === "at_vendor");
+  const apartmentJobs = activeApartment === "All"
+    ? pickupJobs
+    : pickupJobs.filter(j => j.apartment === activeApartment);
+
+  const newJobs      = apartmentJobs.filter(j => j.status === "vendor_accepted");
+  const pendingPickup = apartmentJobs.filter(j => j.status === "delivery_assigned");
+  const inTransit    = apartmentJobs.filter(j => j.status === "picked_up");
+  const atVendor     = apartmentJobs.filter(j => j.status === "at_vendor");
 
   // Accept new assignment
   async function handleAccept(jobId) {
@@ -761,6 +767,8 @@ export default function PickupJobsPage() {
             {error}
           </div>
         )}
+
+        <ApartmentTabs jobs={pickupJobs} active={activeApartment} onChange={setActiveApartment} />
 
         {/* Section 1 — New Assignments */}
         <section>

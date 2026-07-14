@@ -33,7 +33,7 @@ export function OrderProvider({ children }) {
   const [pickupJobs, setPickupJobs]         = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading]               = useState(false);
-  const [deliveryAlert, setDeliveryAlert]   = useState(null);
+  const [deliveryAlerts, setDeliveryAlerts] = useState([]); // [{orderId, message}] - one per order, not a single overwritable slot
   const loadDataRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -63,6 +63,14 @@ export function OrderProvider({ children }) {
 
   // Keep ref always pointing to latest loadData so socket callbacks never go stale
   useEffect(() => { loadDataRef.current = loadData; }, [loadData]);
+
+  // Auto-clear a delivery-ready alert once its order is no longer in pickupJobs
+  // (assigned-orders excludes delivered/cancelled orders) - so the banner
+  // disappears on its own once the delivery boy actually finishes that order,
+  // instead of only clearing via its own × button.
+  useEffect(() => {
+    setDeliveryAlerts(prev => prev.filter(a => pickupJobs.some(j => j.id === a.orderId)));
+  }, [pickupJobs]);
 
   useEffect(() => {
     if (!user) {
@@ -97,7 +105,9 @@ export function OrderProvider({ children }) {
       socket.on('order_ready_for_pickup',   reload);
       socket.on('order_ready_for_delivery', (data) => {
         reload();
-        if (user.role === 'delivery') setDeliveryAlert(data);
+        if (user.role === 'delivery') {
+          setDeliveryAlerts(prev => prev.some(a => a.orderId === data.orderId) ? prev : [...prev, data]);
+        }
       });
       socket.on('order_at_vendor',          reload);
       socket.on('order_ironing',            reload);
@@ -168,7 +178,8 @@ export function OrderProvider({ children }) {
   return (
     <OrderContext.Provider value={{
       orders, pickupJobs, dashboardStats, loading,
-      deliveryAlert, clearDeliveryAlert: () => setDeliveryAlert(null),
+      deliveryAlerts,
+      clearDeliveryAlert: (orderId) => setDeliveryAlerts(prev => prev.filter(a => a.orderId !== orderId)),
       updateOrderStatus, acceptPickupJob, loadData, vendorAction, deliveryAction,
     }}>
       {children}
