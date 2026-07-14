@@ -348,14 +348,26 @@ router.put("/vendor/start-ironing/:orderId", ...auth, async (req, res) => {
       );
     } catch (_) {}
 
-    // Log iron start time
+    // Log iron start time - one row per bag on this order, matching the
+    // tablet flow's per-bag rows. Previously this omitted ob_id entirely and
+    // sent bag_number=NULL, but both columns are NOT NULL on this table, so
+    // the insert always failed ER_BAD_NULL_ERROR - silently, since it's
+    // wrapped in try/catch - and no log row was ever created for orders
+    // started this way (non-tablet, whole-order "Start Ironing").
     try {
-      await pool.query(
-        `INSERT INTO order_activity_log (order_id, bag_number, vendor_id, iron_start_time)
-         VALUES (?, NULL, ?, NOW())
-         ON DUPLICATE KEY UPDATE iron_start_time = IF(iron_start_time IS NULL, NOW(), iron_start_time)`,
-        [orderId, vendorId]
+      const [orderBags] = await pool.query(
+        `SELECT ob.id AS ob_id, b.bag_number
+           FROM order_bags ob JOIN bags b ON b.id = ob.bag_id
+          WHERE ob.order_id = ?`,
+        [orderId]
       );
+      for (const ob of orderBags) {
+        await pool.query(
+          `INSERT INTO order_activity_log (order_id, ob_id, bag_number, vendor_id, iron_start_time)
+           VALUES (?, ?, ?, ?, NOW())`,
+          [orderId, ob.ob_id, ob.bag_number, vendorId]
+        );
+      }
     } catch (_) {}
 
     const [rows] = await pool.query(
