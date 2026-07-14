@@ -107,17 +107,46 @@ function EmptyState({ message }) {
 function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming }) {
   const [otp, setOtp]         = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [pickedBags, setPickedBags]   = useState([]); // [{id, bag_number}] — for chip display, in entry order
+  const [bagInput, setBagInput]       = useState("");
+  const [bagErr, setBagErr]           = useState("");
   const [err, setErr]         = useState("");
 
   const showBags   = otp.length === 4;
   const canConfirm = otp.length === 4 && selectedIds.size > 0 && !confirming;
 
-  function toggleBag(id) {
+  function addBagByNumber(raw) {
+    const typed = raw.trim();
+    if (!typed) return;
+    setBagErr("");
+    const match = bags.find(b => String(b.bag_number) === typed);
+    if (!match) {
+      setBagErr(`Bag #${typed} is not available at this Iron's Head. Check the number and try again.`);
+      return;
+    }
+    if (selectedIds.has(match.id)) {
+      setBagErr(`Bag #${typed} is already added.`);
+      return;
+    }
+    setSelectedIds(prev => new Set(prev).add(match.id));
+    setPickedBags(prev => [...prev, match]);
+    setBagInput("");
+  }
+
+  function removeBag(id) {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      next.delete(id);
       return next;
     });
+    setPickedBags(prev => prev.filter(b => b.id !== id));
+  }
+
+  function handleBagInputKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addBagByNumber(bagInput);
+    }
   }
 
   async function handleSubmit(e) {
@@ -176,16 +205,16 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
             Ask the customer for the 4-digit OTP sent to their WhatsApp.
           </p>
 
-          {/* Bag checkboxes — appear when OTP is 4 digits */}
+          {/* Bag number entry — appear when OTP is 4 digits */}
           {showBags && (
             <div style={{ marginTop: 18 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Select Bags
+                  Enter Bag Number
                 </label>
                 {selectedIds.size > 0 && (
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "2px 9px" }}>
-                    {selectedIds.size} selected
+                    {selectedIds.size} added
                   </span>
                 )}
               </div>
@@ -196,36 +225,69 @@ function PickupModal({ order, bags, bagsLoading, onConfirm, onClose, confirming 
                   No bags available at this Iron&apos;s Head right now.
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {bags.map(b => {
-                    const checked = selectedIds.has(b.id);
-                    return (
-                      <label
-                        key={b.id}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 12,
-                          padding: "12px 14px", borderRadius: 11, cursor: "pointer",
-                          border: checked ? "2px solid #10b981" : "2px solid #e5e7eb",
-                          background: checked ? "#f0fdf4" : "#fff",
-                          transition: "border-color 0.15s, background 0.15s",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleBag(b.id)}
-                          style={{ width: 18, height: 18, accentColor: "#10b981", flexShrink: 0, cursor: "pointer" }}
-                        />
-                        <span style={{ fontSize: 14, fontWeight: 700, color: checked ? "#065f46" : "#374151" }}>
+                <>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Type bag number, e.g. 12"
+                      value={bagInput}
+                      onChange={e => { setBagInput(e.target.value.replace(/\D/g, "")); setBagErr(""); }}
+                      onKeyDown={handleBagInputKeyDown}
+                      style={{
+                        flex: 1, padding: "12px 14px", borderRadius: 11, fontSize: 14, fontWeight: 700,
+                        border: bagErr ? "2px solid #ef4444" : "2px solid #e5e7eb",
+                        outline: "none", boxSizing: "border-box",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addBagByNumber(bagInput)}
+                      disabled={!bagInput.trim()}
+                      style={{
+                        padding: "0 18px", borderRadius: 11, border: "none",
+                        background: bagInput.trim() ? "#10b981" : "#e5e7eb",
+                        color: bagInput.trim() ? "#fff" : "#9ca3af",
+                        fontSize: 13, fontWeight: 700, cursor: bagInput.trim() ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {bagErr && (
+                    <p style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 600, margin: "6px 0 0" }}>{bagErr}</p>
+                  )}
+                  {pickedBags.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                      {pickedBags.map(b => (
+                        <span
+                          key={b.id}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            padding: "7px 8px 7px 14px", borderRadius: 99,
+                            border: "2px solid #10b981", background: "#f0fdf4",
+                            fontSize: 13, fontWeight: 700, color: "#065f46",
+                          }}
+                        >
                           Bag #{b.bag_number}
+                          <button
+                            type="button"
+                            onClick={() => removeBag(b.id)}
+                            style={{
+                              width: 18, height: 18, borderRadius: "50%", border: "none",
+                              background: "#10b981", color: "#fff", fontSize: 12, lineHeight: 1,
+                              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                            }}
+                          >×</button>
                         </span>
-                      </label>
-                    );
-                  })}
-                </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
               <p style={{ fontSize: 11, color: "#9ca3af", margin: "8px 0 0" }}>
-                Select all bags needed for this order. Tick multiple if clothes need more than one bag.
+                Type the number printed on each bag needed for this order, then press Enter or Add. Add multiple if clothes need more than one bag.
               </p>
             </div>
           )}
