@@ -7,6 +7,7 @@ import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import RideMapModal from "../../components/delivery/RideMapModal";
 import ApartmentTabs from "../../components/delivery/ApartmentTabs";
+import CallCustomerLink from "../../components/delivery/CallCustomerLink";
 
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(d) {
@@ -360,6 +361,7 @@ function AssignmentCard({ job, onAccept, accepting }) {
             <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.items}</p>
           </div>
         </div>
+        <CallCustomerLink phone={job.customer_phone} compact />
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" style={{ width: 14, height: 14, marginTop: 1, flexShrink: 0 }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
@@ -445,7 +447,10 @@ function PendingPickupCard({ job, onReach, reaching, onRide }) {
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#10b981", flexShrink: 0 }}>
             {job.customer?.[0]?.toUpperCase() ?? "?"}
           </div>
-          <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0 }}>{job.customer}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>{job.customer}</p>
+            <CallCustomerLink phone={job.customer_phone} compact />
+          </div>
         </div>
 
         {/* Details grid */}

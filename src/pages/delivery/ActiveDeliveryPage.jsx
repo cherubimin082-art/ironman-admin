@@ -7,6 +7,7 @@ import api from "../../services/api";
 import { useWindowSize } from "../../hooks/useWindowSize";
 import DeliveryAlertBanner from "../../components/delivery/DeliveryAlertBanner";
 import ApartmentTabs from "../../components/delivery/ApartmentTabs";
+import CallCustomerLink from "../../components/delivery/CallCustomerLink";
 
 const ACTIVE_STATUSES = ["ready_for_delivery", "picked_from_vendor", "out_for_delivery", "delivery_rescheduled"];
 // ready_for_delivery / picked_from_vendor are now auto-skipped server-side the
@@ -311,6 +312,9 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
                 <p style={{ fontSize: 11.5, fontWeight: 700, color: "#059669", margin: "2px 0 0" }}>{order.apartment}</p>
               )}
               <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0" }}>{order.customer_address || "—"}</p>
+              <div style={{ marginTop: 8 }}>
+                <CallCustomerLink phone={order.customer_phone} compact />
+              </div>
               {(() => {
                 const url = mapsUrl(order);
                 return url ? (
