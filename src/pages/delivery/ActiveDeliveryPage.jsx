@@ -101,10 +101,8 @@ function OtpModal({ title, hint, onVerify, onClose, loading }) {
   );
 }
 
-// Only worth showing when it differs from pickup_date (apartment has a >0 day offset) —
-// same-day apartments already deliver the same day they're picked up.
 function deliveryDateLabel(order) {
-  if (!order.delivery_date || order.delivery_date === order.pickup_date) return null;
+  if (!order.delivery_date) return null;
   const s = String(order.delivery_date).slice(0, 10);
   const dt = new Date(s + "T00:00:00");
   if (isNaN(dt)) return null;
@@ -314,12 +312,18 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
             <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Apartment</p>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{order.apartment || "—"}</p>
           </div>
-          {deliveryDateLabel(order) && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Deliver By</p>
-              <p style={{ fontSize: 12.5, fontWeight: 600, color: "#2563eb", margin: 0 }}>{deliveryDateLabel(order)}</p>
-            </div>
-          )}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Center Head</p>
+            <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{order.vendor_name || "—"}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Delivery Date</p>
+            <p style={{ fontSize: 12.5, fontWeight: 600, color: deliveryDateLabel(order) ? "#2563eb" : "#374151", margin: 0 }}>{deliveryDateLabel(order) || "—"}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Delivery Time</p>
+            <p style={{ fontSize: 12.5, fontWeight: 600, color: order.apt_delivery_time ? "#2563eb" : "#374151", margin: 0 }}>{order.apt_delivery_time || "—"}</p>
+          </div>
           <div style={{ gridColumn: "1 / -1" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Address</p>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0, lineHeight: 1.45 }}>{order.customer_address || "—"}</p>
