@@ -274,125 +274,102 @@ function OrderCard({ order, onAction, busyId, onShowOtpModal }) {
       {/* Status bar */}
       <div style={{ height: 4, background: "linear-gradient(90deg, #10b981, #3b82f6)" }} />
 
-      <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>
-              Order ID
-            </p>
-            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 800, color: "#111827", margin: 0 }}>
-              {order.order_code || `#${order.id}`}
-            </p>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15.5, fontWeight: 800, color: "#111827", margin: 0 }}>
+            {order.order_code || `#${order.id}`}
+          </p>
           <StatusBadge status={order.status} />
         </div>
 
-        <div style={{ height: 1, background: "#f3f4f6" }} />
-
-        {/* Customer */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Customer + call + navigate */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
-            width: 38, height: 38, borderRadius: 11, background: "#f0fdf4",
+            width: 30, height: 30, borderRadius: 9, background: "#f0fdf4",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 15, fontWeight: 800, color: "#10b981", flexShrink: 0,
+            fontSize: 13, fontWeight: 800, color: "#10b981", flexShrink: 0,
           }}>
             {order.customer?.[0]?.toUpperCase() ?? "?"}
           </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>{order.customer}</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0, flexShrink: 0 }}>{order.customer}</p>
+          <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end" }}>
             <CallCustomerLink phone={order.customer_phone} compact />
+            {(() => {
+              const url = mapsUrl(order);
+              return url ? (
+                <a
+                  href={url} target="_blank" rel="noreferrer"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    padding: "4px 10px", borderRadius: 8, background: "#eff6ff", color: "#1d4ed8",
+                    fontSize: 11.5, fontWeight: 700, textDecoration: "none", border: "1px solid #bfdbfe",
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                    <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+                  </svg>
+                  Navigate
+                </a>
+              ) : null;
+            })()}
           </div>
         </div>
 
         {/* Details grid — apartment, address, same layout as the Pickup Jobs cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px", background: "#f9fafb", borderRadius: 12, padding: "12px 14px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", background: "#f9fafb", borderRadius: 10, padding: "9px 11px" }}>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Apartment</p>
-            <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{order.apartment || "—"}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Apartment</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: 0 }}>{order.apartment || "—"}</p>
           </div>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Center Head</p>
-            <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0 }}>{order.vendor_name || "—"}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Center Head</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: 0 }}>{order.vendor_name || "—"}</p>
           </div>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Delivery Date</p>
-            <p style={{ fontSize: 12.5, fontWeight: 600, color: deliveryDateLabel(order) ? "#2563eb" : "#374151", margin: 0 }}>{deliveryDateLabel(order) || "—"}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Delivery Date</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: deliveryDateLabel(order) ? "#2563eb" : "#374151", margin: 0 }}>{deliveryDateLabel(order) || "—"}</p>
           </div>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Delivery Time</p>
-            <p style={{ fontSize: 12.5, fontWeight: 600, color: order.apt_delivery_time ? "#2563eb" : "#374151", margin: 0 }}>{order.apt_delivery_time || "—"}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Delivery Time</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: order.apt_delivery_time ? "#2563eb" : "#374151", margin: 0 }}>{order.apt_delivery_time || "—"}</p>
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Address</p>
-            <p style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", margin: 0, lineHeight: 1.45 }}>{order.customer_address || "—"}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Address</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: 0, lineHeight: 1.4 }}>{order.customer_address || "—"}</p>
           </div>
           {(order.bag_numbers || order.bag_number) && (
             <div style={{ gridColumn: "1 / -1" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 3px" }}>Bag No.</p>
-              <p style={{ fontSize: 12.5, fontWeight: 700, color: "#15803d", margin: 0 }}>
+              <p style={{ fontSize: 9.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Bag No.</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "#15803d", margin: 0 }}>
                 {String(order.bag_numbers || order.bag_number).split(",").map(n => `#${n.trim()}`).join(", ")}
               </p>
             </div>
           )}
         </div>
 
-        {(() => {
-          const url = mapsUrl(order);
-          return url ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 5, width: "fit-content",
-                padding: "6px 14px",
-                borderRadius: 8, background: "#eff6ff", color: "#1d4ed8",
-                fontSize: 11, fontWeight: 700, textDecoration: "none",
-                border: "1px solid #bfdbfe",
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
-                <path d="M3 11l19-9-9 19-2-8-8-2z"/>
-              </svg>
-              Navigate
-              {order.customer_latitude ? " (GPS)" : " (Address)"}
-            </a>
-          ) : null;
-        })()}
-
         {/* Items + amount */}
-        <div style={{ display: "flex", gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 4px" }}>
-              Items
-            </p>
-            <p style={{ fontSize: 12.5, color: "#374151", margin: 0 }}>{order.items}</p>
-          </div>
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 4px" }}>
-              Amount
-            </p>
-            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>
-              ₹{order.amount}
-            </p>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <p style={{ flex: 1, fontSize: 12, color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{order.items}</p>
+          <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 16, fontWeight: 800, color: "#111827", margin: 0, flexShrink: 0 }}>
+            ₹{order.amount}
+          </p>
         </div>
 
         {/* Location sharing (when active delivery) */}
         {needOtp && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#f9fafb", borderRadius: 10, border: "1px solid #f3f4f6" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: sharing ? "#22c55e" : "#d1d5db", boxShadow: sharing ? "0 0 0 3px rgba(34,197,94,0.25)" : "none" }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 11px", background: "#f9fafb", borderRadius: 9, border: "1px solid #f3f4f6" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: sharing ? "#22c55e" : "#d1d5db", boxShadow: sharing ? "0 0 0 3px rgba(34,197,94,0.25)" : "none" }} />
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: "#374151" }}>
                 {sharing ? "Sharing location" : "Location off"}
               </span>
             </div>
             <button
               onClick={sharing ? stop : start}
               style={{
-                padding: "5px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700,
+                padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700,
                 background: sharing ? "#fef2f2" : "#f0fdf4",
                 color: sharing ? "#dc2626" : "#16a34a",
                 transition: "opacity 0.15s",
