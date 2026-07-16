@@ -1,14 +1,19 @@
 const pool = require('../db');
 const path = require('path');
 
+// firebase-admin v14 uses the modular API (firebase-admin/app,
+// firebase-admin/messaging) - the older admin.credential.cert() /
+// admin.messaging() namespaced style no longer exists on this version.
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
+
 // The service account key is a real secret - kept only on the server
 // filesystem (matching how backend/.env itself is handled), never in git.
 let firebaseApp = null;
 function ensureFirebase() {
   if (firebaseApp) return firebaseApp;
-  const admin = require('firebase-admin');
   const serviceAccount = require(path.join(__dirname, '../firebase-service-account.json'));
-  firebaseApp = admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  firebaseApp = initializeApp({ credential: cert(serviceAccount) });
   return firebaseApp;
 }
 
@@ -32,9 +37,8 @@ async function sendPushToUser(userId, title, body, data = {}) {
     await ensureFcmColumn();
     const [[row]] = await pool.query('SELECT fcm_token FROM users WHERE id = ?', [userId]);
     if (!row?.fcm_token) return;
-    const admin = require('firebase-admin');
     ensureFirebase();
-    await admin.messaging().send({
+    await getMessaging().send({
       token: row.fcm_token,
       notification: { title, body },
       data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
