@@ -5,9 +5,27 @@ const rateLimit = require("express-rate-limit");
 const pool      = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
+const { ensureFcmColumn } = require("../utils/push");
 
 const router = express.Router();
 const auth   = [verifyToken, requireRole("delivery")];
+
+// POST /api/push/register-token
+// Called once the app has an FCM token (after PushNotifications.register()
+// resolves) so the backend can reach this device even when the socket isn't
+// connected (app closed/backgrounded).
+router.post("/push/register-token", ...auth, async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ message: "token is required" });
+  try {
+    await ensureFcmColumn();
+    await pool.query("UPDATE users SET fcm_token = ? WHERE id = ?", [token, req.user.id]);
+    res.json({ message: "Token registered" });
+  } catch (err) {
+    console.error("push/register-token error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // Caps OTP guesses per order so a 4-digit pickup/delivery OTP can't be brute-forced
 // by an authenticated agent (or anyone holding a leaked agent token).

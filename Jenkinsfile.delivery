@@ -52,6 +52,12 @@ pipeline {
       }
     }
 
+    stage('Inject Firebase Config') {
+      steps {
+        sh 'cp /home/ubuntu/firebase/google-services-delivery.json android/app/google-services.json'
+      }
+    }
+
     stage('Inject Signing Config') {
       steps {
         sh '''

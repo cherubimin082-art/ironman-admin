@@ -6,6 +6,7 @@ const bcrypt  = require("bcryptjs");
 const pool    = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
+const { sendPushToUser } = require("../utils/push");
 
 // ── Image upload (multer) — used by vendor Pricing Management ──────────
 const uploadStorage = multer.diskStorage({
@@ -270,6 +271,7 @@ router.put("/accept-order/:id", ...auth, async (req, res) => {
         io.to("delivery_" + agentId).emit("new_delivery_order", {
           orderId, message: "New order ready for pickup"
         });
+        sendPushToUser(agentId, "New Pickup Assigned", `Order #${orderId} needs pickup`, { orderId, type: "new_delivery_order" });
         emitToCustomer(customerId, "delivery_accepted", {
           orderId,
           agentName:  agent.name  || "Delivery Agent",
@@ -465,6 +467,7 @@ router.put("/mark-complete/:id", ...auth, async (req, res) => {
         io.to("delivery_" + delivery_agent_id).emit("order_ready_for_delivery", {
           orderId, message: "Ironing complete — deliver to customer now"
         });
+        sendPushToUser(delivery_agent_id, "Ironing Complete", `Order #${orderId} is ready — deliver to customer now`, { orderId, type: "order_ready_for_delivery" });
       }
     } catch (_) {}
 
@@ -1479,6 +1482,7 @@ router.put("/vendor/tablet-bags/:bagId/complete-iron", ...tabletAuth, async (req
         io.to(`delivery_${bag.delivery_agent_id}`).emit("order_ready_for_delivery", {
           orderId: bag.order_id, message: "Ironing complete — deliver to customer now"
         });
+        sendPushToUser(bag.delivery_agent_id, "Ironing Complete", `Order #${bag.order_id} is ready — deliver to customer now`, { orderId: bag.order_id, type: "order_ready_for_delivery" });
       }
     } else {
       io.to(`vendor_${vendorId}`).emit("tablet_bag_update", { bagId, status: "completed", orderReady: false });

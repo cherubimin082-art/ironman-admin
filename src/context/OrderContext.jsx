@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { io } from 'socket.io-client';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
+import { initPushListeners, registerPushNotifications } from '../utils/pushNotifications';
 
 const OrderContext = createContext(null);
 let socket = null;
@@ -80,6 +81,8 @@ export function OrderProvider({ children }) {
       return;
     }
     loadData();
+    initPushListeners();
+    if (user.role === 'delivery') registerPushNotifications();
     if (!socket) {
       socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5002', {
         reconnection: true,

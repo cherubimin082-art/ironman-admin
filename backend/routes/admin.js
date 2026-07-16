@@ -3,6 +3,7 @@ const bcrypt  = require("bcryptjs");
 const pool    = require("../db");
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const { getIO } = require("../socket");
+const { sendPushToUser } = require("../utils/push");
 
 const router = express.Router();
 const auth   = [verifyToken, requireRole("admin")];
@@ -125,6 +126,7 @@ router.put("/assign-delivery/:orderId", ...auth, async (req, res) => {
     const io = getIO();
     io.to("delivery_" + delivery_agent_id).emit("new_assignment", { orderId });
     io.to("admin_room").emit("assignment_updated", { orderId, delivery_agent_id });
+    sendPushToUser(delivery_agent_id, "New Pickup Assigned", `Order #${orderId} needs pickup`, { orderId, type: "new_assignment" });
   } catch (_) {}
 
   res.json({ message: "Delivery agent assigned", orderId, delivery_agent_id });

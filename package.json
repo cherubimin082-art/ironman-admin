@@ -14,6 +14,7 @@
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1",
+    "@capacitor/push-notifications": "^8.1.2",
     "@react-google-maps/api": "^2.20.8",
     "axios": "^1.17.0",
     "react": "^19.2.6",
