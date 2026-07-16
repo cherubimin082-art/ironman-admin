@@ -110,6 +110,17 @@ PYEOF
         echo "APK available at: https://devadmin.ironman.today/downloads/ironman-delivery.apk"
       }
     }
+
+    stage('Distribute via Firebase') {
+      steps {
+        sh """
+          GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ironman-admin/backend/firebase-service-account.json \
+          firebase appdistribution:distribute android/app/build/outputs/apk/release/app-release.apk \
+            --app 1:860233554759:android:932cba386e3641f9ea4a62 \
+            --release-notes "Dev delivery build #${env.BUILD_NUMBER}"
+        """
+      }
+    }
   }
 
   post {
