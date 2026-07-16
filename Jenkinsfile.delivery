@@ -117,6 +117,7 @@ PYEOF
           GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ironman-admin/backend/firebase-service-account.json \
           firebase appdistribution:distribute android/app/build/outputs/apk/release/app-release.apk \
             --app 1:860233554759:android:932cba386e3641f9ea4a62 \
+            --groups internal-testing \
             --release-notes "Dev delivery build #${env.BUILD_NUMBER}"
         """
       }
